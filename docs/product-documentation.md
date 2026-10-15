@@ -134,6 +134,8 @@ Site
 
 **Recommended persistent sidebar:** Overview; Content; Media; Content Models; Navigation; Taxonomy; SEO; Performance; Team; Settings. Use secondary navigation within sections instead of exposing every subpage in the sidebar.
 
+**Decided (Oct 2026):** the sidebar holds a site's sections; a top bar holds browser-style tabs for the sites a user has open (plus Home, search, theme and account). Sub-pages are tabs under each page title, with breadcrumbs above it.
+
 ## 4. Feature inventory
 
 ### 4.1 Overview / Dashboard

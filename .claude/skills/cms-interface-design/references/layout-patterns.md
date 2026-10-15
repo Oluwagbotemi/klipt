@@ -4,7 +4,11 @@
 Account -> Sites/Projects -> Selected Site -> CMS. Persistent site sidebar: Overview; Content and Media; Content Models, Navigation, Taxonomy; SEO, Performance; Team, Settings. Detailed pages appear inside their sections; do not put the full sitemap in one sidebar.
 
 ## Shell
-Desktop: fixed or sticky left navigation (~240–280px), main area flexes; page header contains title, optional description, breadcrumb, and contextual primary action. Light theme can use soft-gray shell with white main working surface; dark theme uses subtle surface contrast. Do not apply a decorative giant container if it harms density on complex tables.
+**Decided (Oct 2026):** a sticky **top bar of open-site tabs** above a **left section sidebar**.
+- Top bar (every signed-in page): Home (All sites), one tab per opened site (browser-style; remembers the last page in that site; × closes), + to open another site, then search (⌘K/Ctrl+K command menu), theme, account. Open tabs are a per-browser convenience in localStorage; site names and access always come from the server.
+- Sidebar (lg+, ~240px, sticky under the top bar): New (quick create), sections grouped as below, collapse button. Collapses to an icon rail with tooltips; the preference applies before paint (`data-sidebar` on <html>). Below lg, sections open in a drawer from the top bar's menu button.
+- Page header: breadcrumb (Site › Section › Tab), title, description, contextual primary action, and the section's secondary tabs along its bottom edge. Each tab has its own URL.
+- Hide sections and tabs the member's role can't use; a direct URL to one shows a no-access state (server-enforced). Light theme can use soft-gray shell with white main working surface; dark theme uses subtle surface contrast. Do not apply a decorative giant container if it harms density on complex tables.
 
 ## Route archetypes
 - Sites index: multi-site cards/table, owner/role badges, create site.

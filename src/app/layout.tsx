@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { themeInitScript } from "@/lib/theme";
+import { preferencesInitScript } from "@/lib/theme";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -32,7 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <script dangerouslySetInnerHTML={{ __html: preferencesInitScript }} />
       </head>
       <body className="min-h-full">
         <TooltipProvider delayDuration={300}>{children}</TooltipProvider>

@@ -4,7 +4,7 @@
 360px (small mobile), 390px (mobile), 768px (tablet), 1024px (small desktop), 1440px (desktop), and wide desktop. Treat these as test widths, not mandatory custom breakpoints.
 
 ## Navigation
-Desktop: persistent sidebar. Tablet: compact/collapsible sidebar where space allows. Mobile: accessible drawer/sheet opened from topbar, with site switcher and navigation. Focus must be trapped in open modal/drawer and restored on close.
+Desktop (lg+): persistent, collapsible section sidebar under the open-site tab bar. Below lg: sections in an accessible drawer opened from the top bar; the open-site tabs scroll horizontally with edge fades. Focus must be trapped in open modal/drawer and restored on close.
 
 ## Page patterns
 - Headers: wrap actions; preserve visible primary action, move secondary actions to overflow menu.

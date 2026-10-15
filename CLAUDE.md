@@ -40,7 +40,13 @@ before creating or changing any screen.
   registry may be blocked in cloud sessions; write components by hand if so.
 - Forms: `FormField` for labelled inputs, `InlineAlert` for form-level errors, Server Actions
   with `useActionState` that return field errors and preserve submitted values.
+- Navigation (decided; overrides "persistent sidebar" wording elsewhere): top bar of open-site
+  tabs (`components/shell/open-sites-bar.tsx`, shared by account and site shells) + collapsible
+  section sidebar (`site-sidebar.tsx`). Sections and their tabs live in `src/lib/navigation.ts`,
+  each with an optional `permission` that hides it (display only).
 - Routes: `(auth)` sign-in/up; `(account)` account-level pages; `(site)` site shell.
-  `sites/[siteId]/[section]` is a placeholder for unbuilt sections; add a static route
-  (e.g. `sites/[siteId]/content/page.tsx`) to replace one.
+  `sites/[siteId]/[section]` and `.../[section]/[tab]` are placeholders for unbuilt pages. To
+  build one, add a static route (e.g. `sites/[siteId]/content/page.tsx`) plus a
+  `content/layout.tsx` that renders `<SectionLayout section="content">`, so the breadcrumb, title
+  and tabs stay consistent. Pages still authorize themselves via `getSite()`.
 - Pin new dependencies to versions published at least two weeks ago.
