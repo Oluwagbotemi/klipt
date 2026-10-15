@@ -1,20 +1,22 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { LogOut } from "lucide-react";
+import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuLabel,
+  DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { authClient } from "@/lib/auth-client";
 import type { UserSummary } from "@/lib/types";
 import { cn, initials } from "@/lib/utils";
 
-/**
- * Account menu. Profile, security, and sign-out arrive with authentication;
- * until then this only identifies the (mock) signed-in user.
- */
+/** Account menu. Profile, security and notification settings will be added here. */
 export function UserMenu({
   user,
   showName = false,
@@ -24,6 +26,21 @@ export function UserMenu({
   showName?: boolean;
   className?: string;
 }) {
+  const router = useRouter();
+  const [signingOut, setSigningOut] = useState(false);
+
+  async function signOut() {
+    setSigningOut(true);
+    const { error } = await authClient.signOut();
+    if (error) {
+      setSigningOut(false);
+      toast.error("Couldn't sign out. Check your connection and try again.");
+      return;
+    }
+    router.replace("/sign-in");
+    router.refresh();
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -45,15 +62,22 @@ export function UserMenu({
           </span>
         )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" side="top" className="w-64">
+      <DropdownMenuContent align="end" className="w-64">
         <div className="px-2 py-1.5">
           <p className="truncate text-sm font-medium">{user.name}</p>
           <p className="text-muted-foreground truncate text-xs">{user.email}</p>
         </div>
         <DropdownMenuSeparator />
-        <DropdownMenuLabel className="font-normal">
-          Sample account. Profile, security and sign-out arrive with authentication.
-        </DropdownMenuLabel>
+        <DropdownMenuItem
+          disabled={signingOut}
+          onSelect={(event) => {
+            event.preventDefault();
+            void signOut();
+          }}
+        >
+          <LogOut aria-hidden />
+          {signingOut ? "Signing out…" : "Sign out"}
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

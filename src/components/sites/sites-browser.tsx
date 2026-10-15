@@ -2,7 +2,7 @@
 
 import { useDeferredValue, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Globe, LayoutGrid, List, Search, SearchX } from "lucide-react";
+import { ChevronRight, Globe, LayoutGrid, List, Plus, Search, SearchX } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { SiteAvatar } from "@/components/shell/site-avatar";
 import { SiteBadges } from "@/components/sites/site-badges";
@@ -37,7 +37,15 @@ export function SitesBrowser({ sites }: { sites: SiteSummary[] }) {
       <EmptyState
         icon={Globe}
         title="No sites yet"
-        description="Sites you create, or are invited to, will appear here."
+        description="Create your first site to start adding content. Sites you're invited to will also appear here."
+        action={
+          <Button asChild>
+            <Link href="/sites/new">
+              <Plus aria-hidden />
+              Create site
+            </Link>
+          </Button>
+        }
       />
     );
   }

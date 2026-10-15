@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Construction } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
+import { getSite } from "@/lib/data/sites";
 import { getSiteNavItem, SITE_NAV_ITEMS } from "@/lib/navigation";
 
 /*
@@ -25,9 +26,11 @@ export async function generateMetadata({
 export default async function PlannedSectionPage({
   params,
 }: PageProps<"/sites/[siteId]/[section]">) {
-  const { section } = await params;
+  const { siteId, section } = await params;
   const item = getSiteNavItem(section);
   if (!item) notFound();
+  // Pages authorize independently of the layout (they render in parallel).
+  await getSite(siteId);
 
   return (
     <>

@@ -1,13 +1,13 @@
+import { Suspense } from "react";
 import { Logo } from "@/components/brand/logo";
 import { SkipLink } from "@/components/shell/skip-link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/user-menu";
-import { getCurrentUser } from "@/lib/data/sites";
+import { Skeleton } from "@/components/ui/skeleton";
+import { requireUser } from "@/lib/data/session";
 
 /** Account-level shell: sites list and (later) profile, security, notifications. */
-export default async function AccountLayout({ children }: LayoutProps<"/">) {
-  const user = await getCurrentUser();
-
+export default function AccountLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex min-h-dvh flex-col">
       <SkipLink />
@@ -15,7 +15,9 @@ export default async function AccountLayout({ children }: LayoutProps<"/">) {
         <Logo />
         <div className="ml-auto flex items-center gap-1">
           <ThemeToggle />
-          <UserMenu user={user} />
+          <Suspense fallback={<Skeleton className="size-10 rounded-full" />}>
+            <AccountMenu />
+          </Suspense>
         </div>
       </header>
       <main
@@ -26,4 +28,9 @@ export default async function AccountLayout({ children }: LayoutProps<"/">) {
       </main>
     </div>
   );
+}
+
+async function AccountMenu() {
+  const user = await requireUser();
+  return <UserMenu user={user} />;
 }

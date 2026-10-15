@@ -1,12 +1,6 @@
 import { Suspense } from "react";
 import { SiteChrome, SiteChromeSkeleton } from "@/components/shell/site-chrome";
 import { SkipLink } from "@/components/shell/skip-link";
-import { getSites } from "@/lib/data/sites";
-
-export async function generateStaticParams() {
-  const sites = await getSites();
-  return sites.map((site) => ({ siteId: site.id }));
-}
 
 /**
  * Site shell: persistent sidebar on desktop (lg+), drawer navigation below.

@@ -1,25 +1,49 @@
 import "server-only";
 
-import { MOCK_CURRENT_USER, MOCK_SITES } from "@/lib/mock/fixtures";
-import type { SiteSummary, UserSummary } from "@/lib/types";
+import { cache } from "react";
+import { notFound } from "next/navigation";
+import { getDb } from "@/server/db";
+import * as sitesRepo from "@/server/sites";
+import { can, type SitePermission } from "@/lib/permissions";
+import type { SiteRole, SiteSummary, UserSummary } from "@/lib/types";
+import { requireUser } from "@/lib/data/session";
 
 /*
- * Data access for sites. Currently backed by MOCK fixtures; swap these
- * implementations for real queries (with server-side authorization) once the
- * backend exists. Callers should not need to change.
+ * Data access layer for sites. Every function resolves the current user from
+ * the session and only returns sites that user is a member of. Non-members
+ * get "not found" rather than "forbidden", so site ids can't be probed.
  */
 
-export const USING_MOCK_DATA = true;
-
-export async function getCurrentUser(): Promise<UserSummary> {
-  return MOCK_CURRENT_USER;
+export class ForbiddenError extends Error {
+  constructor(permission: SitePermission) {
+    super(`Missing permission: ${permission}`);
+  }
 }
 
-/** Sites the current user is a member of. */
 export async function getSites(): Promise<SiteSummary[]> {
-  return [...MOCK_SITES].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const user = await requireUser();
+  return sitesRepo.listSitesForUser(await getDb(), user.id);
 }
 
-export async function getSite(siteId: string): Promise<SiteSummary | null> {
-  return MOCK_SITES.find((site) => site.id === siteId) ?? null;
+/** The site, if the current user is a member; otherwise renders not-found. */
+export const getSite = cache(async (siteId: string): Promise<SiteSummary> => {
+  const user = await requireUser();
+  const site = await sitesRepo.getSiteForUser(await getDb(), user.id, siteId);
+  if (!site) notFound();
+  return site;
+});
+
+/**
+ * Authorizes a site-scoped action. Use at the top of every Server Action and
+ * route handler that touches site data; UI checks are display-only.
+ */
+export async function requireSitePermission(
+  siteId: string,
+  permission: SitePermission,
+): Promise<{ user: UserSummary; role: SiteRole }> {
+  const user = await requireUser();
+  const role = await sitesRepo.getSiteRole(await getDb(), user.id, siteId);
+  if (!role) notFound();
+  if (!can(role, permission)) throw new ForbiddenError(permission);
+  return { user, role };
 }

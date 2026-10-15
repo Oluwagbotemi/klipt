@@ -1,4 +1,3 @@
-import { notFound } from "next/navigation";
 import { Logo } from "@/components/brand/logo";
 import { MobileSiteNav } from "@/components/shell/mobile-site-nav";
 import { SiteNav } from "@/components/shell/site-nav";
@@ -6,7 +5,8 @@ import { SiteSwitcher } from "@/components/shell/site-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/user-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getCurrentUser, getSite, getSites } from "@/lib/data/sites";
+import { requireUser } from "@/lib/data/session";
+import { getSite, getSites } from "@/lib/data/sites";
 
 const asideClasses =
   "sticky top-0 hidden h-dvh flex-col gap-5 overflow-y-auto px-4 pt-5 pb-4 lg:flex";
@@ -19,8 +19,7 @@ const mobileHeaderClasses =
  */
 export async function SiteChrome({ siteId }: { siteId: Promise<string> }) {
   const id = await siteId;
-  const [site, sites, user] = await Promise.all([getSite(id), getSites(), getCurrentUser()]);
-  if (!site) notFound();
+  const [site, sites, user] = await Promise.all([getSite(id), getSites(), requireUser()]);
 
   return (
     <>

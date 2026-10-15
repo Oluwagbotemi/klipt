@@ -8,7 +8,12 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx --env-file-if-exists=.env.local scripts/db-migrate.ts",
+    "db:seed": "tsx --env-file-if-exists=.env.local scripts/db-seed.ts",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "db:reset": "node -e \"require('fs').rmSync(process.env.PGLITE_DATA_DIR||'.data/pglite',{recursive:true,force:true})\" && npm run db:migrate && npm run db:seed"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.8",
@@ -23,6 +28,7 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "server-only": "^0.0.1",
+    "sonner": "2.0.8",
     "tailwind-merge": "^3.7.0",
     "zod": "4.6.5"
   },
