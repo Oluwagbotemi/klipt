@@ -54,4 +54,13 @@ before creating or changing any screen.
   `page`) parsed by `parseContentListParams`. Per-entry rights come from `entryActions()` in
   `src/lib/content.ts`; `applyBulkAction` re-checks them server-side and skips the rest.
   Server Actions that change data call `refresh()` from `next/cache`.
+- Editor: bodies are Tiptap JSON in `content_entries.data.body`. `src/lib/editor/rich-text.ts` holds
+  the one extension set used by the browser editor and server rendering; `sanitizeDoc()` runs on
+  every save and before rendering. Add a node/mark there (and to the sanitizer allow-list) or it
+  is stripped. Send editor JSON to Server Actions as plain JSON (stringify/parse first).
+- Editor writes (`src/server/editor.ts`) lock the row and compare `expectedUpdatedAt`; a mismatch
+  is a `ConflictError`, never a silent overwrite. Slug changes on published entries create 301s
+  without chains or loops. Scheduled entries are promoted by `publishDueEntries()` on read until a
+  background job exists. SEO length hints are guidance only and never block publishing.
+- Default public paths (`entryPath`): pages `/slug`, posts `/posts/slug`, until URL patterns exist.
 - Pin new dependencies to versions published at least two weeks ago.
