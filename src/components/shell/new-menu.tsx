@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { FileText, Globe, Newspaper, Plus } from "lucide-react";
+import { FileText, Globe, Loader2, Newspaper, Plus } from "lucide-react";
+import { useCreateEntry } from "@/components/content/new-entry-button";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -16,42 +17,47 @@ import type { SiteRole } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 /**
- * Quick create. Page and post creation arrive with the content editor; until
- * then they are shown disabled and labelled, so nothing pretends to work.
- * `rail` makes it full-width in the sidebar and icon-only when collapsed.
+ * Quick create: a page or post in this site (when the role allows), or a new
+ * site. `rail` makes it full-width in the sidebar and icon-only when collapsed.
  */
 export function NewMenu({
+  siteId,
   role,
   rail = false,
   className,
 }: {
+  siteId: string;
   role: SiteRole;
   rail?: boolean;
   className?: string;
 }) {
   const canCreateContent = can(role, "content.create");
+  const { create, pending } = useCreateEntry(siteId);
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button className={cn(rail && "w-full in-data-[sidebar=collapsed]:px-0", className)}>
-          <Plus aria-hidden />
-          <span className={rail ? "in-data-[sidebar=collapsed]:sr-only" : undefined}>New</span>
+        <Button
+          disabled={pending}
+          className={cn(rail && "w-full in-data-[sidebar=collapsed]:px-0", className)}
+        >
+          {pending ? <Loader2 className="animate-spin" aria-hidden /> : <Plus aria-hidden />}
+          <span className={rail ? "in-data-[sidebar=collapsed]:sr-only" : undefined}>
+            {pending ? "Creating…" : "New"}
+          </span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-56">
+      <DropdownMenuContent align="start" className="w-52">
         {canCreateContent && (
           <>
             <DropdownMenuLabel>In this site</DropdownMenuLabel>
-            <DropdownMenuItem disabled>
+            <DropdownMenuItem onSelect={() => create("page")}>
               <FileText aria-hidden />
               Page
-              <span className="text-muted-foreground ml-auto text-xs">Not built yet</span>
             </DropdownMenuItem>
-            <DropdownMenuItem disabled>
+            <DropdownMenuItem onSelect={() => create("post")}>
               <Newspaper aria-hidden />
               Post
-              <span className="text-muted-foreground ml-auto text-xs">Not built yet</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
           </>

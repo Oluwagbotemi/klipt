@@ -49,4 +49,9 @@ before creating or changing any screen.
   build one, add a static route (e.g. `sites/[siteId]/content/page.tsx`) plus a
   `content/layout.tsx` that renders `<SectionLayout section="content">`, so the breadcrumb, title
   and tabs stay consistent. Pages still authorize themselves via `getSite()`.
+- Content: list views live in `sites/[siteId]/content/(list)/` (route group so the entry page
+  at `content/[entryId]` gets its own header). List state is in the URL (`q`, `status`, `sort`,
+  `page`) parsed by `parseContentListParams`. Per-entry rights come from `entryActions()` in
+  `src/lib/content.ts`; `applyBulkAction` re-checks them server-side and skips the rest.
+  Server Actions that change data call `refresh()` from `next/cache`.
 - Pin new dependencies to versions published at least two weeks ago.

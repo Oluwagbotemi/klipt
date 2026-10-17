@@ -28,10 +28,11 @@ Without `DATABASE_URL`, the app uses an embedded Postgres (PGlite) stored in `.d
 
 ### Demo accounts (after `npm run db:seed`)
 
-| Email               | Password          | Has                                                          |
-| ------------------- | ----------------- | ------------------------------------------------------------ |
-| `sam@klipt.test`    | `klipt-demo-1234` | 3 owned sites (one with a pending transfer), Editor on a 4th |
-| `morgan@klipt.test` | `klipt-demo-1234` | Owner of Atlas Outdoor Supply                                |
+| Email               | Password          | Role and what you'll see                                                                                                                  |
+| ------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `sam@klipt.test`    | `klipt-demo-1234` | Owner of Northwind Journal (25 entries), Harbor & Pine Studio (pending transfer) and Lumen Clinic (empty); Editor on Atlas Outdoor Supply |
+| `morgan@klipt.test` | `klipt-demo-1234` | Owner of Atlas Outdoor Supply                                                                                                             |
+| `riley@klipt.test`  | `klipt-demo-1234` | Author on Northwind Journal: can create content and archive only their own unpublished entries                                            |
 
 These exist only in your local database. The seed script refuses to run against `DATABASE_URL` unless passed `--force`.
 
@@ -57,5 +58,5 @@ These exist only in your local database. The seed script refuses to run against 
 
 ## Status
 
-Built: design tokens (light/dark), app shell (open-site tabs, collapsible section sidebar, breadcrumbs, section tabs, ⌘K search), sign-up/sign-in/sign-out, Sites list and Create site on a real database, with server-side authorization.
-Next: Content library and editor. See §9 of the product documentation for the build sequence.
+Built: design tokens (light/dark), app shell (open-site tabs, collapsible section sidebar, breadcrumbs, section tabs, ⌘K search), sign-up/sign-in/sign-out, Sites list and Create site, Content library (search, status filters, sorting, pagination, create, bulk archive/restore/delete, entry details) on a real database, with server-side authorization.
+Next: the content editor (body, slug, SEO, publishing). See §9 of the product documentation for the build sequence.

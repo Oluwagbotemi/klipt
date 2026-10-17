@@ -16,7 +16,7 @@ export function SiteSidebar({ siteId, role }: { siteId: string; role: SiteRole }
 
   return (
     <aside className={asideClasses} aria-label="Sidebar">
-      <NewMenu role={role} rail />
+      <NewMenu siteId={siteId} role={role} rail />
       <div className="flex-1">
         <SiteNav siteId={siteId} role={role} rail showTooltips={collapsed} />
       </div>

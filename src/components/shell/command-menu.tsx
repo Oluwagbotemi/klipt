@@ -3,9 +3,11 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { Command } from "cmdk";
-import { CornerDownLeft, Globe, LayoutGrid, Plus, Search } from "lucide-react";
+import { CornerDownLeft, FileText, Globe, LayoutGrid, Newspaper, Plus, Search } from "lucide-react";
+import { useCreateEntry } from "@/components/content/new-entry-button";
 import { Button } from "@/components/ui/button";
 import { canSeeTab, siteHref, visibleSiteNav } from "@/lib/navigation";
+import { can } from "@/lib/permissions";
 import type { SiteRole } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -44,6 +46,9 @@ export function CommandMenu({
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
+
+  const { create } = useCreateEntry(current?.siteId ?? "");
+  const canCreateContent = current ? can(current.role, "content.create") : false;
 
   function go(href: string) {
     setOpen(false);
@@ -152,6 +157,32 @@ export function CommandMenu({
           </Command.Group>
 
           <Command.Group heading="Actions" className={groupClass}>
+            {canCreateContent && (
+              <>
+                <Command.Item
+                  value="New page create"
+                  onSelect={() => {
+                    setOpen(false);
+                    create("page");
+                  }}
+                  className={itemClass}
+                >
+                  <FileText aria-hidden />
+                  New page
+                </Command.Item>
+                <Command.Item
+                  value="New post create"
+                  onSelect={() => {
+                    setOpen(false);
+                    create("post");
+                  }}
+                  className={itemClass}
+                >
+                  <Newspaper aria-hidden />
+                  New post
+                </Command.Item>
+              </>
+            )}
             <Command.Item
               value="Create site new"
               onSelect={() => go("/sites/new")}
