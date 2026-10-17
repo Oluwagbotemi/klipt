@@ -158,3 +158,56 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Rich text: the editor surface and the preview share these styles. */
+@layer components {
+  .rich-text {
+    @apply text-foreground text-base leading-7;
+  }
+  .rich-text > * + * {
+    @apply mt-4;
+  }
+  .rich-text h2 {
+    @apply mt-8 text-2xl leading-tight font-semibold tracking-tight;
+  }
+  .rich-text h3 {
+    @apply mt-6 text-xl leading-snug font-semibold;
+  }
+  .rich-text h4 {
+    @apply mt-5 text-lg font-semibold;
+  }
+  .rich-text ul {
+    @apply list-disc pl-6;
+  }
+  .rich-text ol {
+    @apply list-decimal pl-6;
+  }
+  .rich-text li > * + * {
+    @apply mt-1;
+  }
+  .rich-text li + li {
+    @apply mt-1;
+  }
+  .rich-text blockquote {
+    @apply border-border text-muted-foreground border-l-4 pl-4 italic;
+  }
+  .rich-text a {
+    @apply text-primary underline underline-offset-4;
+  }
+  .rich-text code {
+    @apply bg-muted rounded px-1 py-0.5 font-mono text-[0.875em];
+  }
+  .rich-text pre {
+    @apply bg-muted overflow-x-auto rounded-lg p-4 font-mono text-sm;
+  }
+  .rich-text pre code {
+    @apply bg-transparent p-0;
+  }
+  .rich-text hr {
+    @apply border-border my-8;
+  }
+  .rich-text p.is-editor-empty:first-child::before {
+    @apply text-muted-foreground pointer-events-none float-left h-0;
+    content: attr(data-placeholder);
+  }
+}

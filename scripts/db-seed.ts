@@ -29,6 +29,54 @@ const DEMO_USERS = [
 
 const DAY = 24 * 60 * 60 * 1000;
 
+/** Placeholder body so the editor has something to show. Clearly sample text. */
+function sampleBody(title: string) {
+  const text = (value: string) => ({ type: "text", text: value });
+  return {
+    type: "doc",
+    content: [
+      {
+        type: "paragraph",
+        content: [
+          text(`Sample content for “${title}”. `),
+          {
+            type: "text",
+            text: "This text was added by the demo seed",
+            marks: [{ type: "bold" }],
+          },
+          text(" so the editor has something to show; replace it with your own writing."),
+        ],
+      },
+      { type: "heading", attrs: { level: 2 }, content: [text("What this section covers")] },
+      {
+        type: "paragraph",
+        content: [
+          text(
+            "Use headings to structure longer pieces, keep paragraphs short, and link to related pages where it helps readers, for example the ",
+          ),
+          {
+            type: "text",
+            text: "about page",
+            marks: [{ type: "link", attrs: { href: "/about-us" } }],
+          },
+          text("."),
+        ],
+      },
+      {
+        type: "bulletList",
+        content: [
+          "A clear, specific title",
+          "A short summary near the top",
+          "Descriptive link text",
+        ].map((item) => ({
+          type: "listItem",
+          content: [{ type: "paragraph", content: [text(item)] }],
+        })),
+      },
+    ],
+  };
+}
+
 type SeedEntry = [model: "page" | "post", title: string, status: ContentStatus, author: string];
 
 /** Inserts demo entries with staggered dates, newest first. */
@@ -53,6 +101,11 @@ async function seedEntries(
         title,
         slug: slugify(title),
         status,
+        data: { body: sampleBody(title) },
+        seo:
+          status === "published" && i % 3 === 0
+            ? { description: `A short summary of “${title}” for search results.` }
+            : {},
         authorId,
         createdAt: new Date(updatedAt.getTime() - 5 * DAY),
         updatedAt,

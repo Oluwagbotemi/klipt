@@ -58,5 +58,5 @@ These exist only in your local database. The seed script refuses to run against 
 
 ## Status
 
-Built: design tokens (light/dark), app shell (open-site tabs, collapsible section sidebar, breadcrumbs, section tabs, ⌘K search), sign-up/sign-in/sign-out, Sites list and Create site, Content library (search, status filters, sorting, pagination, create, bulk archive/restore/delete, entry details) on a real database, with server-side authorization.
-Next: the content editor (body, slug, SEO, publishing). See §9 of the product documentation for the build sequence.
+Built: design tokens (light/dark), app shell (open-site tabs, collapsible section sidebar, breadcrumbs, section tabs, ⌘K search), sign-up/sign-in/sign-out, Sites list and Create site, Content library, and the content editor (rich text with autosave and conflict detection, URL changes with 301 redirects, SEO and social fields with previews, advanced indexing controls, publish/schedule/review workflow, preview), all on a real database with server-side authorization.
+Next: Media library (images, alt text), then the site Overview.
