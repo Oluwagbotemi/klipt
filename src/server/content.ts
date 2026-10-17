@@ -2,6 +2,8 @@ import { and, asc, count, desc, eq, ilike, inArray, ne, or, sql, type SQL } from
 import type { DbOrTx } from "@/server/db";
 import { isUniqueViolation } from "@/server/db/errors";
 import { auditEvents, contentEntries, contentModels, users } from "@/server/db/schema";
+import { publishDueEntries } from "@/server/editor";
+import { NotAllowedError } from "@/server/errors";
 import { getSiteRole } from "@/server/sites";
 import {
   CONTENT_STATUSES,
@@ -23,7 +25,7 @@ import { can } from "@/lib/permissions";
  * through the data layer (src/lib/data/content.ts).
  */
 
-export class NotAllowedError extends Error {}
+export { NotAllowedError };
 
 const entryFields = {
   id: contentEntries.id,
@@ -92,6 +94,7 @@ export async function listEntries(
   params: ContentListParams,
 ): Promise<EntryList> {
   await requireRole(db, userId, siteId);
+  await publishDueEntries(db, siteId);
 
   const needle = params.q ? `%${escapeLike(params.q)}%` : null;
   const scope = and(
@@ -151,6 +154,7 @@ export async function getEntry(
   entryId: string,
 ): Promise<EntrySummary | null> {
   await requireRole(db, userId, siteId);
+  await publishDueEntries(db, siteId);
   const [row] = await selectEntries(db)
     .where(and(eq(contentEntries.siteId, siteId), eq(contentEntries.id, entryId)))
     .limit(1);

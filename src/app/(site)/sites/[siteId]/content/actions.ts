@@ -3,7 +3,16 @@
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { getDb } from "@/server/db";
+import { getDb, type Database } from "@/server/db";
+import {
+  ConflictError,
+  EditorValidationError,
+  changeSlug,
+  saveEntry,
+  transitionEntry,
+  type EntryState,
+} from "@/server/editor";
+import type { WorkflowAction } from "@/lib/content";
 import { applyBulkAction, createEntry, NotAllowedError } from "@/server/content";
 import { ForbiddenError, requireSitePermission } from "@/lib/data/sites";
 import { siteHref } from "@/lib/navigation";
@@ -73,5 +82,89 @@ export async function bulkContentAction(
     redirect(siteHref(input.data.siteId, "content"));
   }
   refresh();
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// Editor
+// ---------------------------------------------------------------------------
+
+export type EditorResult =
+  | { ok: true; state: EntryState; redirectCreated?: boolean }
+  | { ok: false; error: string; field?: string; conflict?: boolean };
+
+async function editorCall(
+  siteId: string,
+  entryId: string,
+  run: (userId: string, db: Database) => Promise<EntryState & { redirectCreated?: boolean }>,
+): Promise<EditorResult> {
+  if (!id.safeParse(siteId).success || !id.safeParse(entryId).success) {
+    return { ok: false, error: "That entry couldn't be found." };
+  }
+  const { user } = await requireSitePermission(siteId, "site.view");
+  try {
+    const { redirectCreated, ...state } = await run(user.id, await getDb());
+    return { ok: true, state, redirectCreated };
+  } catch (error) {
+    if (error instanceof ConflictError) {
+      return { ok: false, conflict: true, error: error.message };
+    }
+    if (error instanceof EditorValidationError) {
+      return { ok: false, error: error.message, field: error.field };
+    }
+    if (error instanceof NotAllowedError) {
+      return { ok: false, error: "You don't have permission to make that change." };
+    }
+    throw error;
+  }
+}
+
+const version = z.string().min(1).max(40);
+
+/** Autosave: title, body and SEO. */
+export async function saveEntryAction(
+  siteId: string,
+  entryId: string,
+  input: { title: string; body: unknown; seo: unknown; expectedUpdatedAt: string },
+): Promise<EditorResult> {
+  if (!version.safeParse(input?.expectedUpdatedAt).success || typeof input.title !== "string") {
+    return { ok: false, error: "Nothing to save." };
+  }
+  return editorCall(siteId, entryId, (userId, db) => saveEntry(db, userId, siteId, entryId, input));
+}
+
+export async function changeSlugAction(
+  siteId: string,
+  entryId: string,
+  input: { slug: string; createRedirect: boolean; expectedUpdatedAt: string },
+): Promise<EditorResult> {
+  const parsed = z
+    .object({ slug: z.string().max(200), createRedirect: z.boolean(), expectedUpdatedAt: version })
+    .safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Enter a URL slug.", field: "slug" };
+  const result = await editorCall(siteId, entryId, (userId, db) =>
+    changeSlug(db, userId, siteId, entryId, parsed.data),
+  );
+  if (result.ok) refresh();
+  return result;
+}
+
+export async function entryWorkflowAction(
+  siteId: string,
+  entryId: string,
+  input: { action: WorkflowAction; scheduledAt?: string | null; expectedUpdatedAt: string },
+): Promise<EditorResult> {
+  const parsed = z
+    .object({
+      action: z.enum(["publish", "schedule", "unpublish", "submit", "withdraw"]),
+      scheduledAt: z.string().max(40).nullish(),
+      expectedUpdatedAt: version,
+    })
+    .safeParse(input);
+  if (!parsed.success) return { ok: false, error: "That change isn't available." };
+  const result = await editorCall(siteId, entryId, (userId, db) =>
+    transitionEntry(db, userId, siteId, entryId, parsed.data),
+  );
+  if (result.ok) refresh();
   return result;
 }

@@ -111,6 +111,57 @@ export function entryActions(
   };
 }
 
+type PolicyEntry = Pick<EntrySummary, "status" | "authorId"> & {
+  publishedAt: string | Date | null;
+};
+
+/**
+ * Whether a member may edit an entry's content, URL and SEO. Editors and
+ * above edit anything that isn't archived. Authors edit their own entries
+ * while they are drafts or in review; live and scheduled content needs
+ * publish rights. Archived entries are read-only until restored.
+ */
+export function canEditEntry(role: SiteRole, userId: string, entry: PolicyEntry): boolean {
+  if (entry.status === "archived") return false;
+  if (can(role, "content.edit_any")) return true;
+  return (
+    can(role, "content.create") &&
+    entry.authorId === userId &&
+    (entry.status === "draft" || entry.status === "in_review")
+  );
+}
+
+/** Why an entry is read-only for this member, or null if they can edit it. */
+export function readOnlyReason(role: SiteRole, userId: string, entry: PolicyEntry): string | null {
+  if (canEditEntry(role, userId, entry)) return null;
+  if (entry.status === "archived")
+    return "This entry is archived. Restore it as a draft to edit it.";
+  if (!can(role, "content.create"))
+    return "Your role on this site can view content but not edit it.";
+  if (entry.authorId !== userId) return "Authors can only edit their own drafts.";
+  return "Published and scheduled content can only be changed by an editor, admin or owner.";
+}
+
+export type WorkflowAction = "publish" | "schedule" | "unpublish" | "submit" | "withdraw";
+
+/** Publishing transitions available to a member for an entry's current status. */
+export function workflowActions(
+  role: SiteRole,
+  userId: string,
+  entry: PolicyEntry,
+): Record<WorkflowAction, boolean> {
+  const editable = canEditEntry(role, userId, entry);
+  const publisher = editable && can(role, "content.publish");
+  const s = entry.status;
+  return {
+    publish: publisher && s !== "published",
+    schedule: publisher && (s === "draft" || s === "in_review" || s === "scheduled"),
+    unpublish: publisher && (s === "published" || s === "scheduled"),
+    submit: editable && !can(role, "content.publish") && s === "draft",
+    withdraw: editable && !can(role, "content.publish") && s === "in_review",
+  };
+}
+
 /** URL-safe slug: "Hello, Wörld!" → "hello-world". */
 export function slugify(input: string): string {
   return (
