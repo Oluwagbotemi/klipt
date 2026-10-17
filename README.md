@@ -52,9 +52,10 @@ These exist only in your local database. The seed script refuses to run against 
 
 ## Deploying (Vercel + Neon)
 
-1. Create a Neon project and copy its pooled connection string.
-2. In Vercel, set environment variables: `DATABASE_URL`, `BETTER_AUTH_SECRET` (new random value), `BETTER_AUTH_URL` (your production URL).
-3. Set the build command to `npm run db:migrate && npm run build` so migrations run on each deploy.
+1. In the Vercel project, open **Storage → Create Database → Neon** and connect it to the project. This sets `DATABASE_URL` (pooled, used by the app) and `DATABASE_URL_UNPOOLED` (direct, used for migrations).
+2. Add environment variables: `BETTER_AUTH_SECRET` (a new random value) and `BETTER_AUTH_URL` (your production URL, no trailing slash).
+3. Set the build command to `npm run db:migrate && npm run build` so migrations run on each deploy, and make sure the production branch is `main`.
+4. Demo accounts are not created in production; sign up on the live site.
 
 ## Status
 
