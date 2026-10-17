@@ -1,6 +1,8 @@
 /**
  * Applies pending SQL migrations from ./drizzle.
- * Uses DATABASE_URL when set; otherwise the local PGlite directory.
+ * Uses DATABASE_URL_UNPOOLED (direct connection, preferred for migrations;
+ * set automatically by Vercel's Neon integration) or DATABASE_URL when set;
+ * otherwise the local PGlite directory.
  */
 import { mkdirSync } from "node:fs";
 import path from "node:path";
@@ -8,14 +10,14 @@ import path from "node:path";
 const migrationsFolder = path.join(process.cwd(), "drizzle");
 
 async function main() {
-  const url = process.env.DATABASE_URL;
+  const url = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
   if (url) {
     const { drizzle } = await import("drizzle-orm/node-postgres");
     const { migrate } = await import("drizzle-orm/node-postgres/migrator");
     const db = drizzle(url);
     await migrate(db, { migrationsFolder });
     await db.$client.end();
-    console.log("Migrations applied to DATABASE_URL.");
+    console.log("Migrations applied to the configured Postgres database.");
     return;
   }
 
