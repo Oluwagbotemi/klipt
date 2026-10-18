@@ -16,6 +16,7 @@ import type { WorkflowAction } from "@/lib/content";
 import { applyBulkAction, createEntry, NotAllowedError } from "@/server/content";
 import { ForbiddenError, requireSitePermission } from "@/lib/data/sites";
 import { siteHref } from "@/lib/navigation";
+import { scheduleWebhookDelivery } from "@/lib/data/webhooks";
 
 /*
  * Content Server Actions. Arguments come from the browser, so each one is
@@ -77,6 +78,7 @@ export async function bulkContentAction(
     input.data.entryIds,
     input.data.action,
   );
+  scheduleWebhookDelivery(input.data.siteId);
 
   if (options.redirectToList && result.applied > 0 && input.data.action === "delete") {
     redirect(siteHref(input.data.siteId, "content"));
@@ -104,6 +106,7 @@ async function editorCall(
   const { user } = await requireSitePermission(siteId, "site.view");
   try {
     const { redirectCreated, ...state } = await run(user.id, await getDb());
+    scheduleWebhookDelivery(siteId, { settle: true });
     return { ok: true, state, redirectCreated };
   } catch (error) {
     if (error instanceof ConflictError) {

@@ -67,5 +67,11 @@ before creating or changing any screen.
   from `src/lib/data/delivery.ts`, which authenticates the key and picks the site;
   `src/server/delivery.ts` is the one place scoped by key instead of `userId` and must only return
   published content. Keys are stored as SHA-256 hashes, shown once, managed by `api_keys.manage`.
+- Webhooks (`src/server/webhooks.ts`): content writes call `enqueueEntryEvent(tx, …)` inside their
+  transaction (outbox in `webhook_deliveries`); a new event that changes what's live must be queued
+  there too. Sending happens via `scheduleWebhookDelivery()` (`after()`) from Server Actions,
+  `handleDelivery` and content reads, plus the daily cron `/api/cron/webhooks`. Customer URLs go
+  through `src/server/webhook-url.ts` (no private networks); signing secrets are encrypted with
+  `src/server/secrets.ts`.
 - Default public paths (`entryPath`): pages `/slug`, posts `/posts/slug`, until URL patterns exist.
 - Pin new dependencies to versions published at least two weeks ago.

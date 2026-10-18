@@ -10,6 +10,7 @@ import {
 } from "@/server/db/schema";
 import { NotAllowedError } from "@/server/errors";
 import { getSiteRole } from "@/server/sites";
+import { enqueueEntryEvent } from "@/server/webhooks";
 import { canEditEntry, workflowActions, type WorkflowAction } from "@/lib/content";
 import { EMPTY_DOC, sanitizeDoc, type RichTextDoc } from "@/lib/editor/rich-text";
 import type { EntryDocument, EntryState } from "@/lib/editor/types";
@@ -45,20 +46,52 @@ const iso = (date: Date | null) => date?.toISOString() ?? null;
  * background job does this; it only affects the given site.
  */
 export async function publishDueEntries(db: DbOrTx, siteId: string) {
-  await db
-    .update(contentEntries)
-    .set({
-      status: "published",
-      publishedAt: sql`coalesce(${contentEntries.publishedAt}, ${contentEntries.scheduledAt})`,
-      scheduledAt: null,
-    })
+  await db.transaction(async (tx) => {
+    const promoted = await tx
+      .update(contentEntries)
+      .set({
+        status: "published",
+        publishedAt: sql`coalesce(${contentEntries.publishedAt}, ${contentEntries.scheduledAt})`,
+        scheduledAt: null,
+      })
+      .where(
+        and(
+          eq(contentEntries.siteId, siteId),
+          eq(contentEntries.status, "scheduled"),
+          lte(contentEntries.scheduledAt, new Date()),
+        ),
+      )
+      .returning({
+        id: contentEntries.id,
+        slug: contentEntries.slug,
+        title: contentEntries.title,
+        modelId: contentEntries.modelId,
+      });
+    if (promoted.length === 0) return;
+    const models = await tx
+      .select({ id: contentModels.id, key: contentModels.key })
+      .from(contentModels)
+      .where(eq(contentModels.siteId, siteId));
+    const keyOf = new Map(models.map((model) => [model.id, model.key]));
+    for (const entry of promoted) {
+      await enqueueEntryEvent(tx, siteId, "entry.published", {
+        ...entry,
+        modelKey: keyOf.get(entry.modelId) ?? "page",
+      });
+    }
+  });
+}
+
+/** publishDueEntries for every site with something due (for the scheduled job). */
+export async function publishAllDueEntries(db: DbOrTx) {
+  const due = await db
+    .selectDistinct({ siteId: contentEntries.siteId })
+    .from(contentEntries)
     .where(
-      and(
-        eq(contentEntries.siteId, siteId),
-        eq(contentEntries.status, "scheduled"),
-        lte(contentEntries.scheduledAt, new Date()),
-      ),
+      and(eq(contentEntries.status, "scheduled"), lte(contentEntries.scheduledAt, new Date())),
     );
+  for (const { siteId } of due) await publishDueEntries(db, siteId);
+  return due.length;
 }
 
 export async function getEntryDocument(
@@ -170,13 +203,22 @@ export async function saveEntry(
   if (!seo.success) throw new EditorValidationError(seo.error.issues[0].message, "seo");
 
   return db.transaction(async (tx) => {
-    const { role, entry } = await lockForEdit(tx, userId, siteId, entryId, input.expectedUpdatedAt);
+    const { role, entry, modelKey } = await lockForEdit(
+      tx,
+      userId,
+      siteId,
+      entryId,
+      input.expectedUpdatedAt,
+    );
     if (!canEditEntry(role, userId, entry)) throw new NotAllowedError("Can't edit this entry.");
     const [updated] = await tx
       .update(contentEntries)
       .set({ title, data: { ...entry.data, body }, seo: seo.data, updatedAt: new Date() })
       .where(eq(contentEntries.id, entryId))
       .returning();
+    if (updated.status === "published") {
+      await enqueueEntryEvent(tx, siteId, "entry.updated", { ...updated, modelKey });
+    }
     return stateOf(updated);
   });
 }
@@ -270,6 +312,15 @@ export async function changeSlug(
       targetId: entryId,
       metadata: { from, to, redirect: redirectCreated },
     });
+    if (updated.status === "published") {
+      await enqueueEntryEvent(
+        tx,
+        siteId,
+        "entry.slug_changed",
+        { ...updated, modelKey },
+        { previousPath: from, redirectCreated },
+      );
+    }
     return { ...stateOf(updated), redirectCreated };
   });
 }
@@ -291,7 +342,13 @@ export async function transitionEntry(
   input: { action: WorkflowAction; scheduledAt?: string | null; expectedUpdatedAt: string },
 ): Promise<EntryState> {
   return db.transaction(async (tx) => {
-    const { role, entry } = await lockForEdit(tx, userId, siteId, entryId, input.expectedUpdatedAt);
+    const { role, entry, modelKey } = await lockForEdit(
+      tx,
+      userId,
+      siteId,
+      entryId,
+      input.expectedUpdatedAt,
+    );
     if (!workflowActions(role, userId, entry)[input.action]) {
       throw new NotAllowedError("That change isn't available for this entry.");
     }
@@ -358,6 +415,12 @@ export async function transitionEntry(
         ...(updated.scheduledAt ? { scheduledAt: updated.scheduledAt.toISOString() } : {}),
       },
     });
+    const wasLive = entry.status === "published";
+    const isLive = updated.status === "published";
+    if (wasLive !== isLive) {
+      const event = isLive ? "entry.published" : "entry.unpublished";
+      await enqueueEntryEvent(tx, siteId, event, { ...updated, modelKey });
+    }
     return stateOf(updated);
   });
 }

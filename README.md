@@ -54,7 +54,8 @@ These exist only in your local database. The seed script refuses to run against 
 
 Klipt is headless: your own website fetches published content from `/api/v1` with a site API key
 (create one in **Settings → Integrations**). See [`docs/content-api.md`](docs/content-api.md) for
-endpoints, response shapes and a Next.js example.
+endpoints, response shapes and a Next.js example. **Webhooks** (same page in Settings) notify your
+website when content is published, edited, moved or unpublished.
 
 ## Deploying (Vercel + Neon)
 
@@ -62,8 +63,10 @@ endpoints, response shapes and a Next.js example.
 2. Add environment variables: `BETTER_AUTH_SECRET` (a new random value) and `BETTER_AUTH_URL` (your production URL, no trailing slash).
 3. Set the build command to `npm run db:migrate && npm run build` so migrations run on each deploy, and make sure the production branch is `main`.
 4. Demo accounts are not created in production; sign up on the live site.
+5. Optional but recommended: add `CRON_SECRET` (any long random value). The daily job in
+   `vercel.json` then publishes due scheduled entries and retries failed webhooks.
 
 ## Status
 
-Built: design tokens (light/dark), app shell (open-site tabs, collapsible section sidebar, breadcrumbs, section tabs, ⌘K search), sign-up/sign-in/sign-out, Sites list and Create site, Content library, and the content editor (rich text with autosave and conflict detection, URL changes with 301 redirects, SEO and social fields with previews, advanced indexing controls, publish/schedule/review workflow, preview), API keys and the read-only content delivery API, all on a real database with server-side authorization.
-Next: webhooks and draft previews for connected websites, then the Media library.
+Built: design tokens (light/dark), app shell (open-site tabs, collapsible section sidebar, breadcrumbs, section tabs, ⌘K search), sign-up/sign-in/sign-out, Sites list and Create site, Content library, and the content editor (rich text with autosave and conflict detection, URL changes with 301 redirects, SEO and social fields with previews, advanced indexing controls, publish/schedule/review workflow, preview), API keys, the read-only content delivery API and webhooks (signed, retried, with a delivery log), all on a real database with server-side authorization.
+Next: draft previews on connected websites, then the Media library.

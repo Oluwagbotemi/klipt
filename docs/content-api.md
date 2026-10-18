@@ -96,8 +96,8 @@ A single entry adds `body` and `seo`:
 Errors use `{ "error": { "code": "…", "message": "…" } }` with status `400` (bad query), `401`
 (missing, invalid or revoked key), `404` or `500`.
 
-Responses are sent with `Cache-Control: private, no-store`. Cache on your side: until Klipt sends
-webhooks on publish, refreshing every minute or so is a good default.
+Responses are sent with `Cache-Control: private, no-store`. Cache on your side, and use
+[webhooks](#4-webhooks) to refresh as soon as something changes.
 
 ## 3. Example: a Next.js blog
 
@@ -171,9 +171,95 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 The same calls work from any language or framework (WordPress, Astro, Nuxt, a mobile app); all you
 need is an HTTPS request with the `Authorization` header.
 
+## 4. Webhooks
+
+Instead of checking Klipt for changes, let Klipt tell your website. In **Settings → Integrations →
+Add webhook**, enter an address on your website (it must be `https://` and publicly reachable) and
+choose the events.
+
+| Event                | Sent when                                                                |
+| -------------------- | ------------------------------------------------------------------------ |
+| `entry.published`    | An entry goes live (including scheduled entries when their time comes)   |
+| `entry.updated`      | A live entry is edited. Combined: at most one every 30 seconds per entry |
+| `entry.unpublished`  | A live entry is unpublished or archived                                  |
+| `entry.slug_changed` | A live entry moves to a new URL; `previousPath` holds the old one        |
+| `ping`               | You press **Send test event**                                            |
+
+Klipt sends a `POST` with a JSON body:
+
+```json
+{
+  "id": "6f1c…",
+  "event": "entry.slug_changed",
+  "createdAt": "2026-10-18T09:05:00.000Z",
+  "site": { "id": "…", "name": "Northwind Journal" },
+  "data": {
+    "entry": {
+      "id": "…",
+      "type": "post",
+      "title": "Hello again",
+      "slug": "hello-again",
+      "path": "/posts/hello-again",
+      "url": "https://blog.example/posts/hello-again"
+    },
+    "previousPath": "/posts/hello-world",
+    "redirectCreated": true
+  }
+}
+```
+
+The message only says _what_ changed. Fetch the current content from the API (or just revalidate
+the affected pages) rather than trusting the message body for content.
+
+Headers: `Klipt-Event`, `Klipt-Delivery` (same as `id`; use it to ignore duplicates) and
+`Klipt-Signature: t=<unix seconds>,v1=<hex>`. The signature is HMAC-SHA256 of
+`<t>.<raw request body>` with the webhook's **signing secret** (on the webhook's page in Klipt).
+
+**Respond with any 2xx status within 10 seconds.** Anything else (or no answer) counts as failed and
+is retried up to 6 times over about 15 hours. Klipt doesn't follow redirects. Every attempt, with
+your website's response, is listed on the webhook's page, where you can also resend it.
+
+### Example: refresh a Next.js blog
+
+```ts
+// app/api/klipt-webhook/route.ts
+import { createHmac, timingSafeEqual } from "node:crypto";
+import { revalidatePath } from "next/cache";
+
+export async function POST(request: Request) {
+  const body = await request.text(); // the raw body, before parsing
+  const header = request.headers.get("klipt-signature") ?? "";
+  const { t, v1 } = Object.fromEntries(header.split(",").map((part) => part.split("=")));
+  const expected = createHmac("sha256", process.env.KLIPT_WEBHOOK_SECRET!)
+    .update(`${t}.${body}`)
+    .digest("hex");
+  const fresh = Math.abs(Date.now() / 1000 - Number(t)) < 300; // reject replays older than 5 min
+  const valid =
+    v1?.length === expected.length && timingSafeEqual(Buffer.from(v1), Buffer.from(expected));
+  if (!valid || !fresh) {
+    return new Response("Invalid signature", { status: 401 });
+  }
+
+  const event = JSON.parse(body);
+  const entry = event.data?.entry;
+  if (entry) {
+    revalidatePath(entry.path);
+    if (event.data.previousPath) revalidatePath(event.data.previousPath);
+    if (entry.type === "post") revalidatePath("/posts");
+  }
+  return Response.json({ ok: true });
+}
+```
+
+### Timing on Vercel
+
+Klipt sends events right after the change, from the same request. Retries and scheduled entries are
+handled whenever Klipt is next in use and by a daily job (`vercel.json`, needs a `CRON_SECRET`
+environment variable). On Vercel's Hobby plan that job can only run once a day; a paid plan can run
+it more often.
+
 ## Not yet available
 
-- Webhooks to notify your website when content is published.
 - Draft previews on your own website.
 - Media/image fields and taxonomies in responses (they arrive with those features).
 - Per-key rate limits.
