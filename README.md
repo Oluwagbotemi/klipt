@@ -50,6 +50,12 @@ These exist only in your local database. The seed script refuses to run against 
 | `npm run db:seed`                    | Add demo data to the local database                             |
 | `npm run db:reset`                   | Delete the local PGlite database, then migrate and seed         |
 
+## Content API (headless)
+
+Klipt is headless: your own website fetches published content from `/api/v1` with a site API key
+(create one in **Settings → Integrations**). See [`docs/content-api.md`](docs/content-api.md) for
+endpoints, response shapes and a Next.js example.
+
 ## Deploying (Vercel + Neon)
 
 1. In the Vercel project, open **Storage → Create Database → Neon** and connect it to the project. This sets `DATABASE_URL` (pooled, used by the app) and `DATABASE_URL_UNPOOLED` (direct, used for migrations).
@@ -59,5 +65,5 @@ These exist only in your local database. The seed script refuses to run against 
 
 ## Status
 
-Built: design tokens (light/dark), app shell (open-site tabs, collapsible section sidebar, breadcrumbs, section tabs, ⌘K search), sign-up/sign-in/sign-out, Sites list and Create site, Content library, and the content editor (rich text with autosave and conflict detection, URL changes with 301 redirects, SEO and social fields with previews, advanced indexing controls, publish/schedule/review workflow, preview), all on a real database with server-side authorization.
-Next: Media library (images, alt text), then the site Overview.
+Built: design tokens (light/dark), app shell (open-site tabs, collapsible section sidebar, breadcrumbs, section tabs, ⌘K search), sign-up/sign-in/sign-out, Sites list and Create site, Content library, and the content editor (rich text with autosave and conflict detection, URL changes with 301 redirects, SEO and social fields with previews, advanced indexing controls, publish/schedule/review workflow, preview), API keys and the read-only content delivery API, all on a real database with server-side authorization.
+Next: webhooks and draft previews for connected websites, then the Media library.

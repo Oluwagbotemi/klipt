@@ -349,3 +349,33 @@ export const auditEvents = pgTable(
   },
   (t) => [index("audit_events_site_idx").on(t.siteId, t.createdAt)],
 );
+
+// ---------------------------------------------------------------------------
+// Content delivery API
+// ---------------------------------------------------------------------------
+
+/**
+ * Read-only keys a site's own website uses to fetch published content.
+ * Only a SHA-256 hash is stored; the key itself is shown once at creation.
+ */
+export const apiKeys = pgTable(
+  "api_keys",
+  {
+    id: id(),
+    siteId: text("site_id")
+      .notNull()
+      .references(() => sites.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    /** First characters of the key, shown so people can tell keys apart. */
+    prefix: text("prefix").notNull(),
+    tokenHash: text("token_hash").notNull(),
+    createdById: text("created_by_id").references(() => users.id, { onDelete: "set null" }),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("api_keys_token_hash_unique").on(t.tokenHash),
+    index("api_keys_site_idx").on(t.siteId, t.createdAt),
+  ],
+);

@@ -16,8 +16,8 @@ export const metadata: Metadata = {
 };
 
 /**
- * Draft preview with neutral styling. How the live site renders content is a
- * separate (undecided) part of the product, so this is a faithful but plain view.
+ * Draft preview with neutral styling. The live site is the customer's own
+ * website (headless), so this is a faithful but plain view of the content.
  */
 export default function PreviewPage({ params }: PageProps<"/preview/[siteId]/[entryId]">) {
   return (

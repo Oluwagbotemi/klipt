@@ -295,6 +295,7 @@ export const SITE_NAV: SiteNavGroup[] = [
           {
             segment: "integrations",
             label: "Integrations",
+            permission: "api_keys.manage",
             planned: ["Connected apps", "API keys", "Webhooks"],
           },
           {
