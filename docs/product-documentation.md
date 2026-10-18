@@ -239,7 +239,7 @@ Site
 ### 4.17 Developer and delivery capabilities
 
 - Content delivery/management APIs, API credentials, webhooks, preview delivery, environments, deployment integrations.
-- Architecture decision still open: headless, hybrid, or coupled rendering. SEO/performance promises depend on the frontend and hosting implementation as well as the CMS.
+- **Decided (Oct 2026): headless-first.** Customers keep their own website (any framework or host) and fetch published content from Klipt's read-only content delivery API with per-site API keys. Klipt supplies resolved SEO data (title, description, canonical, robots, Open Graph), redirects and sitemap URLs; the customer's frontend renders them. Hosted rendering may be added later (hybrid). SEO/performance promises still depend on the frontend and hosting implementation. Developer guide: `docs/content-api.md`.
 
 ## 5. Critical user journeys
 
@@ -296,7 +296,7 @@ This is a **recommendation**, not an approved release plan. Validate primary cus
 ## 8. Open product decisions
 
 1. Who is the initial buyer: agencies, small businesses, marketing teams, or developers?
-2. Will sites be hosted/rendered by the product, or will it be headless-first?
+2. ~~Will sites be hosted/rendered by the product, or will it be headless-first?~~ Decided: headless-first (see 4.17).
 3. What page-building capability is required: structured editor only, reusable blocks, or full visual builder?
 4. What are the exact MVP boundaries and success measures?
 5. Which permissions does each role receive, especially for publishing and billing?

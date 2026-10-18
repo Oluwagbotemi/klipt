@@ -62,5 +62,10 @@ before creating or changing any screen.
   is a `ConflictError`, never a silent overwrite. Slug changes on published entries create 301s
   without chains or loops. Scheduled entries are promoted by `publishDueEntries()` on read until a
   background job exists. SEO length hints are guidance only and never block publishing.
+- Delivery is headless (decided): customer websites read `/api/v1/*` with a site API key
+  (`src/app/api/v1`, guide in `docs/content-api.md`). Handlers wrap their work in `handleDelivery()`
+  from `src/lib/data/delivery.ts`, which authenticates the key and picks the site;
+  `src/server/delivery.ts` is the one place scoped by key instead of `userId` and must only return
+  published content. Keys are stored as SHA-256 hashes, shown once, managed by `api_keys.manage`.
 - Default public paths (`entryPath`): pages `/slug`, posts `/posts/slug`, until URL patterns exist.
 - Pin new dependencies to versions published at least two weeks ago.
