@@ -11,7 +11,8 @@ import { safeRedirectPath } from "@/lib/safe-redirect";
 
 export function SignInForm() {
   const router = useRouter();
-  const next = safeRedirectPath(useSearchParams().get("next"));
+  const params = useSearchParams();
+  const next = safeRedirectPath(params.get("next"));
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -43,7 +44,15 @@ export function SignInForm() {
   return (
     <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
       {error && <InlineAlert>{error}</InlineAlert>}
-      <FormField id="email" name="email" type="email" label="Email" autoComplete="email" required />
+      <FormField
+        id="email"
+        name="email"
+        type="email"
+        label="Email"
+        autoComplete="email"
+        defaultValue={params.get("email") ?? undefined}
+        required
+      />
       <FormField
         id="password"
         name="password"

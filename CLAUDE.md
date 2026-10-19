@@ -82,5 +82,12 @@ before creating or changing any screen.
 - Overview (`src/server/overview.ts`): one query bundle per visit, counted from real records only
   (no estimated metrics). Integration activity, setup steps and webhook failures are limited to
   members who manage integrations.
+- Team (`src/server/team.ts`): invitations are shareable links (token hashed for lookup, encrypted so
+  managers can copy it again; 7 days; must be accepted by an account with the invited email). Only
+  the owner grants Admin or manages admins; nobody changes the owner (that's ownership transfer).
+- **Planned, not built — email (Resend):** Klipt sends no email yet. When added, send invitation
+  links from `createInvitation`/`renewInvitation` (keep the copyable link as a fallback), then
+  password reset (Better Auth `sendResetPassword`), email verification, ownership-transfer and
+  review notifications. Needs `RESEND_API_KEY` and a verified sending domain.
 - Default public paths (`entryPath`): pages `/slug`, posts `/posts/slug`, until URL patterns exist.
 - Pin new dependencies to versions published at least two weeks ago.

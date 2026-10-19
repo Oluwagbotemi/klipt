@@ -2,7 +2,7 @@ import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from "node:cr
 
 /*
  * Encryption for secrets Klipt must be able to read back (webhook signing
- * secrets). AES-256-GCM with a key derived from BETTER_AUTH_SECRET, so a
+ * secrets, invitation links). AES-256-GCM with a key derived from BETTER_AUTH_SECRET, so a
  * database copy alone doesn't reveal them. Rotating BETTER_AUTH_SECRET makes
  * existing values unreadable; the affected webhooks then need a new secret.
  */
