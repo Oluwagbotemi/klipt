@@ -29,6 +29,13 @@
       "when": 1792416943297,
       "tag": "0003_media_url",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792448598324,
+      "tag": "0004_site_invitations",
+      "breakpoints": true
     }
   ]
 }

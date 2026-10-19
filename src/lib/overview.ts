@@ -89,6 +89,10 @@ const ACTIVITY_TEXT: Record<string, string> = {
   "webhook.created": "added a webhook for",
   "webhook.deleted": "deleted the webhook for",
   "site.created": "created the site",
+  "member.joined": "joined the site",
+  "member.role_changed": "changed the role of",
+  "member.removed": "removed",
+  "member.left": "left the site",
 };
 
 export const ACTIVITY_ACTIONS = Object.keys(ACTIVITY_TEXT);

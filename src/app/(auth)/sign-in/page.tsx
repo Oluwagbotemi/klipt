@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Suspense } from "react";
+import { AuthSwitchLink } from "@/components/auth/auth-switch-link";
 import { SignInForm } from "@/components/auth/sign-in-form";
 
 export const metadata: Metadata = { title: "Sign in" };
@@ -18,9 +18,9 @@ export default function SignInPage() {
       </Suspense>
       <p className="text-muted-foreground mt-6 text-center text-sm">
         New to Klipt?{" "}
-        <Link href="/sign-up" className="text-foreground font-medium underline underline-offset-4">
-          Create an account
-        </Link>
+        <Suspense fallback={<span className="text-foreground font-medium">Create an account</span>}>
+          <AuthSwitchLink to="/sign-up">Create an account</AuthSwitchLink>
+        </Suspense>
       </p>
     </>
   );

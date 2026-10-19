@@ -445,3 +445,41 @@ export const webhookDeliveries = pgTable(
     index("webhook_deliveries_entry_idx").on(t.webhookId, t.entryId, t.event),
   ],
 );
+
+// ---------------------------------------------------------------------------
+// Team invitations
+// ---------------------------------------------------------------------------
+
+/**
+ * An invitation to join a site with a role. The link's token is looked up by
+ * its SHA-256 hash and kept encrypted so managers can copy the link again.
+ */
+export const siteInvitations = pgTable(
+  "site_invitations",
+  {
+    id: id(),
+    siteId: text("site_id")
+      .notNull()
+      .references(() => sites.id, { onDelete: "cascade" }),
+    /** Lower-cased. Only an account with this email can accept. */
+    email: text("email").notNull(),
+    role: siteRole("role").notNull(),
+    tokenHash: text("token_hash").notNull(),
+    tokenEncrypted: text("token_encrypted").notNull(),
+    invitedById: text("invited_by_id").references(() => users.id, { onDelete: "set null" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    acceptedById: text("accepted_by_id").references(() => users.id, { onDelete: "set null" }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex("site_invitations_token_hash_unique").on(t.tokenHash),
+    // One open invitation per person per site.
+    uniqueIndex("site_invitations_one_open")
+      .on(t.siteId, t.email)
+      .where(sql`${t.acceptedAt} is null and ${t.revokedAt} is null`),
+    index("site_invitations_site_idx").on(t.siteId, t.createdAt),
+  ],
+);

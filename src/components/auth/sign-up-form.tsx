@@ -1,17 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { FormField } from "@/components/form-field";
 import { InlineAlert } from "@/components/inline-alert";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
+import { safeRedirectPath } from "@/lib/safe-redirect";
 
 const MIN_PASSWORD = 8;
 
 export function SignUpForm() {
   const router = useRouter();
+  const params = useSearchParams();
+  const next = safeRedirectPath(params.get("next"));
   const [error, setError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | undefined>();
   const [pending, setPending] = useState(false);
@@ -46,7 +49,7 @@ export function SignUpForm() {
       );
       return;
     }
-    router.replace("/sites");
+    router.replace(next);
     router.refresh();
   }
 
@@ -61,7 +64,15 @@ export function SignUpForm() {
         maxLength={80}
         required
       />
-      <FormField id="email" name="email" type="email" label="Email" autoComplete="email" required />
+      <FormField
+        id="email"
+        name="email"
+        type="email"
+        label="Email"
+        autoComplete="email"
+        defaultValue={params.get("email") ?? undefined}
+        required
+      />
       <FormField
         id="password"
         name="password"
