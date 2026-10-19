@@ -8,6 +8,7 @@ import * as editorRepo from "@/server/editor";
 import type { ContentListParams, ContentType } from "@/lib/content";
 import { requireUser } from "@/lib/data/session";
 import { getSite } from "@/lib/data/sites";
+import { scheduleWebhookDelivery } from "@/lib/data/webhooks";
 
 /*
  * Data access layer for content. Resolves the user from the session and
@@ -16,7 +17,10 @@ import { getSite } from "@/lib/data/sites";
 
 export async function getEntries(siteId: string, type: ContentType, params: ContentListParams) {
   const [user] = await Promise.all([requireUser(), getSite(siteId)]);
-  return contentRepo.listEntries(await getDb(), user.id, siteId, type, params);
+  const list = await contentRepo.listEntries(await getDb(), user.id, siteId, type, params);
+  // Reads publish due scheduled entries, which may have queued webhooks.
+  scheduleWebhookDelivery(siteId);
+  return list;
 }
 
 /** Everything the editor needs for one entry; not-found for non-members. */
@@ -24,5 +28,6 @@ export const getEntryDocument = cache(async (siteId: string, entryId: string) =>
   const [user] = await Promise.all([requireUser(), getSite(siteId)]);
   const doc = await editorRepo.getEntryDocument(await getDb(), user.id, siteId, entryId);
   if (!doc) notFound();
+  scheduleWebhookDelivery(siteId);
   return doc;
 });

@@ -379,3 +379,63 @@ export const apiKeys = pgTable(
     index("api_keys_site_idx").on(t.siteId, t.createdAt),
   ],
 );
+
+/** Endpoints on a customer's website that Klipt notifies when content changes. */
+export const webhooks = pgTable(
+  "webhooks",
+  {
+    id: id(),
+    siteId: text("site_id")
+      .notNull()
+      .references(() => sites.id, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    description: text("description"),
+    /** Subscribed event names, e.g. ["entry.published"]. */
+    events: jsonb("events").$type<string[]>().notNull(),
+    /** Signing secret, encrypted with the app secret (see src/server/secrets.ts). */
+    secretEncrypted: text("secret_encrypted").notNull(),
+    enabled: boolean("enabled").notNull().default(true),
+    createdById: text("created_by_id").references(() => users.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("webhooks_site_idx").on(t.siteId)],
+);
+
+export const webhookDeliveryStatus = pgEnum("webhook_delivery_status", [
+  "pending",
+  "succeeded",
+  "failed",
+]);
+
+/** Outbox of webhook messages: written with the change, sent afterwards, retried on failure. */
+export const webhookDeliveries = pgTable(
+  "webhook_deliveries",
+  {
+    id: id(),
+    siteId: text("site_id")
+      .notNull()
+      .references(() => sites.id, { onDelete: "cascade" }),
+    webhookId: text("webhook_id")
+      .notNull()
+      .references(() => webhooks.id, { onDelete: "cascade" }),
+    event: text("event").notNull(),
+    /** Entry the event is about, used to combine rapid updates. */
+    entryId: text("entry_id"),
+    payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
+    status: webhookDeliveryStatus("status").notNull().default("pending"),
+    attempts: integer("attempts").notNull().default(0),
+    nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }).notNull().defaultNow(),
+    lastAttemptAt: timestamp("last_attempt_at", { withTimezone: true }),
+    responseStatus: integer("response_status"),
+    responseBody: text("response_body"),
+    error: text("error"),
+    durationMs: integer("duration_ms"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("webhook_deliveries_due_idx").on(t.status, t.nextAttemptAt),
+    index("webhook_deliveries_webhook_idx").on(t.webhookId, t.createdAt),
+    index("webhook_deliveries_entry_idx").on(t.webhookId, t.entryId, t.event),
+  ],
+);

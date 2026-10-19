@@ -5,6 +5,7 @@ import { z } from "zod";
 import { getDb, type Database } from "@/server/db";
 import { authenticateApiKey } from "@/server/api-keys";
 import { getDeliverySite, type DeliverySite } from "@/server/delivery";
+import { scheduleWebhookDelivery } from "@/lib/data/webhooks";
 
 /*
  * Request handling for the content delivery API (/api/v1). Every request
@@ -52,6 +53,8 @@ export async function handleDelivery(
     if (!key) throw new ApiError(401, "unauthorized", "This API key is invalid or was revoked.");
     const site = await getDeliverySite(db, key.siteId);
     if (!site) throw new ApiError(401, "unauthorized", "This API key is invalid or was revoked.");
+    // Reads publish due scheduled entries, which may have queued webhooks.
+    scheduleWebhookDelivery(site.id);
     return await run({ db, site });
   } catch (error) {
     if (error instanceof ApiError) return errorResponse(error);

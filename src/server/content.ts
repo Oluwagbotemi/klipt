@@ -5,6 +5,7 @@ import { auditEvents, contentEntries, contentModels, users } from "@/server/db/s
 import { publishDueEntries } from "@/server/editor";
 import { NotAllowedError } from "@/server/errors";
 import { getSiteRole } from "@/server/sites";
+import { enqueueEntryEvent } from "@/server/webhooks";
 import {
   CONTENT_STATUSES,
   entryActions,
@@ -247,8 +248,11 @@ export async function applyBulkAction(
         status: contentEntries.status,
         authorId: contentEntries.authorId,
         publishedAt: contentEntries.publishedAt,
+        slug: contentEntries.slug,
+        modelKey: contentModels.key,
       })
       .from(contentEntries)
+      .innerJoin(contentModels, eq(contentModels.id, contentEntries.modelId))
       .where(and(eq(contentEntries.siteId, siteId), inArray(contentEntries.id, ids)));
 
     const allowed = entries.filter((entry) => entryActions(role, userId, entry)[action]);
@@ -273,6 +277,12 @@ export async function applyBulkAction(
           metadata: { title: entry.title, previousStatus: entry.status },
         })),
       );
+      if (action === "archive") {
+        // Archiving live content takes it off the website.
+        for (const entry of allowed.filter((item) => item.status === "published")) {
+          await enqueueEntryEvent(tx, siteId, "entry.unpublished", entry);
+        }
+      }
     }
 
     return { applied: allowedIds.length, skipped: ids.length - allowedIds.length };

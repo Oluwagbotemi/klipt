@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { ApiKeysPanel } from "@/components/settings/api-keys-panel";
 import { ConnectWebsite } from "@/components/settings/connect-website";
+import { WebhooksPanel } from "@/components/settings/webhooks-panel";
 import { PermissionDenied } from "@/components/permission-denied";
 import { getApiKeys } from "@/lib/data/api-keys";
+import { getWebhooks, scheduleWebhookDelivery } from "@/lib/data/webhooks";
 import { getSite } from "@/lib/data/sites";
 import { siteHref } from "@/lib/navigation";
 import { can } from "@/lib/permissions";
@@ -33,12 +35,18 @@ export default async function IntegrationsPage({
       />
     );
   }
-  const [keys, origin] = await Promise.all([getApiKeys(site.id), requestOrigin()]);
+  const [keys, hooks, origin] = await Promise.all([
+    getApiKeys(site.id),
+    getWebhooks(site.id),
+    requestOrigin(),
+  ]);
+  scheduleWebhookDelivery(site.id);
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-6 sm:px-8">
       <ConnectWebsite apiBase={`${origin}/api/v1`} hasKeys={keys.length > 0} />
       <ApiKeysPanel siteId={site.id} keys={keys} />
+      <WebhooksPanel siteId={site.id} webhooks={hooks} />
     </div>
   );
 }

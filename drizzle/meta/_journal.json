@@ -15,6 +15,13 @@
       "when": 1792283463020,
       "tag": "0001_api_keys",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792354231454,
+      "tag": "0002_webhooks",
+      "breakpoints": true
     }
   ]
 }

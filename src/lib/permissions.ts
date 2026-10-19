@@ -23,6 +23,7 @@ export const PERMISSIONS = {
   "seo.manage": ["owner", "admin", "editor"],
   "media.upload": ["owner", "admin", "editor", "author"],
   "api_keys.manage": ["owner", "admin"],
+  "webhooks.manage": ["owner", "admin"],
 } as const satisfies Record<string, readonly SiteRole[]>;
 
 export type SitePermission = keyof typeof PERMISSIONS;
