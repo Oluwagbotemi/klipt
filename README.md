@@ -72,4 +72,5 @@ website when content is published, edited, moved or unpublished.
 ## Status
 
 Built: design tokens (light/dark), app shell (open-site tabs, collapsible section sidebar, breadcrumbs, section tabs, ⌘K search), sign-up/sign-in/sign-out, Sites list and Create site, Content library, and the content editor (rich text with autosave and conflict detection, URL changes with 301 redirects, SEO and social fields with previews, advanced indexing controls, publish/schedule/review workflow, preview), the Media library (uploads with automatic resizing, alt text, usage, images in the editor), API keys, the read-only content delivery API and webhooks (signed, retried, with a delivery log), all on a real database with server-side authorization.
-Next: the site Overview, then draft previews on connected websites.
+The site Overview shows content counts, what needs attention (reviews, alt text, SEO issues, failed webhooks), a setup checklist, recent content and activity.
+Next: Team (members and invitations), then draft previews on connected websites.

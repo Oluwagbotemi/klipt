@@ -79,5 +79,8 @@ before creating or changing any screen.
   are Server Actions limited to 4 MB (Vercel's request cap); the browser resizes larger photos first.
   Body images are `image` nodes with `mediaId`; `resolveMediaInDoc()` swaps in the current URL, alt
   text and size before rendering. Authors manage only their own uploads (`canManageMedia`).
+- Overview (`src/server/overview.ts`): one query bundle per visit, counted from real records only
+  (no estimated metrics). Integration activity, setup steps and webhook failures are limited to
+  members who manage integrations.
 - Default public paths (`entryPath`): pages `/slug`, posts `/posts/slug`, until URL patterns exist.
 - Pin new dependencies to versions published at least two weeks ago.
