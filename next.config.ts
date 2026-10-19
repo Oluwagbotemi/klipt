@@ -4,6 +4,10 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
+  experimental: {
+    // Media uploads (4 MB files, see MAX_UPLOAD_BYTES) go through Server Actions.
+    serverActions: { bodySizeLimit: "5mb" },
+  },
   // PGlite ships WebAssembly and data files; load it from node_modules at runtime.
   serverExternalPackages: ["@electric-sql/pglite"],
   turbopack: {

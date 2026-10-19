@@ -17,8 +17,9 @@ import { WorkflowControls } from "@/components/editor/workflow-controls";
 import { Breadcrumbs } from "@/components/shell/breadcrumbs";
 import { Button } from "@/components/ui/button";
 import { canEditEntry, readOnlyReason, workflowActions, type WorkflowAction } from "@/lib/content";
-import { wordCount, type RichTextDoc } from "@/lib/editor/rich-text";
+import { imageAltSummary, wordCount, type RichTextDoc } from "@/lib/editor/rich-text";
 import type { EntryDocument, EntryState } from "@/lib/editor/types";
+import { can } from "@/lib/permissions";
 import { formatDate } from "@/lib/format";
 import { siteHref } from "@/lib/navigation";
 import { entryPath, type EntrySeoInput } from "@/lib/seo";
@@ -257,7 +258,8 @@ export function EntryEditor({
       ? "Pages"
       : "Posts";
   const contentHref = siteHref(siteId, "content");
-  const suggestions = seoChecks({ title, seo, words })
+  const images = imageAltSummary(body);
+  const suggestions = seoChecks({ title, seo, words, images })
     .filter((c) => !c.ok)
     .map((c) => c.text);
   const seoProps = {
@@ -267,6 +269,7 @@ export function EntryEditor({
     path,
     domain,
     words,
+    images,
     readOnly: !editable,
   };
 
@@ -375,6 +378,7 @@ export function EntryEditor({
             <RichTextEditor
               initialContent={doc.body}
               editable={editable}
+              media={{ siteId, canUpload: can(role, "media.upload") }}
               onChange={setBody}
               onReady={(normalized) => {
                 // The editor normalizes stored JSON (e.g. default attributes). If

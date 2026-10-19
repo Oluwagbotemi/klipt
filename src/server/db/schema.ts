@@ -319,7 +319,10 @@ export const mediaAssets = pgTable(
     siteId: text("site_id")
       .notNull()
       .references(() => sites.id, { onDelete: "cascade" }),
+    /** Path in the storage service, e.g. sites/<siteId>/<uuid>/harbour-seals.jpg. */
     storageKey: text("storage_key").notNull(),
+    /** Public URL of the file (Vercel Blob URL, or /media/<key> for local storage). */
+    url: text("url").notNull(),
     filename: text("filename").notNull(),
     mimeType: text("mime_type").notNull(),
     sizeBytes: integer("size_bytes").notNull(),
@@ -331,7 +334,10 @@ export const mediaAssets = pgTable(
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [index("media_assets_site_idx").on(t.siteId, t.createdAt)],
+  (t) => [
+    index("media_assets_site_idx").on(t.siteId, t.createdAt),
+    uniqueIndex("media_assets_storage_key_unique").on(t.storageKey),
+  ],
 );
 
 export const auditEvents = pgTable(

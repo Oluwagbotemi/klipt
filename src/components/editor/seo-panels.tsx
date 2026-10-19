@@ -18,6 +18,7 @@ type SeoProps = {
   path: string;
   domain: string | null;
   words: number;
+  images: { images: number; missingAlt: number };
   readOnly: boolean;
 };
 
@@ -31,10 +32,12 @@ export function seoChecks({
   title,
   seo,
   words,
+  images,
 }: {
   title: string;
   seo: EntrySeoInput;
   words: number;
+  images: { images: number; missingAlt: number };
 }) {
   const effective = resolveSeo(seo, title || "Untitled");
   return [
@@ -46,13 +49,33 @@ export function seoChecks({
     { ok: effective.description.length > 0, text: "Meta description is written" },
     { ok: words >= 50, text: "Body has at least a short paragraph of text" },
     { ok: effective.index, text: "Search engines are allowed to index it" },
+    ...(images.images > 0
+      ? [
+          {
+            ok: images.missingAlt === 0,
+            text:
+              images.missingAlt === 0
+                ? "Images have alt text"
+                : `Images have alt text (${images.missingAlt} missing; add it in Media)`,
+          },
+        ]
+      : []),
   ];
 }
 
 /** SEO title, description, search preview and recommendations. */
-export function SearchPanel({ seo, onChange, title, path, domain, words, readOnly }: SeoProps) {
+export function SearchPanel({
+  seo,
+  onChange,
+  title,
+  path,
+  domain,
+  words,
+  images,
+  readOnly,
+}: SeoProps) {
   const effective = resolveSeo(seo, title || "Untitled");
-  const checks = seoChecks({ title, seo, words });
+  const checks = seoChecks({ title, seo, words, images });
 
   return (
     <SettingsSection title="Search engines" description="How this page may appear in search">

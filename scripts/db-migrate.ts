@@ -14,7 +14,8 @@ async function main() {
   if (url) {
     const { drizzle } = await import("drizzle-orm/node-postgres");
     const { migrate } = await import("drizzle-orm/node-postgres/migrator");
-    const db = drizzle(url);
+    const { withVerifiedSsl } = await import("../src/server/db");
+    const db = drizzle(withVerifiedSsl(url));
     await migrate(db, { migrationsFolder });
     await db.$client.end();
     console.log("Migrations applied to the configured Postgres database.");

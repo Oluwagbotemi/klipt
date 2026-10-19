@@ -1,3 +1,4 @@
+import Image from "@tiptap/extension-image";
 import StarterKit from "@tiptap/starter-kit";
 
 /*
@@ -35,6 +36,32 @@ export function isSafeHref(href: unknown): href is string {
   }
 }
 
+/** Images come from the media library (https URLs, or /media/ when stored locally). */
+export function isSafeImageSrc(src: unknown): src is string {
+  if (typeof src !== "string" || src.length > 2048) return false;
+  if (src.startsWith("/media/") && !src.includes("..")) return true;
+  try {
+    return new URL(src).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+/** Block image with the media library id, so alt text and URL stay current when rendered. */
+const MediaImage = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      mediaId: {
+        default: null,
+        parseHTML: (element) => element.getAttribute("data-media-id"),
+        renderHTML: (attributes) =>
+          attributes.mediaId ? { "data-media-id": attributes.mediaId } : {},
+      },
+    };
+  },
+}).configure({ inline: false, allowBase64: false, HTMLAttributes: { loading: "lazy" } });
+
 export const HEADING_LEVELS = [2, 3, 4] as const;
 
 export function richTextExtensions() {
@@ -50,6 +77,7 @@ export function richTextExtensions() {
         HTMLAttributes: { rel: "noopener noreferrer", target: null },
       },
     }),
+    MediaImage,
   ];
 }
 
@@ -65,6 +93,7 @@ const NODE_TYPES = new Set([
   "codeBlock",
   "horizontalRule",
   "hardBreak",
+  "image",
 ]);
 const MARK_TYPES = new Set(["bold", "italic", "strike", "underline", "code", "link"]);
 const MAX_NODES = 20_000;
@@ -124,6 +153,25 @@ export function sanitizeDoc(input: unknown): RichTextDoc {
       };
     }
 
+    if (raw.type === "image") {
+      const attrs = raw.attrs ?? {};
+      if (!isSafeImageSrc(attrs.src)) return [];
+      const text = (value: unknown) => (typeof value === "string" ? value.slice(0, 250) : null);
+      const size = (value: unknown) => {
+        const n = Number(value);
+        return Number.isInteger(n) && n > 0 && n <= 20_000 ? n : null;
+      };
+      const mediaId = attrs.mediaId;
+      out.attrs = {
+        src: attrs.src,
+        alt: text(attrs.alt) ?? "",
+        title: text(attrs.title),
+        width: size(attrs.width),
+        height: size(attrs.height),
+        mediaId: typeof mediaId === "string" && /^[\w-]{1,64}$/.test(mediaId) ? mediaId : null,
+      };
+      return [out];
+    }
     if (raw.type === "horizontalRule" || raw.type === "hardBreak") return [out];
     if (raw.type === "listItem" && children.length === 0) {
       out.content = [{ type: "paragraph" }];
@@ -146,6 +194,21 @@ export function docToText(doc: RichTextNode): string {
   const parts = (doc.content ?? []).map(docToText);
   const block = ["paragraph", "heading", "listItem", "blockquote", "codeBlock"].includes(doc.type);
   return parts.join(block ? "" : " ") + (block ? "\n" : "");
+}
+
+/** Images in the body, and how many have no alt text. */
+export function imageAltSummary(doc: RichTextNode): { images: number; missingAlt: number } {
+  let images = 0;
+  let missingAlt = 0;
+  const visit = (node: RichTextNode) => {
+    if (node.type === "image") {
+      images++;
+      if (!String(node.attrs?.alt ?? "").trim()) missingAlt++;
+    }
+    node.content?.forEach(visit);
+  };
+  visit(doc);
+  return { images, missingAlt };
 }
 
 export function wordCount(doc: RichTextNode): number {

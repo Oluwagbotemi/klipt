@@ -9,6 +9,7 @@ import {
   Heading2,
   Heading3,
   Heading4,
+  ImagePlus,
   Italic,
   Link2,
   List,
@@ -21,6 +22,7 @@ import {
   Underline,
   Undo2,
 } from "lucide-react";
+import { MediaPicker } from "@/components/media/media-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -36,6 +38,7 @@ export function RichTextEditor({
   onChange,
   onReady,
   labelledBy,
+  media,
 }: {
   initialContent: RichTextDoc;
   editable: boolean;
@@ -43,7 +46,10 @@ export function RichTextEditor({
   /** Called once with the editor's normalized copy of the initial content. */
   onReady?: (doc: RichTextDoc) => void;
   labelledBy?: string;
+  /** Enables "Insert image" from this site's media library. */
+  media?: { siteId: string; canUpload: boolean };
 }) {
+  const [picking, setPicking] = useState(false);
   const onChangeRef = useRef(onChange);
   const onReadyRef = useRef(onReady);
   useEffect(() => {
@@ -85,8 +91,35 @@ export function RichTextEditor({
 
   return (
     <div className="flex flex-col">
-      {editable && <Toolbar editor={editor} />}
+      {editable && (
+        <Toolbar editor={editor} onInsertImage={media ? () => setPicking(true) : undefined} />
+      )}
       <EditorContent editor={editor} />
+      {media && (
+        <MediaPicker
+          open={picking}
+          onOpenChange={setPicking}
+          siteId={media.siteId}
+          canUpload={media.canUpload}
+          onInsert={(asset, alt) => {
+            editor
+              .chain()
+              .focus()
+              .insertContent({
+                type: "image",
+                attrs: {
+                  src: asset.url,
+                  alt,
+                  width: asset.width,
+                  height: asset.height,
+                  mediaId: asset.id,
+                },
+              })
+              .run();
+            setPicking(false);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -208,7 +241,7 @@ const GROUPS: ToolbarItem[][] = [
 const ITEMS = GROUPS.flat();
 
 /** Formatting toolbar: one tab stop, arrow keys move between buttons (ARIA toolbar pattern). */
-function Toolbar({ editor }: { editor: Editor }) {
+function Toolbar({ editor, onInsertImage }: { editor: Editor; onInsertImage?: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const [focusIndex, setFocusIndex] = useState(0);
   const state = useEditorState({
@@ -285,6 +318,26 @@ function Toolbar({ editor }: { editor: Editor }) {
               tabIndex={ITEMS.length === focusIndex ? 0 : -1}
               onFocus={() => setFocusIndex(ITEMS.length)}
             />
+          )}
+          {g === 1 && onInsertImage && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  data-tb
+                  tabIndex={ITEMS.length + 1 === focusIndex ? 0 : -1}
+                  aria-label="Insert image"
+                  aria-haspopup="dialog"
+                  onClick={onInsertImage}
+                  onFocus={() => setFocusIndex(ITEMS.length + 1)}
+                >
+                  <ImagePlus aria-hidden />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Insert image</TooltipContent>
+            </Tooltip>
           )}
         </div>
       ))}
