@@ -203,6 +203,12 @@
   .rich-text pre code {
     @apply bg-transparent p-0;
   }
+  .rich-text img {
+    @apply border-border mx-auto h-auto max-h-[36rem] w-auto max-w-full rounded-lg border;
+  }
+  .rich-text img.ProseMirror-selectednode {
+    @apply ring-ring ring-2 ring-offset-2;
+  }
   .rich-text hr {
     @apply border-border my-8;
   }

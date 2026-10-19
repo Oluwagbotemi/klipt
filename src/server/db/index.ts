@@ -20,11 +20,19 @@ export type DbOrTx = Database | Transaction;
 
 export const MIGRATIONS_FOLDER = path.join(process.cwd(), "drizzle");
 
+/**
+ * Neon's URLs say sslmode=require, which node-postgres already treats as
+ * verify-full (and warns will change). Spell it out to keep full verification.
+ */
+export function withVerifiedSsl(url: string): string {
+  return url.replace(/([?&]sslmode=)require\b/, "$1verify-full");
+}
+
 async function connect(): Promise<Database> {
   const url = process.env.DATABASE_URL;
   if (url) {
     const { drizzle } = await import("drizzle-orm/node-postgres");
-    return drizzle(url, { schema }) as unknown as Database;
+    return drizzle(withVerifiedSsl(url), { schema }) as unknown as Database;
   }
 
   if (process.env.NODE_ENV === "production" && !process.env.ALLOW_PGLITE_IN_PRODUCTION) {

@@ -63,10 +63,13 @@ website when content is published, edited, moved or unpublished.
 2. Add environment variables: `BETTER_AUTH_SECRET` (a new random value) and `BETTER_AUTH_URL` (your production URL, no trailing slash).
 3. Set the build command to `npm run db:migrate && npm run build` so migrations run on each deploy, and make sure the production branch is `main`.
 4. Demo accounts are not created in production; sign up on the live site.
-5. Optional but recommended: add `CRON_SECRET` (any long random value). The daily job in
+5. **Media uploads:** in Vercel, open **Storage → Create → Blob**, create a store and connect it to
+   the project (this sets `BLOB_READ_WRITE_TOKEN`), then redeploy. Without it, uploads show "File
+   storage isn't set up yet". Locally, files are stored in `.data/media`.
+6. Optional but recommended: add `CRON_SECRET` (any long random value). The daily job in
    `vercel.json` then publishes due scheduled entries and retries failed webhooks.
 
 ## Status
 
-Built: design tokens (light/dark), app shell (open-site tabs, collapsible section sidebar, breadcrumbs, section tabs, ⌘K search), sign-up/sign-in/sign-out, Sites list and Create site, Content library, and the content editor (rich text with autosave and conflict detection, URL changes with 301 redirects, SEO and social fields with previews, advanced indexing controls, publish/schedule/review workflow, preview), API keys, the read-only content delivery API and webhooks (signed, retried, with a delivery log), all on a real database with server-side authorization.
-Next: draft previews on connected websites, then the Media library.
+Built: design tokens (light/dark), app shell (open-site tabs, collapsible section sidebar, breadcrumbs, section tabs, ⌘K search), sign-up/sign-in/sign-out, Sites list and Create site, Content library, and the content editor (rich text with autosave and conflict detection, URL changes with 301 redirects, SEO and social fields with previews, advanced indexing controls, publish/schedule/review workflow, preview), the Media library (uploads with automatic resizing, alt text, usage, images in the editor), API keys, the read-only content delivery API and webhooks (signed, retried, with a delivery log), all on a real database with server-side authorization.
+Next: the site Overview, then draft previews on connected websites.

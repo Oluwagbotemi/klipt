@@ -21,9 +21,11 @@ function SheetContent({
   className,
   children,
   side = "left",
+  closeLabel = "Close navigation",
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: "left" | "right";
+  closeLabel?: string;
 }) {
   return (
     <SheetPrimitive.Portal>
@@ -46,7 +48,7 @@ function SheetContent({
         {children}
         <SheetPrimitive.Close className="text-sidebar-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:ring-ring/50 absolute top-3 right-3 inline-flex size-9 cursor-pointer items-center justify-center rounded-lg transition-colors outline-none focus-visible:ring-[3px]">
           <XIcon className="size-4" aria-hidden />
-          <span className="sr-only">Close navigation</span>
+          <span className="sr-only">{closeLabel}</span>
         </SheetPrimitive.Close>
       </SheetPrimitive.Content>
     </SheetPrimitive.Portal>

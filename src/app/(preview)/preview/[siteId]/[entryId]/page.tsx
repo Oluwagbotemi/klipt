@@ -6,6 +6,7 @@ import { Eye } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { STATUS_LABELS } from "@/lib/content";
 import { getEntryDocument } from "@/lib/data/content";
+import { withCurrentMedia } from "@/lib/data/media";
 import { getSite } from "@/lib/data/sites";
 import { richTextExtensions, sanitizeDoc } from "@/lib/editor/rich-text";
 import { siteHref } from "@/lib/navigation";
@@ -31,7 +32,8 @@ async function Preview({ params }: { params: PageProps<"/preview/[siteId]/[entry
   const { siteId, entryId } = await params;
   const [site, doc] = await Promise.all([getSite(siteId), getEntryDocument(siteId, entryId)]);
   // Content is re-sanitized and rendered from the allow-listed schema only.
-  const html = generateHTML(sanitizeDoc(doc.body), richTextExtensions());
+  const body = await withCurrentMedia(site.id, sanitizeDoc(doc.body));
+  const html = generateHTML(body, richTextExtensions());
   const editHref = `${siteHref(site.id, "content")}/${doc.entry.id}`;
 
   return (

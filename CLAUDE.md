@@ -73,5 +73,11 @@ before creating or changing any screen.
   `handleDelivery` and content reads, plus the daily cron `/api/cron/webhooks`. Customer URLs go
   through `src/server/webhook-url.ts` (no private networks); signing secrets are encrypted with
   `src/server/secrets.ts`.
+- Media: files go through `uploadMedia()` (`src/server/media.ts`), which identifies the type from the
+  bytes (`src/server/file-type.ts`; no SVG) and stores via `getStorage()` (`src/server/storage.ts`:
+  Vercel Blob with `BLOB_READ_WRITE_TOKEN`, else `.data/media` served by `/media/[...key]`). Uploads
+  are Server Actions limited to 4 MB (Vercel's request cap); the browser resizes larger photos first.
+  Body images are `image` nodes with `mediaId`; `resolveMediaInDoc()` swaps in the current URL, alt
+  text and size before rendering. Authors manage only their own uploads (`canManageMedia`).
 - Default public paths (`entryPath`): pages `/slug`, posts `/posts/slug`, until URL patterns exist.
 - Pin new dependencies to versions published at least two weeks ago.

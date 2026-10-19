@@ -3,6 +3,7 @@ import { generateHTML } from "@tiptap/html/server";
 import type { DbOrTx } from "@/server/db";
 import { contentEntries, contentModels, redirects, sites, users } from "@/server/db/schema";
 import { publishDueEntries } from "@/server/editor";
+import { resolveMediaInDoc } from "@/server/media-render";
 import {
   docToText,
   EMPTY_DOC,
@@ -138,9 +139,11 @@ function toSummary(row: EntryRow, domain: string | null): DeliveryEntrySummary {
   };
 }
 
-function toEntry(row: EntryRow, domain: string | null): DeliveryEntry {
+async function toEntry(db: DbOrTx, row: EntryRow, domain: string | null): Promise<DeliveryEntry> {
   const summary = toSummary(row, domain);
-  const body = readBody(row.entry.data);
+  const body = await resolveMediaInDoc(db, row.entry.siteId, readBody(row.entry.data), {
+    absolute: true,
+  });
   const stored = entrySeoSchema.catch({}).parse(row.entry.seo);
   const seo = resolveSeo(stored, row.entry.title);
   return {
@@ -214,7 +217,7 @@ export async function getPublishedEntry(
   const [row] = await selectEntries(db)
     .where(and(publishedIn(site.id), eq(contentModels.key, type), eq(contentEntries.slug, slug)))
     .limit(1);
-  return row ? toEntry(row, site.domain) : null;
+  return row ? toEntry(db, row, site.domain) : null;
 }
 
 /** "/Posts/Hello/?x=1#top" → "/Posts/Hello". Returns null for anything that isn't a path. */
