@@ -13,25 +13,21 @@ import {
 import { publishDueEntries } from "@/server/editor";
 import { NotAllowedError } from "@/server/errors";
 import { getSiteRole } from "@/server/sites";
-import { EMPTY_DOC, sanitizeDoc, wordCount } from "@/lib/editor/rich-text";
 import {
   ACTIVITY_ACTIONS,
   type ActivityItem,
   type OverviewEntry,
-  type SeoIssue,
-  type SeoIssueKey,
   type SiteOverview,
 } from "@/lib/overview";
 import { can } from "@/lib/permissions";
-import { entryPath, entrySeoSchema, resolveSeo, SEO_GUIDANCE } from "@/lib/seo";
+import { PAGE_ISSUE_KEYS } from "@/lib/seo-audit";
+import { entryPath } from "@/lib/seo";
+import { loadSiteAudit } from "@/server/seo";
 
 /*
  * Everything on a site's Overview, in one call. Counts and issues come from
  * the site's own records; nothing is estimated or invented.
  */
-
-/** Published entries examined for SEO issues (newest first). */
-const SEO_SCAN_LIMIT = 2000;
 
 const entryColumns = {
   id: contentEntries.id,
@@ -84,82 +80,71 @@ export async function getSiteOverview(
       .leftJoin(users, eq(users.id, contentEntries.authorId));
   const manager = can(role, "webhooks.manage") || can(role, "api_keys.manage");
 
-  const [statusRows, inReview, upcoming, recent, published, [media], activityRows] =
-    await Promise.all([
-      db
-        .select({ status: contentEntries.status, total: count() })
-        .from(contentEntries)
-        .where(inSite)
-        .groupBy(contentEntries.status),
-      entries()
-        .where(and(inSite, eq(contentEntries.status, "in_review")))
-        .orderBy(asc(contentEntries.updatedAt))
-        .limit(5),
-      entries()
-        .where(and(inSite, eq(contentEntries.status, "scheduled")))
-        .orderBy(asc(contentEntries.scheduledAt))
-        .limit(5),
-      entries()
-        .where(and(inSite, sql`${contentEntries.status} <> 'archived'`))
-        .orderBy(desc(contentEntries.updatedAt))
-        .limit(6),
-      db
-        .select({
-          id: contentEntries.id,
-          title: contentEntries.title,
-          seo: contentEntries.seo,
-          data: contentEntries.data,
-        })
-        .from(contentEntries)
-        .where(and(inSite, eq(contentEntries.status, "published")))
-        .orderBy(desc(contentEntries.publishedAt))
-        .limit(SEO_SCAN_LIMIT),
-      db
-        .select({
-          total: count(),
-          missingAlt:
-            sql<number>`count(*) filter (where ${like(mediaAssets.mimeType, "image/%")} and coalesce(${mediaAssets.altText}, '') = '')`.mapWith(
-              Number,
-            ),
-        })
-        .from(mediaAssets)
-        .where(eq(mediaAssets.siteId, siteId)),
-      db
-        .select({
-          id: auditEvents.id,
-          action: auditEvents.action,
-          targetType: auditEvents.targetType,
-          targetId: auditEvents.targetId,
-          metadata: auditEvents.metadata,
-          createdAt: auditEvents.createdAt,
-          actorName: users.name,
-          entryTitle: contentEntries.title,
-          entryId: contentEntries.id,
-        })
-        .from(auditEvents)
-        .leftJoin(users, eq(users.id, auditEvents.actorId))
-        .leftJoin(
-          contentEntries,
-          and(
-            eq(auditEvents.targetType, "content_entry"),
-            eq(contentEntries.id, auditEvents.targetId),
+  const [statusRows, inReview, upcoming, recent, audit, [media], activityRows] = await Promise.all([
+    db
+      .select({ status: contentEntries.status, total: count() })
+      .from(contentEntries)
+      .where(inSite)
+      .groupBy(contentEntries.status),
+    entries()
+      .where(and(inSite, eq(contentEntries.status, "in_review")))
+      .orderBy(asc(contentEntries.updatedAt))
+      .limit(5),
+    entries()
+      .where(and(inSite, eq(contentEntries.status, "scheduled")))
+      .orderBy(asc(contentEntries.scheduledAt))
+      .limit(5),
+    entries()
+      .where(and(inSite, sql`${contentEntries.status} <> 'archived'`))
+      .orderBy(desc(contentEntries.updatedAt))
+      .limit(6),
+    loadSiteAudit(db, siteId),
+    db
+      .select({
+        total: count(),
+        missingAlt:
+          sql<number>`count(*) filter (where ${like(mediaAssets.mimeType, "image/%")} and coalesce(${mediaAssets.altText}, '') = '')`.mapWith(
+            Number,
           ),
-        )
-        .where(
-          and(
-            eq(auditEvents.siteId, siteId),
-            // Integration changes (key names, webhook URLs) are only shown to those who manage them.
-            inArray(
-              auditEvents.action,
-              manager
-                ? ACTIVITY_ACTIONS
-                : ACTIVITY_ACTIONS.filter((a) => !/^(api_key|webhook)\./.test(a)),
-            ),
+      })
+      .from(mediaAssets)
+      .where(eq(mediaAssets.siteId, siteId)),
+    db
+      .select({
+        id: auditEvents.id,
+        action: auditEvents.action,
+        targetType: auditEvents.targetType,
+        targetId: auditEvents.targetId,
+        metadata: auditEvents.metadata,
+        createdAt: auditEvents.createdAt,
+        actorName: users.name,
+        entryTitle: contentEntries.title,
+        entryId: contentEntries.id,
+      })
+      .from(auditEvents)
+      .leftJoin(users, eq(users.id, auditEvents.actorId))
+      .leftJoin(
+        contentEntries,
+        and(
+          eq(auditEvents.targetType, "content_entry"),
+          eq(contentEntries.id, auditEvents.targetId),
+        ),
+      )
+      .where(
+        and(
+          eq(auditEvents.siteId, siteId),
+          // Integration changes (key names, webhook URLs) are only shown to those who manage them.
+          inArray(
+            auditEvents.action,
+            manager
+              ? ACTIVITY_ACTIONS
+              : ACTIVITY_ACTIONS.filter((a) => !/^(api_key|webhook)\./.test(a)),
           ),
-        )
-        .orderBy(desc(auditEvents.createdAt))
-        .limit(8),
-    ]);
+        ),
+      )
+      .orderBy(desc(auditEvents.createdAt))
+      .limit(8),
+  ]);
 
   const counts = { published: 0, draft: 0, in_review: 0, scheduled: 0 };
   for (const row of statusRows) {
@@ -172,40 +157,20 @@ export async function getSiteOverview(
     inReview: inReview.map(toEntry),
     upcoming: upcoming.map(toEntry),
     recent: recent.map(toEntry),
-    seoIssues: seoIssues(published),
+    seoIssues: PAGE_ISSUE_KEYS.filter((key) => audit.issueCounts[key] > 0).map((key) => ({
+      key,
+      count: audit.issueCounts[key],
+      examples: audit.pages
+        .filter((page) => page.issues.includes(key))
+        .slice(0, 3)
+        .map((page) => ({ id: page.id, title: page.title })),
+    })),
     publishedCount: counts.published,
+    allowIndexing: audit.allowIndexing,
     activity: activityRows.map(toActivity),
     setup: manager ? await setupSteps(db, siteId, counts.published, media.total) : null,
     webhookFailures: manager ? await recentWebhookFailures(db, siteId) : null,
   };
-}
-
-function seoIssues(
-  rows: { id: string; title: string; seo: unknown; data: Record<string, unknown> }[],
-): SeoIssue[] {
-  const found: Record<SeoIssueKey, { id: string; title: string }[]> = {
-    missing_description: [],
-    long_title: [],
-    thin_content: [],
-    noindex: [],
-  };
-  for (const row of rows) {
-    const seo = resolveSeo(entrySeoSchema.catch({}).parse(row.seo), row.title || "Untitled");
-    const item = { id: row.id, title: row.title || "Untitled" };
-    if (!seo.description) found.missing_description.push(item);
-    if (seo.title.length > SEO_GUIDANCE.title.max) found.long_title.push(item);
-    if (!seo.index) found.noindex.push(item);
-    let body = EMPTY_DOC;
-    try {
-      body = row.data.body ? sanitizeDoc(row.data.body) : EMPTY_DOC;
-    } catch {
-      // Unreadable bodies count as empty.
-    }
-    if (wordCount(body) < 50) found.thin_content.push(item);
-  }
-  return (Object.entries(found) as [SeoIssueKey, { id: string; title: string }[]][])
-    .filter(([, items]) => items.length > 0)
-    .map(([key, items]) => ({ key, count: items.length, examples: items.slice(0, 3) }));
 }
 
 function toActivity(row: {

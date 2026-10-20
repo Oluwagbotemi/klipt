@@ -33,7 +33,7 @@ curl "https://klipt.example.com/api/v1/entries?type=post" \
 
 | Request                          | Returns                                                                 |
 | -------------------------------- | ----------------------------------------------------------------------- |
-| `GET /site`                      | Site name, domain, URL, language and timezone                           |
+| `GET /site`                      | Site name, domain, URL, language, timezone and `allowIndexing`          |
 | `GET /entries`                   | Published entries, newest first. Query: `type`, `page`, `limit` (≤ 100) |
 | `GET /entries/{type}/{slug}`     | One published entry with its body and SEO                               |
 | `GET /resolve?path=/posts/hello` | What's at a URL on your site: an entry, a redirect, or 404              |
@@ -92,6 +92,8 @@ A single entry adds `body` and `seo`:
 - Images in the body come from the site's media library: `<img src alt width height loading="lazy">`
   with absolute URLs, the image's **current** alt text (fixing it in Media fixes it everywhere) and its
   real size, so pages don't jump while images load. Deleted images are left out.
+- If the site is hidden from search engines (SEO › Crawling & indexing), every entry comes back with
+  `robots: "noindex, nofollow"`, `/sitemap` is empty, and `GET /site` reports `allowIndexing: false`.
 - SEO values already include fallbacks (e.g. the title when no SEO title is set). `url` and
   `canonicalUrl` are `null` until the site has a domain in Klipt.
 - `/resolve` for an old URL returns `{ "redirect": { "to": "/posts/new-slug", "statusCode": 301 } }`.

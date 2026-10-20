@@ -11,7 +11,9 @@ import {
   sanitizeDoc,
   type RichTextDoc,
 } from "@/lib/editor/rich-text";
-import { entryPath, entrySeoSchema, resolveSeo } from "@/lib/seo";
+import { entryPath, entrySeoSchema, normalizePath, resolveSeo } from "@/lib/seo";
+
+export { normalizePath };
 
 /*
  * Content delivery: what a site's own website reads through the content API.
@@ -26,6 +28,8 @@ export interface DeliverySite {
   url: string | null;
   language: string;
   timezone: string;
+  /** False when the site asks search engines not to index anything. */
+  allowIndexing: boolean;
 }
 
 export interface DeliveryEntrySummary {
@@ -82,6 +86,7 @@ export async function getDeliverySite(db: DbOrTx, siteId: string): Promise<Deliv
       id: sites.id,
       name: sites.name,
       domain: sites.domain,
+      allowIndexing: sites.allowIndexing,
       language: sites.language,
       timezone: sites.timezone,
     })
@@ -139,8 +144,8 @@ function toSummary(row: EntryRow, domain: string | null): DeliveryEntrySummary {
   };
 }
 
-async function toEntry(db: DbOrTx, row: EntryRow, domain: string | null): Promise<DeliveryEntry> {
-  const summary = toSummary(row, domain);
+async function toEntry(db: DbOrTx, row: EntryRow, site: DeliverySite): Promise<DeliveryEntry> {
+  const summary = toSummary(row, site.domain);
   const body = await resolveMediaInDoc(db, row.entry.siteId, readBody(row.entry.data), {
     absolute: true,
   });
@@ -154,9 +159,12 @@ async function toEntry(db: DbOrTx, row: EntryRow, domain: string | null): Promis
       title: seo.title,
       description: seo.description,
       canonicalUrl: stored.canonicalUrl || summary.url,
-      index: seo.index,
-      follow: seo.follow,
-      robots: `${seo.index ? "index" : "noindex"}, ${seo.follow ? "follow" : "nofollow"}`,
+      // The site-wide switch (SEO › Crawling & indexing) overrides each page.
+      index: seo.index && site.allowIndexing,
+      follow: seo.follow && site.allowIndexing,
+      robots: site.allowIndexing
+        ? `${seo.index ? "index" : "noindex"}, ${seo.follow ? "follow" : "nofollow"}`
+        : "noindex, nofollow",
       openGraph: { title: seo.ogTitle, description: seo.ogDescription },
       schemaType: row.schemaType,
     },
@@ -217,15 +225,7 @@ export async function getPublishedEntry(
   const [row] = await selectEntries(db)
     .where(and(publishedIn(site.id), eq(contentModels.key, type), eq(contentEntries.slug, slug)))
     .limit(1);
-  return row ? toEntry(db, row, site.domain) : null;
-}
-
-/** "/Posts/Hello/?x=1#top" → "/Posts/Hello". Returns null for anything that isn't a path. */
-export function normalizePath(input: string): string | null {
-  const path = input.trim().split(/[?#]/)[0];
-  if (!path.startsWith("/") || path.startsWith("//") || path.length > 2048) return null;
-  const trimmed = path.replace(/\/+$/, "");
-  return trimmed === "" ? "/" : trimmed;
+  return row ? toEntry(db, row, site) : null;
 }
 
 /**
@@ -274,6 +274,7 @@ export async function listRedirects(db: DbOrTx, siteId: string) {
  * and not pointing their canonical URL somewhere else.
  */
 export async function listSitemap(db: DbOrTx, site: DeliverySite) {
+  if (!site.allowIndexing) return [];
   await publishDueEntries(db, site.id);
   const rows = await db
     .select({

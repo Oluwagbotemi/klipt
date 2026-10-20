@@ -119,12 +119,15 @@ describe("site overview", () => {
     const issues = Object.fromEntries(
       overview.seoIssues.map((i) => [i.key, i.examples.map((e) => e.title)]),
     );
-    assert.deepEqual(issues, {
-      missing_description: ["No description"],
-      long_title: ["A very long SEO title that goes well beyond what results usually show"],
-      thin_content: ["Short"],
-      noindex: ["Hidden"],
-    });
+    assert.deepEqual(issues.missing_description, ["No description"]);
+    assert.deepEqual(issues.long_title, [
+      "A very long SEO title that goes well beyond what results usually show",
+    ]);
+    assert.deepEqual(issues.thin_content, ["Short"]);
+    assert.deepEqual(issues.noindex, ["Hidden"]);
+    // The sample posts share one description, which is flagged too.
+    assert.ok(issues.duplicate_description?.length);
+    assert.equal(overview.allowIndexing, true);
 
     const first = overview.activity[0];
     assert.equal(first.action, "content.created");
