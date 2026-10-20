@@ -81,4 +81,6 @@ SEO: recommendations for live pages (descriptions, titles, duplicates, thin cont
 
 Settings: general (name, language, time zone), your website's domain, SEO defaults (title template, default sharing image), ownership transfer (password-confirmed, accepted by the new owner via a link), and the danger zone (archive and restore, or delete with password and name confirmation).
 
-Next: content models, taxonomy and navigation menus.
+Content models: custom content types (e.g. Product) and extra fields on any type (text, long text, number, date, yes/no, dropdown, image, link to content), with required fields checked on publish. Entries of custom types live under Content › Collections, and the content API returns every entry's `fields` with images and published links resolved.
+
+Next: taxonomy and navigation menus.

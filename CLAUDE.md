@@ -98,6 +98,14 @@ before creating or changing any screen.
   recipient accepts; acceptance demotes or removes the old owner and promotes the new one in one
   transaction. Archived sites vanish for everyone (getSiteRole ignores them) except the owner's
   Archived sites list. SEO defaults (title template, default OG image) feed the content API.
+- Content models (`src/server/models.ts`, rules in `src/lib/models.ts`): field definitions live in
+  `content_models.fields`, values in `content_entries.data[fieldKey]` beside `body`. Field keys and types
+  never change after creation (removing a field keeps stored values, unseen). `saveEntry` validates
+  values against the model (`validateFieldValues` + `assertFieldTargets`: images and linked entries
+  must belong to the site); drafts may be incomplete, publish/schedule refuse missing required fields.
+  Delivery resolves `fields` in batch: images → absolute URL/alt/size, links → published targets only.
+  Changing models needs `models.manage`; a custom model can be deleted only with no entries and no
+  links to it.
 - **Planned, not built — email (Resend):** Klipt sends no email yet. When added, send invitation
   links from `createInvitation`/`renewInvitation` (keep the copyable link as a fallback), then
   password reset (Better Auth `sendResetPassword`), email verification, ownership-transfer and

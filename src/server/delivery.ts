@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
 import { generateHTML } from "@tiptap/html/server";
 import type { DbOrTx } from "@/server/db";
 import {
@@ -8,6 +8,7 @@ import {
   redirects,
   sites,
   users,
+  type ContentFieldDefinition,
 } from "@/server/db/schema";
 import { publishDueEntries } from "@/server/editor";
 import { absoluteMediaUrl, resolveMediaInDoc } from "@/server/media-render";
@@ -19,6 +20,7 @@ import {
   sanitizeDoc,
   type RichTextDoc,
 } from "@/lib/editor/rich-text";
+import { readFieldValues } from "@/lib/models";
 import { entryPath, entrySeoSchema, normalizePath, resolveSeo } from "@/lib/seo";
 import { applyTitleTemplate } from "@/lib/site-settings";
 
@@ -58,7 +60,17 @@ export interface DeliveryEntrySummary {
   author: { name: string } | null;
   publishedAt: string | null;
   updatedAt: string;
+  /** The content type's own fields; every field is present, `null` when empty. */
+  fields: Record<string, DeliveryFieldValue>;
 }
+
+export type DeliveryFieldValue =
+  | string
+  | number
+  | boolean
+  | null
+  | { url: string; alt: string; width: number | null; height: number | null }
+  | { id: string; type: string; title: string; slug: string; path: string };
 
 export interface DeliverySeo {
   title: string;
@@ -129,6 +141,7 @@ const entryColumns = {
   entry: contentEntries,
   modelKey: contentModels.key,
   schemaType: contentModels.schemaType,
+  modelFields: contentModels.fields,
   authorName: users.name,
 };
 
@@ -136,8 +149,92 @@ type EntryRow = {
   entry: typeof contentEntries.$inferSelect;
   modelKey: string;
   schemaType: string | null;
+  modelFields: ContentFieldDefinition[];
   authorName: string | null;
 };
+
+type FieldMap = Map<string, Record<string, DeliveryFieldValue>>;
+
+/**
+ * Field values for a batch of entries, with images resolved to absolute URLs
+ * and links resolved to the linked entry. Links to anything that isn't
+ * published (or images that were deleted) come back as null.
+ */
+async function resolveFields(db: DbOrTx, siteId: string, rows: EntryRow[]): Promise<FieldMap> {
+  const stored = rows.map((row) => ({
+    row,
+    values: readFieldValues(row.modelFields, row.entry.data),
+  }));
+  const idsOf = (type: ContentFieldDefinition["type"]) => [
+    ...new Set(
+      stored.flatMap(({ row, values }) =>
+        row.modelFields
+          .filter((field) => field.type === type && typeof values[field.key] === "string")
+          .map((field) => String(values[field.key])),
+      ),
+    ),
+  ];
+  const mediaIds = idsOf("media");
+  const entryIds = idsOf("reference");
+  const [media, linked] = await Promise.all([
+    mediaIds.length
+      ? db
+          .select()
+          .from(mediaAssets)
+          .where(and(eq(mediaAssets.siteId, siteId), inArray(mediaAssets.id, mediaIds)))
+      : [],
+    entryIds.length
+      ? db
+          .select({
+            id: contentEntries.id,
+            title: contentEntries.title,
+            slug: contentEntries.slug,
+            modelKey: contentModels.key,
+          })
+          .from(contentEntries)
+          .innerJoin(contentModels, eq(contentModels.id, contentEntries.modelId))
+          .where(and(publishedIn(siteId), inArray(contentEntries.id, entryIds)))
+      : [],
+  ]);
+  const mediaById = new Map(media.map((asset) => [asset.id, asset]));
+  const entryById = new Map(linked.map((entry) => [entry.id, entry]));
+
+  const out: FieldMap = new Map();
+  for (const { row, values } of stored) {
+    const fields: Record<string, DeliveryFieldValue> = {};
+    for (const field of row.modelFields) {
+      const value = values[field.key];
+      if (value === undefined) {
+        fields[field.key] = null;
+      } else if (field.type === "media") {
+        const asset = mediaById.get(String(value));
+        fields[field.key] = asset
+          ? {
+              url: absoluteMediaUrl(asset.url),
+              alt: asset.altText ?? "",
+              width: asset.width,
+              height: asset.height,
+            }
+          : null;
+      } else if (field.type === "reference") {
+        const target = entryById.get(String(value));
+        fields[field.key] = target
+          ? {
+              id: target.id,
+              type: target.modelKey,
+              title: target.title,
+              slug: target.slug,
+              path: entryPath(target.modelKey, target.slug),
+            }
+          : null;
+      } else {
+        fields[field.key] = value;
+      }
+    }
+    out.set(row.entry.id, fields);
+  }
+  return out;
+}
 
 function readBody(data: Record<string, unknown>): RichTextDoc {
   try {
@@ -155,7 +252,7 @@ function excerptOf(description: string, body: RichTextDoc, max = 200): string {
   return `${cut.slice(0, cut.lastIndexOf(" ") > 0 ? cut.lastIndexOf(" ") : max)}…`;
 }
 
-function toSummary(row: EntryRow, domain: string | null): DeliveryEntrySummary {
+function toSummary(row: EntryRow, domain: string | null, fields: FieldMap): DeliveryEntrySummary {
   const { entry } = row;
   const path = entryPath(row.modelKey, entry.slug);
   const seo = entrySeoSchema.catch({}).parse(entry.seo);
@@ -170,6 +267,7 @@ function toSummary(row: EntryRow, domain: string | null): DeliveryEntrySummary {
     author: row.authorName ? { name: row.authorName } : null,
     publishedAt: entry.publishedAt?.toISOString() ?? null,
     updatedAt: entry.updatedAt.toISOString(),
+    fields: fields.get(entry.id) ?? {},
   };
 }
 
@@ -189,7 +287,7 @@ async function defaultOgImage(db: DbOrTx, site: DeliverySite) {
 }
 
 async function toEntry(db: DbOrTx, row: EntryRow, site: DeliverySite): Promise<DeliveryEntry> {
-  const summary = toSummary(row, site.domain);
+  const summary = toSummary(row, site.domain, await resolveFields(db, site.id, [row]));
   const body = await resolveMediaInDoc(db, row.entry.siteId, readBody(row.entry.data), {
     absolute: true,
   });
@@ -255,8 +353,9 @@ export async function listPublished(
       .innerJoin(contentModels, eq(contentModels.id, contentEntries.modelId))
       .where(where),
   ]);
+  const fields = await resolveFields(db, site.id, rows);
   return {
-    items: rows.map((row) => toSummary(row, site.domain)),
+    items: rows.map((row) => toSummary(row, site.domain, fields)),
     page: options.page,
     limit: options.limit,
     total,

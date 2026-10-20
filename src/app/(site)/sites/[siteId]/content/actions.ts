@@ -14,6 +14,8 @@ import {
 } from "@/server/editor";
 import type { WorkflowAction } from "@/lib/content";
 import { applyBulkAction, createEntry, NotAllowedError } from "@/server/content";
+import { searchLinkTargets } from "@/server/models";
+import type { LinkTarget } from "@/lib/models";
 import { ForbiddenError, requireSitePermission } from "@/lib/data/sites";
 import { siteHref } from "@/lib/navigation";
 import { scheduleWebhookDelivery } from "@/lib/data/webhooks";
@@ -25,11 +27,13 @@ import { scheduleWebhookDelivery } from "@/lib/data/webhooks";
 
 const id = z.string().min(1).max(64);
 
+/** Creates a draft of a built-in ("page", "post") or custom content type and opens it. */
 export async function createEntryAction(
   siteId: string,
-  modelKey: "page" | "post",
+  modelKey: string,
 ): Promise<{ error: string }> {
-  const input = z.object({ siteId: id, modelKey: z.enum(["page", "post"]) }).safeParse({
+  const modelKeySchema = z.string().regex(/^[a-z][a-z0-9-]{1,39}$/);
+  const input = z.object({ siteId: id, modelKey: modelKeySchema }).safeParse({
     siteId,
     modelKey,
   });
@@ -93,7 +97,7 @@ export async function bulkContentAction(
 
 export type EditorResult =
   | { ok: true; state: EntryState; redirectCreated?: boolean }
-  | { ok: false; error: string; field?: string; conflict?: boolean };
+  | { ok: false; error: string; field?: string; fieldKey?: string; conflict?: boolean };
 
 async function editorCall(
   siteId: string,
@@ -113,7 +117,7 @@ async function editorCall(
       return { ok: false, conflict: true, error: error.message };
     }
     if (error instanceof EditorValidationError) {
-      return { ok: false, error: error.message, field: error.field };
+      return { ok: false, error: error.message, field: error.field, fieldKey: error.fieldKey };
     }
     if (error instanceof NotAllowedError) {
       return { ok: false, error: "You don't have permission to make that change." };
@@ -124,11 +128,17 @@ async function editorCall(
 
 const version = z.string().min(1).max(40);
 
-/** Autosave: title, body and SEO. */
+/** Autosave: title, body, SEO and the content type's field values. */
 export async function saveEntryAction(
   siteId: string,
   entryId: string,
-  input: { title: string; body: unknown; seo: unknown; expectedUpdatedAt: string },
+  input: {
+    title: string;
+    body: unknown;
+    seo: unknown;
+    fields?: unknown;
+    expectedUpdatedAt: string;
+  },
 ): Promise<EditorResult> {
   if (!version.safeParse(input?.expectedUpdatedAt).success || typeof input.title !== "string") {
     return { ok: false, error: "Nothing to save." };
@@ -170,4 +180,23 @@ export async function entryWorkflowAction(
   );
   if (result.ok) refresh();
   return result;
+}
+
+/** Entries a "Link to content" field can point at (the editor's picker). */
+export async function searchLinkTargetsAction(
+  siteId: string,
+  input: { modelKeys: string[]; q: string; excludeId?: string },
+): Promise<LinkTarget[]> {
+  const parsed = z
+    .object({
+      siteId: id,
+      modelKeys: z.array(z.string().max(40)).max(20),
+      q: z.string().max(100),
+      excludeId: id.optional(),
+    })
+    .safeParse({ siteId, ...input });
+  if (!parsed.success) return [];
+  const { siteId: site, ...query } = parsed.data;
+  const { user } = await requireSitePermission(site, "site.view");
+  return searchLinkTargets(await getDb(), user.id, site, query);
 }
