@@ -94,6 +94,14 @@ export const verifications = pgTable("verifications", {
 // Sites and membership
 // ---------------------------------------------------------------------------
 
+/** Applied when a page leaves a field empty. */
+export interface SiteSeoDefaults {
+  /** e.g. "%s | Northwind Journal"; %s is the page's SEO title. */
+  titleTemplate?: string;
+  /** Media library image used for social sharing when a page has none. */
+  ogImageId?: string;
+}
+
 export const siteRole = pgEnum("site_role", ["owner", "admin", "editor", "author", "viewer"]);
 export const sitePublishState = pgEnum("site_publish_state", ["live", "not_published"]);
 
@@ -109,6 +117,8 @@ export const sites = pgTable(
     publishState: sitePublishState("publish_state").notNull().default("not_published"),
     /** Site-wide switch: false asks search engines not to index anything (e.g. a staging site). */
     allowIndexing: boolean("allow_indexing").notNull().default(true),
+    /** Site-wide SEO defaults (see SiteSeoDefaults). */
+    seoDefaults: jsonb("seo_defaults").$type<SiteSeoDefaults>().notNull().default({}),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
@@ -168,8 +178,10 @@ export const siteOwnershipTransfers = pgTable(
     status: transferStatus("status").notNull().default("pending"),
     /** Whether the previous owner stays on as Admin after acceptance. */
     previousOwnerRetainsAdmin: boolean("previous_owner_retains_admin").notNull().default(true),
-    /** Hash of the acceptance token; the raw token is only ever emailed. */
+    /** Hash of the acceptance token, used to look it up. */
     tokenHash: text("token_hash").notNull(),
+    /** The token, encrypted, so the owner can copy the link again (it isn't emailed yet). */
+    tokenEncrypted: text("token_encrypted"),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     respondedAt: timestamp("responded_at", { withTimezone: true }),
     createdAt: createdAt(),

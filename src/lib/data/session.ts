@@ -33,3 +33,16 @@ export async function requireUser(): Promise<UserSummary> {
   if (!user) redirect("/sign-in");
   return user;
 }
+
+/** Re-checks the signed-in user's password before sensitive actions (transfer, delete). */
+export async function verifyCurrentPassword(password: string): Promise<boolean> {
+  if (!password || password.length > 128) return false;
+  const requestHeaders = await headers();
+  const auth = await getAuth();
+  try {
+    const result = await auth.api.verifyPassword({ body: { password }, headers: requestHeaders });
+    return result.status === true;
+  } catch {
+    return false;
+  }
+}

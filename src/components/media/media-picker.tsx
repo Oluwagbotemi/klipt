@@ -30,7 +30,11 @@ export function MediaPicker({
   siteId,
   canUpload,
   onInsert,
+  title = "Insert image",
+  actionLabel = "Insert image",
 }: {
+  title?: string;
+  actionLabel?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   siteId: string;
@@ -100,7 +104,7 @@ export function MediaPicker({
     >
       <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Insert image</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
             Choose from your media library, or upload a new image.
           </DialogDescription>
@@ -219,7 +223,7 @@ export function MediaPicker({
           </Button>
           <Button onClick={insert} disabled={!selected || inserting}>
             {inserting && <Loader2 className="animate-spin" aria-hidden />}
-            Insert image
+            {actionLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

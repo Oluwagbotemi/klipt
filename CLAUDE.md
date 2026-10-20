@@ -89,6 +89,11 @@ before creating or changing any screen.
 - Team (`src/server/team.ts`): invitations are shareable links (token hashed for lookup, encrypted so
   managers can copy it again; 7 days; must be accepted by an account with the invited email). Only
   the owner grants Admin or manages admins; nobody changes the owner (that's ownership transfer).
+- Settings (`src/server/site-settings.ts`, `src/server/ownership.ts`): transfer, archive and delete
+  re-check the password (`verifyCurrentPassword`). Transfers change nothing until the named
+  recipient accepts; acceptance demotes or removes the old owner and promotes the new one in one
+  transaction. Archived sites vanish for everyone (getSiteRole ignores them) except the owner's
+  Archived sites list. SEO defaults (title template, default OG image) feed the content API.
 - **Planned, not built — email (Resend):** Klipt sends no email yet. When added, send invitation
   links from `createInvitation`/`renewInvitation` (keep the copyable link as a fallback), then
   password reset (Better Auth `sendResetPassword`), email verification, ownership-transfer and

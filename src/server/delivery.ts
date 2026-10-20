@@ -1,9 +1,16 @@
 import { and, asc, count, desc, eq } from "drizzle-orm";
 import { generateHTML } from "@tiptap/html/server";
 import type { DbOrTx } from "@/server/db";
-import { contentEntries, contentModels, redirects, sites, users } from "@/server/db/schema";
+import {
+  contentEntries,
+  contentModels,
+  mediaAssets,
+  redirects,
+  sites,
+  users,
+} from "@/server/db/schema";
 import { publishDueEntries } from "@/server/editor";
-import { resolveMediaInDoc } from "@/server/media-render";
+import { absoluteMediaUrl, resolveMediaInDoc } from "@/server/media-render";
 import {
   docToText,
   EMPTY_DOC,
@@ -12,6 +19,7 @@ import {
   type RichTextDoc,
 } from "@/lib/editor/rich-text";
 import { entryPath, entrySeoSchema, normalizePath, resolveSeo } from "@/lib/seo";
+import { applyTitleTemplate } from "@/lib/site-settings";
 
 export { normalizePath };
 
@@ -30,6 +38,10 @@ export interface DeliverySite {
   timezone: string;
   /** False when the site asks search engines not to index anything. */
   allowIndexing: boolean;
+  /** e.g. "%s | Northwind Journal", applied to page titles for the <title> tag. */
+  titleTemplate: string | null;
+  /** Internal: default social image (media id). */
+  defaultOgImageId: string | null;
 }
 
 export interface DeliveryEntrySummary {
@@ -55,7 +67,14 @@ export interface DeliverySeo {
   follow: boolean;
   /** Ready for a robots meta tag, e.g. "noindex, follow". */
   robots: string;
-  openGraph: { title: string; description: string };
+  /** The title with the site's title template applied, for the <title> tag. */
+  documentTitle: string;
+  openGraph: {
+    title: string;
+    description: string;
+    /** The site's default sharing image, when one is set. */
+    image: { url: string; width: number | null; height: number | null; alt: string } | null;
+  };
   /** schema.org type of the content model, e.g. "Article". */
   schemaType: string | null;
 }
@@ -89,11 +108,19 @@ export async function getDeliverySite(db: DbOrTx, siteId: string): Promise<Deliv
       allowIndexing: sites.allowIndexing,
       language: sites.language,
       timezone: sites.timezone,
+      seoDefaults: sites.seoDefaults,
     })
     .from(sites)
     .where(eq(sites.id, siteId))
     .limit(1);
-  return site ? { ...site, url: siteUrl(site.domain) } : null;
+  if (!site) return null;
+  const { seoDefaults, ...rest } = site;
+  return {
+    ...rest,
+    url: siteUrl(site.domain),
+    titleTemplate: seoDefaults.titleTemplate ?? null,
+    defaultOgImageId: seoDefaults.ogImageId ?? null,
+  };
 }
 
 const entryColumns = {
@@ -144,6 +171,21 @@ function toSummary(row: EntryRow, domain: string | null): DeliveryEntrySummary {
   };
 }
 
+async function defaultOgImage(db: DbOrTx, site: DeliverySite) {
+  if (!site.defaultOgImageId) return null;
+  const [image] = await db
+    .select({
+      url: mediaAssets.url,
+      width: mediaAssets.width,
+      height: mediaAssets.height,
+      alt: mediaAssets.altText,
+    })
+    .from(mediaAssets)
+    .where(and(eq(mediaAssets.siteId, site.id), eq(mediaAssets.id, site.defaultOgImageId)))
+    .limit(1);
+  return image ? { ...image, url: absoluteMediaUrl(image.url), alt: image.alt ?? "" } : null;
+}
+
 async function toEntry(db: DbOrTx, row: EntryRow, site: DeliverySite): Promise<DeliveryEntry> {
   const summary = toSummary(row, site.domain);
   const body = await resolveMediaInDoc(db, row.entry.siteId, readBody(row.entry.data), {
@@ -165,7 +207,12 @@ async function toEntry(db: DbOrTx, row: EntryRow, site: DeliverySite): Promise<D
       robots: site.allowIndexing
         ? `${seo.index ? "index" : "noindex"}, ${seo.follow ? "follow" : "nofollow"}`
         : "noindex, nofollow",
-      openGraph: { title: seo.ogTitle, description: seo.ogDescription },
+      documentTitle: applyTitleTemplate(site.titleTemplate ?? undefined, seo.title),
+      openGraph: {
+        title: seo.ogTitle,
+        description: seo.ogDescription,
+        image: await defaultOgImage(db, site),
+      },
       schemaType: row.schemaType,
     },
   };
