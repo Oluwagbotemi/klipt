@@ -39,6 +39,7 @@ curl "https://klipt.example.com/api/v1/entries?type=post" \
 | `GET /resolve?path=/posts/hello` | What's at a URL on your site: an entry, a redirect, or 404              |
 | `GET /sitemap`                   | `path`, `url` and `lastModified` for every page that belongs in sitemap |
 | `GET /redirects`                 | Every redirect: `from`, `to`, `statusCode`                              |
+| `GET /preview?token=…`           | An entry's current content, drafts included, for a preview link (§ 5)   |
 
 `type` is a content type key: `page`, `post`, or a custom model's key.
 
@@ -274,8 +275,81 @@ handled whenever Klipt is next in use and by a daily job (`vercel.json`, needs a
 environment variable). On Vercel's Hobby plan that job can only run once a day; a paid plan can run
 it more often.
 
+## 5. Draft previews on your website
+
+Editors can see a draft exactly as it will look on your website before publishing.
+
+1. Add a route on your website that turns preview mode on (below), e.g. `/api/preview`.
+2. In Klipt, open **Settings › Integrations › Draft previews** and enter its full address, e.g.
+   `https://myblog.com/api/preview` (an owner or admin can do this).
+3. The editor's **Preview on website** button now opens
+   `https://myblog.com/api/preview?token=…&type=post&slug=hello&path=/posts/hello`.
+
+The `token` works for **one hour** and only for that entry. Your website exchanges it, together with
+its API key, for the entry's current content:
+
+```bash
+curl "https://klipt.example.com/api/v1/preview?token=…" -H "Authorization: Bearer klipt_…"
+```
+
+The response looks like `GET /entries/{type}/{slug}` plus `status` (`draft`, `in_review`,
+`scheduled` or `published`) and `preview: { expiresAt }`. It is never cached. Errors:
+
+| Status | `code`                  | Meaning                                             |
+| ------ | ----------------------- | --------------------------------------------------- |
+| 401    | `invalid_preview_token` | The token was changed, cut off or not made by Klipt |
+| 401    | `preview_expired`       | Older than an hour; click Preview in Klipt again    |
+| 403    | `wrong_site`            | The token belongs to a different site than the key  |
+| 404    | `not_found`             | The entry was deleted or archived                   |
+
+### Example: Next.js Draft Mode
+
+```ts
+// app/api/preview/route.ts
+import { cookies, draftMode } from "next/headers";
+import { redirect } from "next/navigation";
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const token = searchParams.get("token") ?? "";
+  // Check the token before turning preview mode on.
+  const res = await fetch(`${BASE}/preview?token=${encodeURIComponent(token)}`, {
+    headers: { Authorization: `Bearer ${process.env.KLIPT_API_KEY}` },
+    cache: "no-store",
+  });
+  if (!res.ok) return new Response("Preview link not valid", { status: 401 });
+
+  (await draftMode()).enable();
+  (await cookies()).set("klipt-preview", token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    maxAge: 3600,
+  });
+  // Only follow relative paths so the link can't send visitors to another site.
+  const path = searchParams.get("path") ?? "/";
+  redirect(path.startsWith("/") && !path.startsWith("//") ? path : "/");
+}
+```
+
+```ts
+// In your page, before loading the published entry:
+const { isEnabled } = await draftMode();
+const token = (await cookies()).get("klipt-preview")?.value;
+if (isEnabled && token) {
+  const res = await fetch(`${BASE}/preview?token=${encodeURIComponent(token)}`, {
+    headers: { Authorization: `Bearer ${process.env.KLIPT_API_KEY}` },
+    cache: "no-store",
+  });
+  const draft = res.ok ? (await res.json()).data : null;
+  // The cookie is for one entry; other pages keep showing published content.
+  if (draft?.type === type && draft.slug === slug) return draft;
+}
+```
+
+To leave preview mode, add a route that calls `(await draftMode()).disable()`.
+
 ## Not yet available
 
-- Draft previews on your own website.
 - A media endpoint and image fields outside the body (e.g. a featured image); taxonomies.
 - Per-key rate limits.

@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq } from "drizzle-orm";
+import { and, asc, count, desc, eq, sql } from "drizzle-orm";
 import { generateHTML } from "@tiptap/html/server";
 import type { DbOrTx } from "@/server/db";
 import {
@@ -11,6 +11,7 @@ import {
 } from "@/server/db/schema";
 import { publishDueEntries } from "@/server/editor";
 import { absoluteMediaUrl, resolveMediaInDoc } from "@/server/media-render";
+import { verifyPreviewToken } from "@/server/previews";
 import {
   docToText,
   EMPTY_DOC,
@@ -26,7 +27,8 @@ export { normalizePath };
 /*
  * Content delivery: what a site's own website reads through the content API.
  * These functions are scoped by a siteId that the caller resolved from an API
- * key (not a user), and only ever return published content.
+ * key (not a user), and only ever return published content, except
+ * getPreviewEntry, which also needs a signed preview token.
  */
 
 export interface DeliverySite {
@@ -259,6 +261,47 @@ export async function listPublished(
     limit: options.limit,
     total,
     hasMore: options.page * options.limit < total,
+  };
+}
+
+export type PreviewResult =
+  | {
+      ok: true;
+      entry: DeliveryEntry & { status: string; preview: { expiresAt: string } };
+    }
+  | { ok: false; reason: "invalid" | "expired" | "wrong_site" | "not_found" };
+
+/**
+ * The one exception to "published only": an entry's current content, for a
+ * valid preview token (see src/server/previews.ts) issued for this site.
+ * Archived entries are never shown.
+ */
+export async function getPreviewEntry(
+  db: DbOrTx,
+  site: DeliverySite,
+  token: string,
+): Promise<PreviewResult> {
+  const verified = verifyPreviewToken(token);
+  if (!verified.ok) return { ok: false, reason: verified.reason };
+  if (verified.claims.siteId !== site.id) return { ok: false, reason: "wrong_site" };
+  const [row] = await selectEntries(db)
+    .where(
+      and(
+        eq(contentEntries.siteId, site.id),
+        eq(contentEntries.id, verified.claims.entryId),
+        sql`${contentEntries.status} <> 'archived'`,
+      ),
+    )
+    .limit(1);
+  if (!row) return { ok: false, reason: "not_found" };
+  const entry = await toEntry(db, row, site);
+  return {
+    ok: true,
+    entry: {
+      ...entry,
+      status: row.entry.status,
+      preview: { expiresAt: new Date(verified.claims.exp * 1000).toISOString() },
+    },
   };
 }
 

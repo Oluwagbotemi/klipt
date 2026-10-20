@@ -119,6 +119,8 @@ export const sites = pgTable(
     allowIndexing: boolean("allow_indexing").notNull().default(true),
     /** Site-wide SEO defaults (see SiteSeoDefaults). */
     seoDefaults: jsonb("seo_defaults").$type<SiteSeoDefaults>().notNull().default({}),
+    /** Address on the customer's website that shows drafts (see src/server/previews.ts). */
+    previewUrl: text("preview_url"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
     archivedAt: timestamp("archived_at", { withTimezone: true }),

@@ -73,6 +73,10 @@ before creating or changing any screen.
   `handleDelivery` and content reads, plus the daily cron `/api/cron/webhooks`. Customer URLs go
   through `src/server/webhook-url.ts` (no private networks); signing secrets are encrypted with
   `src/server/secrets.ts`.
+- Previews (`src/server/previews.ts`): `sites.preview_url` is the customer's preview route; the editor
+  opens it with a stateless 1-hour HMAC token (HKDF from `BETTER_AUTH_SECRET`, info
+  `preview-tokens/v1`) for one entry. `GET /api/v1/preview` needs the API key and a token for that
+  key's site; `getPreviewEntry()` is the only delivery query that returns unpublished content.
 - Media: files go through `uploadMedia()` (`src/server/media.ts`), which identifies the type from the
   bytes (`src/server/file-type.ts`; no SVG) and stores via `getStorage()` (`src/server/storage.ts`:
   Vercel Blob with `BLOB_READ_WRITE_TOKEN`, else `.data/media` served by `/media/[...key]`). Uploads
