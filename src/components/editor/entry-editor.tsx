@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { CircleAlert, CloudOff, ExternalLink, Loader2, Lock, RotateCw } from "lucide-react";
+import { CircleAlert, CloudOff, Loader2, Lock, RotateCw } from "lucide-react";
 import { toast } from "sonner";
 import {
   changeSlugAction,
@@ -10,6 +10,7 @@ import {
 } from "@/app/(site)/sites/[siteId]/content/actions";
 import { EntryActionsMenu } from "@/components/content/entry-actions-menu";
 import { ContentStatusBadge } from "@/components/content/status-badge";
+import { PreviewButton } from "@/components/editor/preview-button";
 import { RichTextEditor } from "@/components/editor/rich-text-editor";
 import { AdvancedPanel, SearchPanel, SocialPanel, seoChecks } from "@/components/editor/seo-panels";
 import { UrlPanel } from "@/components/editor/url-panel";
@@ -57,6 +58,7 @@ export function EntryEditor({
   role,
   userId,
   doc,
+  previewHost = null,
 }: {
   siteId: string;
   siteName: string;
@@ -64,6 +66,8 @@ export function EntryEditor({
   role: SiteRole;
   userId: string;
   doc: EntryDocument;
+  /** Host of the site's preview address on its own website, if one is set. */
+  previewHost?: string | null;
 }) {
   const { entry } = doc;
   const [state, setState] = useState<EntryState>({
@@ -309,13 +313,7 @@ export function EntryEditor({
               onRetry={() => void save()}
             />
           </div>
-          <Button variant="outline" asChild>
-            <a href={`/preview/${siteId}/${entry.id}`} target="_blank" rel="noopener">
-              Preview
-              <ExternalLink aria-hidden />
-              <span className="sr-only">(opens in a new tab)</span>
-            </a>
-          </Button>
+          <PreviewButton siteId={siteId} entryId={entry.id} previewHost={previewHost} />
           <WorkflowControls
             allowed={allowed}
             status={state.status}

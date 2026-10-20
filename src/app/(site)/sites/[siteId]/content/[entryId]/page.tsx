@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { EntryEditor } from "@/components/editor/entry-editor";
 import { getEntryDocument } from "@/lib/data/content";
+import { getSitePreviewUrl } from "@/lib/data/previews";
 import { requireUser } from "@/lib/data/session";
 import { getSite } from "@/lib/data/sites";
 
@@ -16,10 +17,11 @@ export default async function EntryPage({
   params,
 }: PageProps<"/sites/[siteId]/content/[entryId]">) {
   const { siteId, entryId } = await params;
-  const [user, site, doc] = await Promise.all([
+  const [user, site, doc, previewUrl] = await Promise.all([
     requireUser(),
     getSite(siteId),
     getEntryDocument(siteId, entryId),
+    getSitePreviewUrl(siteId),
   ]);
 
   return (
@@ -31,6 +33,7 @@ export default async function EntryPage({
       role={site.currentUserRole}
       userId={user.id}
       doc={doc}
+      previewHost={previewUrl ? new URL(previewUrl).host : null}
     />
   );
 }
