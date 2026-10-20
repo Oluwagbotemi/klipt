@@ -107,6 +107,8 @@ export const sites = pgTable(
     language: text("language").notNull().default("en"),
     timezone: text("timezone").notNull().default("UTC"),
     publishState: sitePublishState("publish_state").notNull().default("not_published"),
+    /** Site-wide switch: false asks search engines not to index anything (e.g. a staging site). */
+    allowIndexing: boolean("allow_indexing").notNull().default(true),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
     archivedAt: timestamp("archived_at", { withTimezone: true }),

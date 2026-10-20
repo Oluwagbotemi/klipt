@@ -77,4 +77,6 @@ Team: members and roles, shareable invitation links, a Roles & permissions overv
 
 **Planned:** email via Resend (invitations, password reset, notifications). Klipt doesn't send email yet; invitations are links you share yourself.
 
-Next: the SEO section, then site Settings.
+SEO: recommendations for live pages (descriptions, titles, duplicates, thin content, alt text, broken links, noindex), internal links (broken links, pages nothing links to), a redirects manager that keeps redirects one hop, the sitemap with reasons pages are left out, and a site-wide search visibility switch.
+
+Next: site Settings (general, domains, SEO defaults, ownership transfer, danger zone).

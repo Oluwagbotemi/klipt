@@ -1,0 +1,1 @@
+ALTER TABLE "sites" ADD COLUMN "allow_indexing" boolean DEFAULT true NOT NULL;

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   CalendarClock,
+  EyeOff,
   CircleCheck,
   Circle,
   ClipboardCheck,
@@ -18,7 +19,8 @@ import { getOverview } from "@/lib/data/overview";
 import { getSite } from "@/lib/data/sites";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { siteHref } from "@/lib/navigation";
-import { activityVerb, SEO_ISSUE_TEXT, type OverviewEntry, type SetupStep } from "@/lib/overview";
+import { activityVerb, type OverviewEntry, type SetupStep } from "@/lib/overview";
+import { PAGE_ISSUES } from "@/lib/seo-audit";
 import { can } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 
@@ -68,6 +70,19 @@ export default async function OverviewPage({ params }: PageProps<"/sites/[siteId
   ];
 
   const attention = [
+    ...(!overview.allowIndexing
+      ? [
+          {
+            key: "hidden",
+            icon: EyeOff,
+            tone: "destructive" as const,
+            title: "The whole site is hidden from search engines",
+            why: "Search visibility is turned off, so none of your pages should appear in search results.",
+            href: siteHref(site.id, "seo", "indexing"),
+            action: "Review setting",
+          },
+        ]
+      : []),
     ...(overview.webhookFailures
       ? [
           {
@@ -191,12 +206,12 @@ export default async function OverviewPage({ params }: PageProps<"/sites/[siteId
                   <Search className="text-muted-foreground mt-0.5 size-5 shrink-0" aria-hidden />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium">
-                      {SEO_ISSUE_TEXT[issue.key].title}{" "}
+                      {PAGE_ISSUES[issue.key].title}{" "}
                       <span className="text-muted-foreground font-normal">
                         · {issue.count} of {overview.publishedCount} live
                       </span>
                     </p>
-                    <p className="text-muted-foreground text-sm">{SEO_ISSUE_TEXT[issue.key].why}</p>
+                    <p className="text-muted-foreground text-sm">{PAGE_ISSUES[issue.key].why}</p>
                     <ul className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-sm">
                       {issue.examples.map((example) => (
                         <li key={example.id} className="min-w-0">

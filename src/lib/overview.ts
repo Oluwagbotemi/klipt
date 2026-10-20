@@ -1,4 +1,5 @@
 import type { ContentStatus } from "@/lib/content";
+import type { PageIssueKey } from "@/lib/seo-audit";
 
 /** Site Overview data (client-safe types). Everything here is counted from real records. */
 
@@ -13,10 +14,8 @@ export interface OverviewEntry {
   scheduledAt: string | null;
 }
 
-export type SeoIssueKey = "missing_description" | "long_title" | "thin_content" | "noindex";
-
 export interface SeoIssue {
-  key: SeoIssueKey;
+  key: PageIssueKey;
   count: number;
   /** Up to three entries to fix first. */
   examples: { id: string; title: string }[];
@@ -45,31 +44,14 @@ export interface SiteOverview {
   recent: OverviewEntry[];
   seoIssues: SeoIssue[];
   publishedCount: number;
+  /** False when the whole site is hidden from search engines. */
+  allowIndexing: boolean;
   activity: ActivityItem[];
   /** Only for members who can manage integrations; null otherwise. */
   setup: SetupStep[] | null;
   /** Failed webhook deliveries in the last 7 days (managers only). */
   webhookFailures: number | null;
 }
-
-export const SEO_ISSUE_TEXT: Record<SeoIssueKey, { title: string; why: string }> = {
-  missing_description: {
-    title: "No meta description",
-    why: "Search engines will pick their own snippet. A short summary usually reads better.",
-  },
-  long_title: {
-    title: "SEO title may be cut off",
-    why: "Results usually show about 60 characters.",
-  },
-  thin_content: {
-    title: "Very little text",
-    why: "Fewer than 50 words gives search engines and readers little to go on.",
-  },
-  noindex: {
-    title: "Hidden from search engines",
-    why: "Live, but set to noindex. Check that this is intended.",
-  },
-};
 
 const ACTIVITY_TEXT: Record<string, string> = {
   "content.created": "created",

@@ -79,6 +79,10 @@ before creating or changing any screen.
   are Server Actions limited to 4 MB (Vercel's request cap); the browser resizes larger photos first.
   Body images are `image` nodes with `mediaId`; `resolveMediaInDoc()` swaps in the current URL, alt
   text and size before rendering. Authors manage only their own uploads (`canManageMedia`).
+- SEO: page checks live in `src/lib/seo-audit.ts` (pure, shared by Overview and the SEO section);
+  `loadSiteAudit()` in `src/server/seo.ts` feeds them. Redirects saved there stay one hop (targets
+  are followed, older redirects re-pointed, loops and live paths refused). `sites.allow_indexing`
+  false makes the content API send noindex everywhere and an empty sitemap.
 - Overview (`src/server/overview.ts`): one query bundle per visit, counted from real records only
   (no estimated metrics). Integration activity, setup steps and webhook failures are limited to
   members who manage integrations.
