@@ -80,7 +80,12 @@ A single entry adds `body` and `seo`:
       "index": true,
       "follow": true,
       "robots": "index, follow",
-      "openGraph": { "title": "Hello world", "description": "A friendly first post." },
+      "documentTitle": "Hello world | The Blog",
+      "openGraph": {
+        "title": "Hello world",
+        "description": "A friendly first post.",
+        "image": { "url": "https://…/share.png", "width": 1200, "height": 630, "alt": "…" }
+      },
       "schemaType": "Article"
     }
   }
@@ -92,6 +97,9 @@ A single entry adds `body` and `seo`:
 - Images in the body come from the site's media library: `<img src alt width height loading="lazy">`
   with absolute URLs, the image's **current** alt text (fixing it in Media fixes it everywhere) and its
   real size, so pages don't jump while images load. Deleted images are left out.
+- `seo.documentTitle` is the title with the site's title template applied (Settings › SEO
+  defaults), ready for `<title>`. `seo.openGraph.image` is the site's default sharing image, or
+  `null`.
 - If the site is hidden from search engines (SEO › Crawling & indexing), every entry comes back with
   `robots: "noindex, nofollow"`, `/sitemap` is empty, and `GET /site` reports `allowIndexing: false`.
 - SEO values already include fallbacks (e.g. the title when no SEO title is set). `url` and
@@ -140,11 +148,14 @@ async function load(slug: string) {
 export async function generateMetadata({ params }: PageProps<"/posts/[slug]">): Promise<Metadata> {
   const { seo } = await load((await params).slug);
   return {
-    title: seo.title,
+    title: seo.documentTitle,
     description: seo.description,
     alternates: seo.canonicalUrl ? { canonical: seo.canonicalUrl } : undefined,
     robots: { index: seo.index, follow: seo.follow },
-    openGraph: seo.openGraph,
+    openGraph: {
+      ...seo.openGraph,
+      images: seo.openGraph.image ? [seo.openGraph.image] : undefined,
+    },
   };
 }
 

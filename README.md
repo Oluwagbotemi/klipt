@@ -79,4 +79,6 @@ Team: members and roles, shareable invitation links, a Roles & permissions overv
 
 SEO: recommendations for live pages (descriptions, titles, duplicates, thin content, alt text, broken links, noindex), internal links (broken links, pages nothing links to), a redirects manager that keeps redirects one hop, the sitemap with reasons pages are left out, and a site-wide search visibility switch.
 
-Next: site Settings (general, domains, SEO defaults, ownership transfer, danger zone).
+Settings: general (name, language, time zone), your website's domain, SEO defaults (title template, default sharing image), ownership transfer (password-confirmed, accepted by the new owner via a link), and the danger zone (archive and restore, or delete with password and name confirmation).
+
+Next: draft previews on connected websites, content models, taxonomy and navigation menus.

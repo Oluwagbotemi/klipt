@@ -203,6 +203,7 @@ async function main() {
     siteId: harbor.id,
     fromUserId: samId,
     recipientEmail: "client@harborpine.example",
+    // A random, unshared token: the owner can make a new link from Settings › Ownership.
     tokenHash: createHash("sha256").update(randomBytes(32)).digest("hex"),
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
   });
