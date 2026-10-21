@@ -153,5 +153,14 @@ before creating or changing any screen.
   and verification links that land on `/email-verified`; verification is never required to sign in.
   UI checks `isEmailEnabled()` and keeps copyable links as the fallback. Invitations can be re-emailed
   once a minute (`site_invitations.emailed_at`).
+- Performance (`src/server/performance.ts`, rules in `src/lib/performance.ts`, guide `docs/performance.md`):
+  real-user Core Web Vitals only, never estimates. The customer's website posts batches to
+  `POST /api/v1/vitals` (`src/lib/data/vitals-ingest.ts`) with the site's public `sites.vitals_key`
+  (created on first visit, replaced by `performance.manage`); the Origin must be the site's domain
+  (± www) or preview origin (`allowedOrigins`). Ingest aggregates into `web_vitals_daily` histograms
+  (fixed bucket edges per metric; Google's thresholds are edges) — no raw events, IPs or user agents —
+  with daily caps in `web_vitals_usage`; p75 is interpolated within a bucket. The daily cron prunes
+  rows older than 90 days. Pages, Assets (media checks) and Recommendations (fixed rules) need
+  `performance.view` (owner/admin/editor).
 - Default public paths (`entryPath`): pages `/slug`, posts `/posts/slug`, until URL patterns exist.
 - Pin new dependencies to versions published at least two weeks ago.

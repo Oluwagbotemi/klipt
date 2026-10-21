@@ -18,8 +18,13 @@ import {
   siteMembers,
   siteOwnershipTransfers,
   users,
+  webVitalsDaily,
+  webVitalsUsage,
 } from "@/server/db/schema";
 import { slugify, type ContentStatus } from "@/lib/content";
+import { bucketIndex, type Device, type Metric } from "@/lib/performance";
+import { entryPath } from "@/lib/seo";
+import { getPerformanceSetup } from "@/server/performance";
 import { createSite } from "@/server/sites";
 import { createTerm, setEntryTerms } from "@/server/taxonomy";
 
@@ -129,6 +134,117 @@ function sampleBody(title: string) {
 type SeedEntry = [model: "page" | "post", title: string, status: ContentStatus, author: string];
 
 /** Inserts demo entries with staggered dates, newest first. */
+/**
+ * 28 days of demo Core Web Vitals for Northwind, stored the way the ingest
+ * endpoint stores them (daily histograms). Medians are per page; a fixed
+ * random seed keeps the numbers the same on every reset.
+ */
+async function seedVitals(db: SeedDb, siteId: string, ownerId: string) {
+  await getPerformanceSetup(db, ownerId, siteId); // creates the reporting key
+  const published = await db
+    .select({ title: contentEntries.title, slug: contentEntries.slug, key: contentModels.key })
+    .from(contentEntries)
+    .innerJoin(contentModels, eq(contentModels.id, contentEntries.modelId))
+    .where(and(eq(contentEntries.siteId, siteId), eq(contentEntries.status, "published")));
+  const pathOf = (title: string) => {
+    const entry = published.find((e) => e.title === title);
+    return entry ? entryPath(entry.key, entry.slug) : null;
+  };
+
+  let state = 42;
+  const random = () => {
+    // mulberry32
+    state |= 0;
+    state = (state + 0x6d2b79f5) | 0;
+    let t = Math.imul(state ^ (state >>> 15), 1 | state);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const normal = () =>
+    Math.sqrt(-2 * Math.log(random() || 1e-9)) * Math.cos(2 * Math.PI * random());
+  const sample = (median: number, spread = 0.45) => median * Math.exp(normal() * spread);
+
+  type Medians = Partial<Record<Metric, number>>;
+  const base: Record<Device, Medians> = {
+    desktop: { LCP: 1500, INP: 90, CLS: 0.03, FCP: 900, TTFB: 350 },
+    mobile: { LCP: 2100, INP: 150, CLS: 0.05, FCP: 1400, TTFB: 600 },
+  };
+  const pages: {
+    path: string | null;
+    visits: number;
+    mobile?: Medians;
+    desktop?: Medians;
+    improving?: boolean;
+  }[] = [
+    { path: pathOf("Home"), visits: 60 },
+    {
+      path: pathOf("Why the harbour seals came back"),
+      visits: 35,
+      mobile: { LCP: 4200, TTFB: 1300 },
+      desktop: { LCP: 2900 },
+      improving: true,
+    },
+    {
+      path: pathOf("Winter reading list"),
+      visits: 25,
+      mobile: { CLS: 0.22 },
+      desktop: { CLS: 0.14 },
+    },
+    { path: pathOf("A beginner's guide to foraging"), visits: 20, mobile: { INP: 380 } },
+    { path: pathOf("About us"), visits: 12 },
+    { path: pathOf("Storm-watching safely"), visits: 6, mobile: { LCP: 3100 } },
+    { path: "/search", visits: 10, mobile: { TTFB: 1600, LCP: 3300 }, desktop: { TTFB: 900 } },
+  ];
+
+  const rows = new Map<string, typeof webVitalsDaily.$inferInsert>();
+  const usage = new Map<string, number>();
+  const today = Date.now();
+  for (let daysAgo = 27; daysAgo >= 0; daysAgo--) {
+    const day = new Date(today - daysAgo * DAY).toISOString().slice(0, 10);
+    for (const page of pages) {
+      if (!page.path) continue;
+      for (const device of ["mobile", "desktop"] as const) {
+        const visits = Math.round(
+          page.visits * (device === "mobile" ? 0.6 : 0.4) * (0.7 + random() * 0.6),
+        );
+        for (const metric of ["LCP", "INP", "CLS", "FCP", "TTFB"] as const) {
+          let median = page[device]?.[metric] ?? base[device][metric]!;
+          // The improving page got lighter images two weeks ago.
+          if (page.improving && metric === "LCP" && daysAgo < 14) median *= 0.62;
+          // Not every visit has an interaction to measure.
+          const count = metric === "INP" ? Math.round(visits * 0.6) : visits;
+          for (let i = 0; i < count; i++) {
+            const value = Math.max(0, sample(median, metric === "CLS" ? 0.8 : 0.45));
+            const bucket = bucketIndex(metric, value);
+            const id = `${day}|${page.path}|${metric}|${device}|${bucket}`;
+            const row = rows.get(id) ?? {
+              siteId,
+              day,
+              path: page.path,
+              metric,
+              device,
+              bucket,
+              count: 0,
+              sum: 0,
+            };
+            row.count += 1;
+            row.sum += value;
+            rows.set(id, row);
+            usage.set(day, (usage.get(day) ?? 0) + 1);
+          }
+        }
+      }
+    }
+  }
+  const values = [...rows.values()];
+  for (let i = 0; i < values.length; i += 1000) {
+    await db.insert(webVitalsDaily).values(values.slice(i, i + 1000));
+  }
+  await db
+    .insert(webVitalsUsage)
+    .values([...usage.entries()].map(([day, samples]) => ({ siteId, day, samples })));
+}
+
 async function seedEntries(
   db: Awaited<ReturnType<typeof getDb>>,
   siteId: string,
@@ -373,6 +489,7 @@ async function main() {
   ]);
   await seedTaxonomy(db, northwind.id, samId);
   await seedTeamWork(db, northwind.id, { sam: samId, morgan: morganId, riley: rileyId });
+  await seedVitals(db, northwind.id, samId);
   await seedEntries(db, harbor.id, [
     ["page", "Home", "published", samId],
     ["page", "Our work", "draft", samId],

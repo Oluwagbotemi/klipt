@@ -26,7 +26,7 @@ export const KIND_PREFIXES: Record<ActivityKind, string[]> = {
   structure: ["model", "taxonomy", "term", "menu"],
   team: ["member", "ownership"],
   settings: ["site", "seo", "redirect", "previews"],
-  integrations: ["api_key", "webhook"],
+  integrations: ["api_key", "webhook", "performance"],
 };
 
 export function kindOf(action: string): ActivityKind | null {
@@ -293,6 +293,8 @@ export function describeActivity(
       return say("created the API key", name);
     case "api_key.revoked":
       return say("revoked the API key", name);
+    case "performance.key_rotated":
+      return say("replaced the Core Web Vitals reporting key");
     case "webhook.created":
       return say("added a webhook for", str(meta.url));
     case "webhook.updated":

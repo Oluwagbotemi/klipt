@@ -135,7 +135,7 @@ export async function listMedia(
 }
 
 /** Entries whose content refers to these files (by media id or URL). */
-async function usageOf(db: DbOrTx, siteId: string, assets: { id: string; url: string }[]) {
+export async function usageOf(db: DbOrTx, siteId: string, assets: { id: string; url: string }[]) {
   if (assets.length === 0) return new Map<string, MediaUsage[]>();
   const rows = await db
     .select({

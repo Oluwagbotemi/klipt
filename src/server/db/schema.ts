@@ -3,6 +3,7 @@ import {
   type AnyPgColumn,
   boolean,
   date,
+  doublePrecision,
   index,
   integer,
   jsonb,
@@ -126,6 +127,8 @@ export const sites = pgTable(
     seoDefaults: jsonb("seo_defaults").$type<SiteSeoDefaults>().notNull().default({}),
     /** Address on the customer's website that shows drafts (see src/server/previews.ts). */
     previewUrl: text("preview_url"),
+    /** Public key the customer's website sends Core Web Vitals with (src/server/performance.ts). */
+    vitalsKey: text("vitals_key"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
@@ -134,6 +137,9 @@ export const sites = pgTable(
     uniqueIndex("sites_domain_unique")
       .on(t.domain)
       .where(sql`${t.domain} is not null`),
+    uniqueIndex("sites_vitals_key_unique")
+      .on(t.vitalsKey)
+      .where(sql`${t.vitalsKey} is not null`),
   ],
 );
 
@@ -651,4 +657,42 @@ export const menuItems = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index("menu_items_menu_idx").on(t.menuId, t.position)],
+);
+
+/**
+ * Real-user Core Web Vitals, aggregated on arrival into one row per UTC day,
+ * page, metric, device class and histogram bucket (edges in src/lib/performance.ts).
+ * No raw events, IP addresses or user agents are stored.
+ */
+export const webVitalsDaily = pgTable(
+  "web_vitals_daily",
+  {
+    siteId: text("site_id")
+      .notNull()
+      .references(() => sites.id, { onDelete: "cascade" }),
+    day: date("day").notNull(),
+    path: text("path").notNull(),
+    metric: text("metric").notNull(),
+    device: text("device").notNull(),
+    bucket: integer("bucket").notNull(),
+    count: integer("count").notNull(),
+    sum: doublePrecision("sum").notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.siteId, t.day, t.path, t.metric, t.device, t.bucket] }),
+    index("web_vitals_daily_site_day_idx").on(t.siteId, t.day),
+  ],
+);
+
+/** Samples accepted per site and UTC day, for the daily cap. */
+export const webVitalsUsage = pgTable(
+  "web_vitals_usage",
+  {
+    siteId: text("site_id")
+      .notNull()
+      .references(() => sites.id, { onDelete: "cascade" }),
+    day: date("day").notNull(),
+    samples: integer("samples").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.siteId, t.day] })],
 );

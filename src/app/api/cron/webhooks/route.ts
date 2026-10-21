@@ -3,12 +3,13 @@ import { timingSafeEqual } from "node:crypto";
 import { pruneActivity } from "@/server/activity";
 import { getDb } from "@/server/db";
 import { publishAllDueEntries } from "@/server/editor";
+import { pruneVitals } from "@/server/performance";
 import { processWebhookQueue, pruneDeliveries } from "@/server/webhooks";
 
 /*
  * Scheduled job (vercel.json): publishes due scheduled entries on every site,
  * sends webhook retries that are due, and prunes old delivery history and site activity
- * (kept for a year).
+ * (kept for a year) and Core Web Vitals older than 90 days.
  * Vercel calls it with `Authorization: Bearer $CRON_SECRET`.
  */
 
@@ -40,5 +41,6 @@ export async function GET() {
   }
   await pruneDeliveries(db);
   const activityPruned = await pruneActivity(db);
-  return Response.json({ sitesPublished, sent, failed, activityPruned });
+  const vitalsPruned = await pruneVitals(db);
+  return Response.json({ sitesPublished, sent, failed, activityPruned, vitalsPruned });
 }
