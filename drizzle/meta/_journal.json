@@ -99,6 +99,13 @@
       "when": 1792616544448,
       "tag": "0013_performance",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792626031068,
+      "tag": "0014_publishing_settings",
+      "breakpoints": true
     }
   ]
 }
