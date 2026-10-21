@@ -90,6 +90,8 @@ export const PERMISSION_LABELS: Record<SitePermission, string> = {
   "activity.view": "See content activity",
   "activity.view_all": "See all site activity (team, settings, integrations)",
   "seo.manage": "Manage SEO settings and redirects",
+  "performance.view": "See Core Web Vitals and performance recommendations",
+  "performance.manage": "Manage the Core Web Vitals reporting key",
   "taxonomy.manage": "Manage categories, tags and other terms",
   "navigation.manage": "Edit navigation menus",
   "media.upload": "Upload media",

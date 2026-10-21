@@ -27,6 +27,8 @@ export const PERMISSIONS = {
   "media.upload": ["owner", "admin", "editor", "author"],
   "api_keys.manage": ["owner", "admin"],
   "webhooks.manage": ["owner", "admin"],
+  "performance.view": ["owner", "admin", "editor"],
+  "performance.manage": ["owner", "admin"],
   "activity.view": ["owner", "admin", "editor"],
   "activity.view_all": ["owner", "admin"],
 } as const satisfies Record<string, readonly SiteRole[]>;

@@ -15,7 +15,9 @@ import {
 } from "lucide-react";
 import { ContentStatusBadge } from "@/components/content/status-badge";
 import { QuickActions } from "@/components/overview/quick-actions";
+import { PerformanceCard } from "@/components/overview/performance-card";
 import { getOverview } from "@/lib/data/overview";
+import { getPerformanceSummary } from "@/lib/data/performance";
 import { getSite } from "@/lib/data/sites";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { siteHref } from "@/lib/navigation";
@@ -32,6 +34,7 @@ export default async function OverviewPage({ params }: PageProps<"/sites/[siteId
   const { siteId } = await params;
   const [site, overview] = await Promise.all([getSite(siteId), getOverview(siteId)]);
   const role = site.currentUserRole;
+  const performance = can(role, "performance.view") ? await getPerformanceSummary(site.id) : null;
   const content = siteHref(site.id, "content");
   const entryHref = (id: string) => `${content}/${id}`;
   const canPublish = can(role, "content.publish");
@@ -240,6 +243,7 @@ export default async function OverviewPage({ params }: PageProps<"/sites/[siteId
           {setupOpen && overview.setup && (
             <SetupChecklist siteId={site.id} steps={overview.setup} />
           )}
+          {performance && <PerformanceCard siteId={site.id} summary={performance} />}
           <section aria-labelledby="upcoming-heading" className={card}>
             <h2 id="upcoming-heading" className="p-5 pb-3 text-base font-semibold sm:px-6">
               Scheduled

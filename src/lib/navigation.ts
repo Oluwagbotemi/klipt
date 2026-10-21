@@ -210,7 +210,8 @@ export const SITE_NAV: SiteNavGroup[] = [
         section: "performance",
         label: "Performance",
         icon: Gauge,
-        description: "Core Web Vitals and recommendations from connected data sources.",
+        description: "Core Web Vitals from real visits to your website, and what to fix.",
+        permission: "performance.view",
         tabs: [
           {
             segment: null,
@@ -220,10 +221,10 @@ export const SITE_NAV: SiteNavGroup[] = [
           {
             segment: "web-vitals",
             label: "Core Web Vitals",
-            planned: ["LCP", "INP", "CLS", "Field vs. lab data, clearly labelled"],
+            planned: ["LCP", "INP", "CLS", "Field data, clearly labelled"],
           },
           { segment: "pages", label: "Pages", planned: ["Per-page performance"] },
-          { segment: "assets", label: "Assets", planned: ["Large images and scripts"] },
+          { segment: "assets", label: "Assets", planned: ["Large images"] },
           {
             segment: "recommendations",
             label: "Recommendations",

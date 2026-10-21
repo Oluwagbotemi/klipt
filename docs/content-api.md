@@ -564,6 +564,13 @@ if (isEnabled && token) {
 
 To leave preview mode, add a route that calls `(await draftMode()).disable()`.
 
+## 6. Speed measurements (Core Web Vitals)
+
+Your website can also send Klipt how fast pages were for real visitors:
+`POST /api/v1/vitals` with the site's public **reporting key** (not your secret API
+key). Klipt shows the results under Optimize › Performance. Setup, code for Next.js and
+other websites, limits and privacy details: [`docs/performance.md`](performance.md).
+
 ## Not yet available
 
 - A media endpoint; fields that hold several values (e.g. a list of links).
