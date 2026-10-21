@@ -173,11 +173,12 @@ export const siteOwnershipTransfers = pgTable(
     siteId: text("site_id")
       .notNull()
       .references(() => sites.id, { onDelete: "cascade" }),
-    fromUserId: text("from_user_id")
-      .notNull()
-      .references(() => users.id),
+    /** Null once that account is deleted; the transfer history stays with the site. */
+    fromUserId: text("from_user_id").references(() => users.id, { onDelete: "set null" }),
     recipientEmail: text("recipient_email").notNull(),
-    recipientUserId: text("recipient_user_id").references(() => users.id),
+    recipientUserId: text("recipient_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
     status: transferStatus("status").notNull().default("pending"),
     /** Whether the previous owner stays on as Admin after acceptance. */
     previousOwnerRetainsAdmin: boolean("previous_owner_retains_admin").notNull().default(true),

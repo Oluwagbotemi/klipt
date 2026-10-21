@@ -119,6 +119,14 @@ before creating or changing any screen.
   overwrite) and queues the opt-in `menu.updated` webhook via `enqueueSiteEvent`. Entry items store
   `entryId` (links follow URL changes); the API (`/api/v1/menus/{key}`) omits unpublished or deleted
   targets and their children. Reorder logic is pure in `src/lib/menu-tree.ts`.
+- Account (`src/server/account.ts`, rules in `src/lib/account.ts`, pages `/account` and
+  `/account/security`): name and email changes go straight to `users` (email lowercased, unique,
+  stored unverified; needs the current password). Password changes use Better Auth
+  `changePassword` (hashing only; "sign out other devices" deletes the other sessions ourselves, since
+  Better Auth's option replaces the current session mid-request). Sessions are listed/revoked by id for the signed-in user only; tokens never reach the browser.
+  Deleting an account needs the password and the typed email, is refused while the user owns any
+  site (archived included), and relies on FKs: memberships/sessions cascade, authorship and
+  "created by" columns (content, media, keys, webhooks, transfers) are set to null.
 - **Planned, not built — email (Resend):** Klipt sends no email yet. When added, send invitation
   links from `createInvitation`/`renewInvitation` (keep the copyable link as a fallback), then
   password reset (Better Auth `sendResetPassword`), email verification, ownership-transfer and

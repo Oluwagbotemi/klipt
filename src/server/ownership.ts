@@ -238,7 +238,7 @@ export async function previewTransfer(db: DbOrTx, token: string): Promise<Transf
     })
     .from(siteOwnershipTransfers)
     .innerJoin(sites, eq(sites.id, siteOwnershipTransfers.siteId))
-    .innerJoin(users, eq(users.id, siteOwnershipTransfers.fromUserId))
+    .leftJoin(users, eq(users.id, siteOwnershipTransfers.fromUserId))
     .where(eq(siteOwnershipTransfers.tokenHash, hashToken(token)))
     .limit(1);
   if (!row || row.archivedAt) return { state: "invalid" };
@@ -255,7 +255,7 @@ export async function previewTransfer(db: DbOrTx, token: string): Promise<Transf
     state: "open",
     siteName: row.siteName,
     siteDomain: row.siteDomain,
-    fromName: row.fromName,
+    fromName: row.fromName ?? "The site owner",
     recipientEmail: transfer.recipientEmail,
     previousOwnerRetainsAdmin: transfer.previousOwnerRetainsAdmin,
     expiresAt: transfer.expiresAt.toISOString(),
