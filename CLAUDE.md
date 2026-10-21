@@ -141,9 +141,17 @@ before creating or changing any screen.
   in-review entries back with `request_changes` (+ note in `review_feedback`, cleared on resubmit/publish).
   `clearAssignments` runs when a member leaves, is removed or loses `content.create`. Lists filter with
   `assignee=me|none|<userId>`.
-- **Planned, not built — email (Resend):** Klipt sends no email yet. When added, send invitation
-  links from `createInvitation`/`renewInvitation` (keep the copyable link as a fallback), then
-  password reset (Better Auth `sendResetPassword`), email verification, ownership-transfer, review
-  (requested / changes requested) and assignment notifications. Needs `RESEND_API_KEY` and a verified sending domain.
+- Email (`src/server/email/`, setup guide `docs/email.md`): `sendEmail()` posts to Resend with
+  `RESEND_API_KEY` (from `EMAIL_FROM`), else writes to the dev outbox `.data/emails` (outside production
+  or with `ALLOW_DEV_OUTBOX=1`; viewer at `/dev/emails`, localhost only), else sends nothing. Never send
+  inline: `sendInBackground()` (or `sendLater()`/`notifyAboutEntry()` in `src/lib/data/email.ts`) runs
+  after the response, logs failures and never fails the action. Templates (`templates.ts`) escape
+  everything and include a text part. Who gets what lives in `src/server/notifications.ts`: never the
+  actor; assignment/review emails only to current members with `users.notify_assignments` on; security
+  emails (invitations, password reset, verification, email-change notice, transfers) always. Better Auth
+  hooks in `src/server/auth.ts` send reset links to `/reset-password?token=` (sessions revoked on reset)
+  and verification links that land on `/email-verified`; verification is never required to sign in.
+  UI checks `isEmailEnabled()` and keeps copyable links as the fallback. Invitations can be re-emailed
+  once a minute (`site_invitations.emailed_at`).
 - Default public paths (`entryPath`): pages `/slug`, posts `/posts/slug`, until URL patterns exist.
 - Pin new dependencies to versions published at least two weeks ago.

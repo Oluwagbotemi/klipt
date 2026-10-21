@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { AuthSwitchLink } from "@/components/auth/auth-switch-link";
 import { SignInForm } from "@/components/auth/sign-in-form";
+import { isEmailEnabled } from "@/lib/data/email";
 
 export const metadata: Metadata = { title: "Sign in" };
 
@@ -14,7 +16,7 @@ export default function SignInPage() {
       </p>
       {/* The form reads ?next= from the URL, which is request-time data. */}
       <Suspense>
-        <SignInForm />
+        <SignIn />
       </Suspense>
       <p className="text-muted-foreground mt-6 text-center text-sm">
         New to Klipt?{" "}
@@ -24,4 +26,10 @@ export default function SignInPage() {
       </p>
     </>
   );
+}
+
+async function SignIn() {
+  // Whether email (and so password reset) is set up is decided at request time.
+  await connection();
+  return <SignInForm forgotPassword={isEmailEnabled()} />;
 }

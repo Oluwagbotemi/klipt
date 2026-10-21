@@ -229,6 +229,8 @@ export function describeActivity(
       );
     case "member.invite_renewed":
       return say("made a new invitation link for", str(meta.email));
+    case "member.invite_resent":
+      return say("emailed the invitation again to", str(meta.email));
     case "member.invite_cancelled":
       return say("cancelled the invitation for", str(meta.email));
     case "member.joined":

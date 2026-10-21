@@ -7,11 +7,13 @@ import { getDb } from "@/server/db";
 import { NotAllowedError } from "@/server/errors";
 import {
   cancelTransfer,
+  getOwnershipState,
   renewTransferLink,
   startTransfer,
   TransferError,
   transferLinkToken,
 } from "@/server/ownership";
+import { transferRequestMessage } from "@/server/notifications";
 import { SecretUnavailableError } from "@/server/secrets";
 import {
   archiveSite,
@@ -22,6 +24,7 @@ import {
   updateSeoDefaults,
 } from "@/server/site-settings";
 import { getStorage, StorageNotConfiguredError } from "@/server/storage";
+import { isEmailEnabled, sendLater } from "@/lib/data/email";
 import { verifyCurrentPassword } from "@/lib/data/session";
 import { transferUrl } from "@/lib/data/settings";
 import { ForbiddenError, requireSitePermission } from "@/lib/data/sites";
@@ -140,9 +143,9 @@ export async function saveSeoDefaultsAction(
 export type TransferValues = { email: string; retainAdmin: boolean };
 
 export async function startTransferAction(
-  _previous: FormState<TransferValues> & { url?: string },
+  _previous: FormState<TransferValues> & { url?: string; emailed?: boolean },
   formData: FormData,
-): Promise<FormState<TransferValues> & { url?: string }> {
+): Promise<FormState<TransferValues> & { url?: string; emailed?: boolean }> {
   const values = {
     email: String(formData.get("email") ?? ""),
     retainAdmin: formData.get("retainAdmin") === "on",
@@ -158,8 +161,10 @@ export async function startTransferAction(
       email: values.email,
       previousOwnerRetainsAdmin: values.retainAdmin,
     });
+    const url = await transferUrl(token);
+    const emailed = emailTransfer(siteId.data, user.id, values.email, url);
     refresh();
-    return { values, url: await transferUrl(token) };
+    return { values, url, emailed };
   } catch (error) {
     if (error instanceof TransferError) return { values, errors: { email: error.message } };
     if (error instanceof ForbiddenError || error instanceof NotAllowedError) {
@@ -167,6 +172,20 @@ export async function startTransferAction(
     }
     throw error;
   }
+}
+
+/** Emails the transfer link to the recipient after the response. */
+function emailTransfer(siteId: string, ownerId: string, recipientEmail: string, url: string) {
+  if (!isEmailEnabled()) return false;
+  sendLater(async () => [
+    await transferRequestMessage(await getDb(), {
+      siteId,
+      ownerId,
+      recipientEmail: recipientEmail.trim().toLowerCase(),
+      url,
+    }),
+  ]);
+  return true;
 }
 
 type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string };
@@ -197,9 +216,13 @@ export async function transferLinkAction(siteId: string) {
 }
 
 export async function renewTransferLinkAction(siteId: string) {
-  const result = await ownerAction(siteId, async (userId) => ({
-    url: await transferUrl(await renewTransferLink(await getDb(), userId, siteId)),
-  }));
+  const result = await ownerAction(siteId, async (userId) => {
+    const db = await getDb();
+    const url = await transferUrl(await renewTransferLink(db, userId, siteId));
+    const { pending } = await getOwnershipState(db, userId, siteId);
+    const emailed = pending ? emailTransfer(siteId, userId, pending.recipientEmail, url) : false;
+    return { url, emailed };
+  });
   if (result.ok) refresh();
   return result;
 }

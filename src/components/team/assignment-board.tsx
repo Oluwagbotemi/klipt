@@ -36,10 +36,13 @@ export function AssignmentBoardView({
   siteId,
   board,
   me,
+  emailEnabled = false,
 }: {
   siteId: string;
   board: AssignmentBoard;
   me: Me;
+  /** Whether people are emailed about assignments and reviews. */
+  emailEnabled?: boolean;
 }) {
   const canAssign = can(me.role, "content.assign");
   const canReview = can(me.role, "content.publish");
@@ -70,8 +73,9 @@ export function AssignmentBoardView({
         {canAssign
           ? "Assign drafts to members and set due dates here or in the editor. "
           : "Editors assign work; you can take on your own drafts in the editor. "}
-        Klipt doesn&apos;t send notifications yet, so people see their work here and under “Assigned
-        to me” in Content.
+        {emailEnabled
+          ? "People get an email when they're assigned something or asked for a review, and see their work here and under “Assigned to me” in Content."
+          : "Klipt can't send email yet, so people see their work here and under “Assigned to me” in Content."}
       </p>
 
       {board.awaitingReview.length > 0 && (

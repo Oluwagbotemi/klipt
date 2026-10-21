@@ -27,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/format";
 import type { OwnershipState } from "@/lib/site-settings";
 
-type StartState = FormState<TransferValues> & { url?: string };
+type StartState = FormState<TransferValues> & { url?: string; emailed?: boolean };
 
 /** Start, share, renew or cancel an ownership transfer. Only owners see this. */
 export function OwnershipPanel({
@@ -35,11 +35,13 @@ export function OwnershipPanel({
   siteName,
   pending,
   members,
+  emailEnabled,
 }: {
   siteId: string;
   siteName: string;
   pending: OwnershipState["pending"];
   members: { email: string; name: string }[];
+  emailEnabled: boolean;
 }) {
   const [state, formAction, submitting] = useActionState(startTransferAction, {
     values: { email: "", retainAdmin: true },
@@ -83,7 +85,9 @@ export function OwnershipPanel({
               <CopyButton value={state.url} label="Copy link" />
             </div>
             <p className="text-muted-foreground text-xs">
-              Send this to {pending.recipientEmail}. Klipt doesn&apos;t send emails yet.
+              {state.emailed
+                ? `We emailed ${pending.recipientEmail}. You can also send this link yourself.`
+                : `Send this to ${pending.recipientEmail}.`}
             </p>
           </div>
         )}
@@ -111,7 +115,12 @@ export function OwnershipPanel({
               startTransition(async () => {
                 const result = await renewTransferLinkAction(siteId);
                 if (result.ok)
-                  void copy(result.url, "New link copied. The old link no longer works.");
+                  void copy(
+                    result.url,
+                    result.emailed
+                      ? `New link copied and emailed to ${pending.recipientEmail}. The old link no longer works.`
+                      : "New link copied. The old link no longer works.",
+                  );
                 else toast.error(result.error);
               })
             }
@@ -171,7 +180,11 @@ export function OwnershipPanel({
         label="New owner's email"
         defaultValue={state.values.email}
         error={state.errors?.email}
-        hint="They accept by signing in (or creating an account) with this email."
+        hint={
+          emailEnabled
+            ? "We'll email them a link. They accept by signing in (or creating an account) with this email."
+            : "They accept by signing in (or creating an account) with this email."
+        }
         list="transfer-members"
         autoComplete="off"
         required

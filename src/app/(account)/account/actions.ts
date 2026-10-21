@@ -15,7 +15,10 @@ import {
 } from "@/server/account";
 import { getAuth } from "@/server/auth";
 import { getDb } from "@/server/db";
+import { emailChangedEmail } from "@/server/email/templates";
+import { setAssignmentEmails } from "@/server/notifications";
 import { requireSession } from "@/lib/data/account";
+import { appOrigin, isEmailEnabled, sendLater } from "@/lib/data/email";
 import { verifyCurrentPassword } from "@/lib/data/session";
 import { emailSchema, MAX_PASSWORD, nameSchema, newPasswordSchema } from "@/lib/account";
 import type { OwnedSite } from "@/lib/account";
@@ -72,12 +75,45 @@ export async function changeEmailAction(
   }
   try {
     const email = await changeEmail(await getDb(), user.id, parsed.data);
+    if (isEmailEnabled()) await sendEmailChangeNotices(user, email);
     refresh();
     return { values: { email }, saved: true };
   } catch (error) {
     if (error instanceof AccountError) return { values, errors: { email: error.message } };
     throw error;
   }
+}
+
+/**
+ * After an email change: a confirmation link to the new address, and a notice
+ * to the old one (in case someone else made the change).
+ */
+async function sendEmailChangeNotices(user: { name: string; email: string }, newEmail: string) {
+  const auth = await getAuth();
+  try {
+    // The session now reads the new, unverified address, so Better Auth sends to it.
+    await auth.api.sendVerificationEmail({
+      body: { email: newEmail, callbackURL: "/email-verified" },
+      headers: await headers(),
+    });
+  } catch (error) {
+    console.error("Couldn't send the email confirmation", error);
+  }
+  const resetUrl = `${await appOrigin()}/forgot-password`;
+  sendLater([{ to: user.email, ...emailChangedEmail({ name: user.name, newEmail, resetUrl }) }]);
+}
+
+export type NotificationValues = { assignments: boolean };
+
+export async function saveNotificationsAction(
+  _previous: AccountFormState<NotificationValues>,
+  formData: FormData,
+): Promise<AccountFormState<NotificationValues>> {
+  const { user } = await requireSession();
+  const values = { assignments: formData.get("assignments") === "on" };
+  await setAssignmentEmails(await getDb(), user.id, values.assignments);
+  refresh();
+  return { values, saved: true };
 }
 
 export type PasswordValues = { revokeOthers: boolean };

@@ -68,14 +68,15 @@ website when content is published, edited, moved or unpublished.
    storage isn't set up yet". Locally, files are stored in `.data/media`.
 6. Optional but recommended: add `CRON_SECRET` (any long random value). The daily job in
    `vercel.json` then publishes due scheduled entries and retries failed webhooks.
+7. **Email:** add `RESEND_API_KEY` and `EMAIL_FROM` for Production (step by step in
+   [`docs/email.md`](docs/email.md)), then redeploy. Without them Klipt sends no email: invitations
+   and transfers stay shareable links and "Forgot password?" is hidden.
 
 ## Status
 
 Built: design tokens (light/dark), app shell (open-site tabs, collapsible section sidebar, breadcrumbs, section tabs, ⌘K search), sign-up/sign-in/sign-out, Sites list and Create site, Content library, and the content editor (rich text with autosave and conflict detection, URL changes with 301 redirects, SEO and social fields with previews, advanced indexing controls, publish/schedule/review workflow, preview), the Media library (uploads with automatic resizing, alt text, usage, images in the editor), API keys, the read-only content delivery API, webhooks (signed, retried, with a delivery log) and draft previews on your own website (one-hour signed links), all on a real database with server-side authorization.
 The site Overview shows content counts, what needs attention (reviews, alt text, SEO issues, failed webhooks), a setup checklist, recent content and activity.
-Team: members and roles, shareable invitation links, a Roles & permissions overview.
-
-**Planned:** email via Resend (invitations, password reset, notifications). Klipt doesn't send email yet; invitations are links you share yourself.
+Team: members and roles, invitations by email and as shareable links, a Roles & permissions overview.
 
 SEO: recommendations for live pages (descriptions, titles, duplicates, thin content, alt text, broken links, noindex), internal links (broken links, pages nothing links to), a redirects manager that keeps redirects one hop, the sitemap with reasons pages are left out, and a site-wide search visibility switch.
 
@@ -91,4 +92,6 @@ Navigation: header and footer menus plus custom menus, with links to entries (th
 
 Team activity: a site-wide log under Team › Activity of who did what (content, media, structure, team, settings and integrations), grouped by day, with filters for person, kind and dates in the URL and links to what changed. Owners and admins see everything; editors see content, media and structure; authors and viewers don't see it. Autosave records at most one "edited" per person and entry every 15 minutes, a deleted account's name stays on its history, and entries older than a year are removed by the daily job.
 
-Assignments: give an entry to a member with an optional due date (editor sidebar or Team › Assignments), see open work per person, reviews waiting, overdue and unassigned drafts, and filter Content by "Assigned to me". An author assigned someone else's draft can edit it and request review; editors approve (publish) or request changes with a note the writer sees on the entry. Assignment changes never conflict with autosave, are logged in Activity, and are cleared when someone leaves or loses content rights. No notifications are sent yet (planned with email). The content API is unchanged.
+Assignments: give an entry to a member with an optional due date (editor sidebar or Team › Assignments), see open work per person, reviews waiting, overdue and unassigned drafts, and filter Content by "Assigned to me". An author assigned someone else's draft can edit it and request review; editors approve (publish) or request changes with a note the writer sees on the entry. Assignment changes never conflict with autosave, are logged in Activity, and are cleared when someone leaves or loses content rights. People are emailed when they're assigned something, asked for a review, sent changes or approved (each can turn these off). The content API is unchanged.
+
+Email (Resend): invitations (with the copyable link kept as a fallback, and "Resend email"), password reset ("Forgot password?" on sign-in), email confirmation on sign-up and after an email change (plus a notice to the old address), ownership transfer requests and their outcome, and assignment and review notifications with an on/off setting on the account page. Emails send after the response and never block an action. Without `RESEND_API_KEY`, local development saves them to a dev outbox you can read at `/dev/emails`. Setup: `docs/email.md`.

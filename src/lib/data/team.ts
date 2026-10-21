@@ -3,6 +3,7 @@ import "server-only";
 import { headers } from "next/headers";
 import { getDb } from "@/server/db";
 import * as teamRepo from "@/server/team";
+import { appOrigin } from "@/lib/data/email";
 import { getCurrentUser, requireUser } from "@/lib/data/session";
 import { getSite } from "@/lib/data/sites";
 
@@ -25,9 +26,5 @@ export async function getInvitation(token: string) {
 
 /** The public address of an invitation, from this request's origin. */
 export async function invitationUrl(token: string) {
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
-  const local = /^(localhost|127\.0\.0\.1)(:|$)/.test(host);
-  const proto = h.get("x-forwarded-proto") ?? (local ? "http" : "https");
-  return `${proto}://${host}/invite/${token}`;
+  return `${await appOrigin()}/invite/${token}`;
 }

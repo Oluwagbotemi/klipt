@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { TeamMembers } from "@/components/team/team-members";
+import { isEmailEnabled } from "@/lib/data/email";
 import { requireUser } from "@/lib/data/session";
 import { getSite } from "@/lib/data/sites";
 import { getTeam } from "@/lib/data/team";
@@ -15,6 +16,7 @@ export default async function TeamPage({ params }: PageProps<"/sites/[siteId]/te
       siteName={site.name}
       team={team}
       me={{ userId: user.id, role: site.currentUserRole }}
+      emailEnabled={isEmailEnabled()}
     />
   );
 }

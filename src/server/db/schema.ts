@@ -41,6 +41,8 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
+  /** Email about assignments and reviews. Security emails always send. */
+  notifyAssignments: boolean("notify_assignments").notNull().default(true),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });
@@ -588,6 +590,8 @@ export const siteInvitations = pgTable(
     acceptedAt: timestamp("accepted_at", { withTimezone: true }),
     acceptedById: text("accepted_by_id").references(() => users.id, { onDelete: "set null" }),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    /** Last time the invitation was emailed; limits "Resend email". */
+    emailedAt: timestamp("emailed_at", { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

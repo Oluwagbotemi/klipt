@@ -18,16 +18,18 @@ import {
 import { ROLE_DESCRIPTIONS, type InvitableRole } from "@/lib/team";
 import { ROLE_LABELS } from "@/lib/types";
 
-/** Invite form; after creating it, shows the link to share (email delivery comes later). */
+/** Invite form; after creating it, says it was emailed and shows the link to share too. */
 export function InviteDialog({
   siteId,
   siteName,
   roles,
+  emailEnabled,
   onInviteAnother,
 }: {
   siteId: string;
   siteName: string;
   roles: InvitableRole[];
+  emailEnabled: boolean;
   onInviteAnother: () => void;
 }) {
   const [state, formAction, pending] = useActionState(inviteMemberAction, {
@@ -39,10 +41,17 @@ export function InviteDialog({
     return (
       <DialogContent onInteractOutside={(event) => event.preventDefault()}>
         <DialogHeader>
-          <DialogTitle>Share the invitation link</DialogTitle>
+          <DialogTitle>
+            {invite.emailed ? "Invitation sent" : "Share the invitation link"}
+          </DialogTitle>
           <DialogDescription>
-            Send this link to {invite.email} by email, chat or anything you like. They&apos;ll join{" "}
-            {siteName} as {ROLE_LABELS[invite.role]} after signing in with that email.
+            {invite.emailed ? (
+              <>We emailed {invite.email}. You can also copy the link and send it yourself.</>
+            ) : (
+              <>Send this link to {invite.email} by email, chat or anything you like.</>
+            )}{" "}
+            They&apos;ll join {siteName} as {ROLE_LABELS[invite.role]} after signing in with that
+            email.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-1.5">
@@ -77,7 +86,9 @@ export function InviteDialog({
         <DialogHeader>
           <DialogTitle>Invite a member</DialogTitle>
           <DialogDescription>
-            You&apos;ll get a link to send them. Klipt doesn&apos;t send emails yet.
+            {emailEnabled
+              ? "We'll email them a link to join. You'll also get the link to share yourself."
+              : "You'll get a link to send them. Email isn't set up for this Klipt yet."}
           </DialogDescription>
         </DialogHeader>
         {state.errors?.form && <InlineAlert>{state.errors.form}</InlineAlert>}

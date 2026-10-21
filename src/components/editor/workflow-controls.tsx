@@ -46,12 +46,14 @@ export function WorkflowControls({
   status,
   pending,
   suggestions,
+  emailEnabled = false,
   onAction,
 }: {
   allowed: Record<WorkflowAction, boolean>;
   status: string;
   pending: boolean;
   suggestions: string[];
+  emailEnabled?: boolean;
   onAction: (
     action: WorkflowAction,
     options?: { scheduledAt?: string; note?: string },
@@ -248,8 +250,10 @@ export function WorkflowControls({
           <AlertDialogTitle>Request changes</AlertDialogTitle>
           <AlertDialogDescription>
             It goes back to draft so the writer can edit it again. They&apos;ll see your note at the
-            top of the entry. Klipt doesn&apos;t send email yet, so let them know if it&apos;s
-            urgent.
+            top of the entry
+            {emailEnabled
+              ? ", and get an email with it (unless they've turned those off)."
+              : ". Klipt can't send email yet, so let them know if it's urgent."}
           </AlertDialogDescription>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="review-note" className="text-sm font-medium">

@@ -12,9 +12,12 @@ import {
   getInvitationToken,
   removeMember,
   renewInvitation,
+  resendInvitation,
   revokeInvitation,
   TeamError,
 } from "@/server/team";
+import { invitationMessage } from "@/server/notifications";
+import { isEmailEnabled, sendLater } from "@/lib/data/email";
 import { invitationUrl } from "@/lib/data/team";
 import { ForbiddenError, requireSitePermission } from "@/lib/data/sites";
 import { INVITATION_DAYS, invitationSchema, type InvitableRole } from "@/lib/team";
@@ -42,7 +45,7 @@ function failure(error: unknown): { ok: false; error: string } {
 export interface InviteState {
   values: { email: string; role: string };
   errors?: { email?: string; role?: string; form?: string };
-  invite?: { email: string; role: InvitableRole; url: string; days: number };
+  invite?: { email: string; role: InvitableRole; url: string; days: number; emailed: boolean };
 }
 
 export async function inviteMemberAction(
@@ -62,16 +65,29 @@ export async function inviteMemberAction(
   }
   try {
     const { user } = await requireSitePermission(siteId.data, "members.manage");
-    const { token } = await createInvitation(await getDb(), user.id, siteId.data, parsed.data);
+    const db = await getDb();
+    const invitation = await createInvitation(db, user.id, siteId.data, parsed.data);
+    const url = await invitationUrl(invitation.token);
+    const emailed = emailInvitation(invitation.id, url);
     refresh();
     return {
       values: { email: "", role: parsed.data.role },
-      invite: { ...parsed.data, url: await invitationUrl(token), days: INVITATION_DAYS },
+      invite: { ...parsed.data, url, days: INVITATION_DAYS, emailed },
     };
   } catch (error) {
     const result = failure(error);
     return { values, errors: { form: result.error } };
   }
+}
+
+/** Emails the invitation link after the response. False when email isn't set up. */
+function emailInvitation(invitationId: string, url: string) {
+  if (!isEmailEnabled()) return false;
+  sendLater(async () => {
+    const message = await invitationMessage(await getDb(), invitationId, url);
+    return message ? [message] : [];
+  });
+  return true;
 }
 
 async function managed<T extends object>(
@@ -97,9 +113,26 @@ export async function invitationLinkAction(siteId: string, invitationId: string)
 }
 
 export async function renewInvitationAction(siteId: string, invitationId: string) {
-  const result = await managed(siteId, invitationId, async (userId) => ({
-    url: await invitationUrl(await renewInvitation(await getDb(), userId, siteId, invitationId)),
-  }));
+  const result = await managed(siteId, invitationId, async (userId) => {
+    const url = await invitationUrl(
+      await renewInvitation(await getDb(), userId, siteId, invitationId),
+    );
+    return { url, emailed: emailInvitation(invitationId, url) };
+  });
+  if (result.ok) refresh();
+  return result;
+}
+
+/** Emails an open invitation's current link again (at most once a minute). */
+export async function resendInvitationEmailAction(siteId: string, invitationId: string) {
+  if (!isEmailEnabled()) return { ok: false as const, error: "Email isn't set up for Klipt yet." };
+  const result = await managed(siteId, invitationId, async (userId) => {
+    const url = await invitationUrl(
+      await resendInvitation(await getDb(), userId, siteId, invitationId),
+    );
+    emailInvitation(invitationId, url);
+    return {};
+  });
   if (result.ok) refresh();
   return result;
 }

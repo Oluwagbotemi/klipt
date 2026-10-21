@@ -3,6 +3,8 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { listOwnedSites, listSessions } from "@/server/account";
 import { getDb } from "@/server/db";
+import { emailEnabled } from "@/server/email/transport";
+import { getNotificationSettings } from "@/server/notifications";
 import { getSession } from "@/lib/data/session";
 
 /** The signed-in user's session; redirects to sign-in when there is none. */
@@ -22,4 +24,15 @@ export async function getAccountSessions() {
 export async function getOwnedSites() {
   const { user } = await requireSession();
   return listOwnedSites(await getDb(), user.id);
+}
+
+/** Email status for the account page: verified, notification setting, and whether Klipt sends email. */
+export async function getEmailSettings() {
+  const { user } = await requireSession();
+  const settings = await getNotificationSettings(await getDb(), user.id);
+  return {
+    verified: user.emailVerified,
+    assignmentEmails: settings.assignments,
+    emailEnabled: emailEnabled(),
+  };
 }

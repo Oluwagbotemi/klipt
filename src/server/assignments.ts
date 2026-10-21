@@ -67,7 +67,7 @@ export async function setAssignment(
   siteId: string,
   entryId: string,
   input: { assigneeId: string | null; dueOn: string | null },
-): Promise<AssignmentState> {
+): Promise<AssignmentState & { assigneeChanged: boolean }> {
   const due = dueOnSchema.safeParse(input.dueOn ?? null);
   if (!due.success) throw new AssignmentError(due.error.issues[0].message);
   const dueOn = due.data;
@@ -85,7 +85,9 @@ export async function setAssignment(
     const rights = assignmentRights(role, userId, entry);
     const assigneeChanged = input.assigneeId !== entry.assigneeId;
     const dueChanged = dueOn !== entry.dueOn;
-    if (!assigneeChanged && !dueChanged) return stateOf(entry.assigneeId, null, entry.dueOn, tx);
+    if (!assigneeChanged && !dueChanged) {
+      return { ...(await stateOf(entry.assigneeId, null, entry.dueOn, tx)), assigneeChanged };
+    }
 
     if (entry.status === "archived") {
       throw new AssignmentError("Restore this entry before assigning it.");
@@ -155,7 +157,7 @@ export async function setAssignment(
         metadata: { title: entry.title, dueOn },
       });
     }
-    return { assigneeId: input.assigneeId, assigneeName, dueOn };
+    return { assigneeId: input.assigneeId, assigneeName, dueOn, assigneeChanged };
   });
 }
 

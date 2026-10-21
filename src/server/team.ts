@@ -104,6 +104,8 @@ function newToken() {
     tokenHash: hashToken(token),
     tokenEncrypted: encryptSecret(token),
     expiresAt: new Date(Date.now() + INVITATION_DAYS * 86_400_000),
+    // New links are emailed straight away (when email is set up).
+    emailedAt: new Date(),
   };
 }
 
@@ -223,6 +225,43 @@ export async function renewInvitation(
       email: invitation.email,
     });
     return token;
+  });
+}
+
+/** Shortest gap between two emails for the same invitation. */
+export const INVITATION_RESEND_SECONDS = 60;
+
+/**
+ * Records that an open invitation is being emailed again and returns its
+ * current link token. At most once a minute per invitation.
+ */
+export async function resendInvitation(
+  db: DbOrTx,
+  userId: string,
+  siteId: string,
+  invitationId: string,
+): Promise<string> {
+  return db.transaction(async (tx) => {
+    const invitation = await manageableInvitation(tx, userId, siteId, invitationId);
+    if (invitation.expiresAt <= new Date()) {
+      throw new TeamError("This invitation has expired. Get a new link to send it again.");
+    }
+    const [claimed] = await tx
+      .update(siteInvitations)
+      .set({ emailedAt: new Date() })
+      .where(
+        and(
+          eq(siteInvitations.id, invitation.id),
+          sql`(${siteInvitations.emailedAt} is null or ${siteInvitations.emailedAt} < now() - make_interval(secs => ${INVITATION_RESEND_SECONDS}))`,
+        ),
+      )
+      .returning({ id: siteInvitations.id });
+    if (!claimed)
+      throw new TeamError("It was just emailed. Wait a minute before sending it again.");
+    await audit(tx, siteId, userId, "member.invite_resent", "invitation", invitation.id, {
+      email: invitation.email,
+    });
+    return decryptSecret(invitation.tokenEncrypted);
   });
 }
 

@@ -36,6 +36,7 @@ export function AssignmentPanel({
   assignees,
   today,
   assignmentsHref,
+  emailEnabled = false,
   onChange,
 }: {
   siteId: string;
@@ -49,6 +50,8 @@ export function AssignmentPanel({
   today: string;
   /** Team › Assignments. */
   assignmentsHref: string;
+  /** Whether new assignees get an email. */
+  emailEnabled?: boolean;
   onChange: (assignment: AssignmentState) => void;
 }) {
   const [pending, startTransition] = useTransition();
@@ -215,11 +218,11 @@ export function AssignmentPanel({
         ) : saved ? (
           <span>
             <Check className="text-success mr-1 inline size-3.5 align-[-2px]" aria-hidden />
-            Saved. Klipt doesn&apos;t send notifications yet; they&apos;ll see it in{" "}
+            Saved. It shows in{" "}
             <Link href={assignmentsHref} className="underline underline-offset-2">
               Assignments
             </Link>
-            .
+            {emailEnabled ? ", and anyone you assign gets an email." : "."}
           </span>
         ) : (
           <>
