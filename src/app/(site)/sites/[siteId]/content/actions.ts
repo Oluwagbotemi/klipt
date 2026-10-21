@@ -17,9 +17,11 @@ import { applyBulkAction, createEntry, NotAllowedError } from "@/server/content"
 import { searchLinkTargets } from "@/server/models";
 import { AssignmentError, setAssignment } from "@/server/assignments";
 import type { AssignmentState } from "@/lib/assignments";
+import type { EntryEvent } from "@/server/notifications";
 import type { LinkTarget } from "@/lib/models";
 import { ForbiddenError, requireSitePermission } from "@/lib/data/sites";
 import { siteHref } from "@/lib/navigation";
+import { notifyAboutEntry } from "@/lib/data/email";
 import { scheduleWebhookDelivery } from "@/lib/data/webhooks";
 
 /*
@@ -183,11 +185,43 @@ export async function entryWorkflowAction(
     })
     .safeParse(input);
   if (!parsed.success) return { ok: false, error: "That change isn't available." };
-  const result = await editorCall(siteId, entryId, (userId, db) =>
-    transitionEntry(db, userId, siteId, entryId, parsed.data),
-  );
-  if (result.ok) refresh();
+  let email: { userId: string; event: EntryEvent } | null = null;
+  const result = await editorCall(siteId, entryId, async (userId, db) => {
+    const { previousStatus, ...state } = await transitionEntry(
+      db,
+      userId,
+      siteId,
+      entryId,
+      parsed.data,
+    );
+    const event = workflowEmail(parsed.data.action, previousStatus, state, parsed.data.note);
+    if (event) email = { userId, event };
+    return state;
+  });
+  if (result.ok) {
+    const sent = email as { userId: string; event: EntryEvent } | null;
+    if (sent) await notifyAboutEntry(siteId, entryId, sent.userId, sent.event);
+    refresh();
+  }
   return result;
+}
+
+/** Which email (if any) a workflow change sends: review requests and their outcome. */
+function workflowEmail(
+  action: WorkflowAction,
+  previousStatus: EntryState["status"],
+  state: EntryState,
+  note: string | null | undefined,
+): EntryEvent | null {
+  if (action === "submit") return { kind: "review_requested" };
+  if (action === "request_changes") return { kind: "changes_requested", note: (note ?? "").trim() };
+  if ((action === "publish" || action === "schedule") && previousStatus === "in_review") {
+    return {
+      kind: "approved",
+      scheduledAt: action === "schedule" && state.scheduledAt ? new Date(state.scheduledAt) : null,
+    };
+  }
+  return null;
 }
 
 /** Entries a "Link to content" field can point at (the editor's picker). */
@@ -233,13 +267,20 @@ export async function setAssignmentAction(
   if (!parsed.success) return { ok: false, error: "That assignment isn't valid." };
   const { user } = await requireSitePermission(parsed.data.siteId, "site.view");
   try {
-    const assignment = await setAssignment(
+    const { assigneeChanged, ...assignment } = await setAssignment(
       await getDb(),
       user.id,
       parsed.data.siteId,
       parsed.data.entryId,
       { assigneeId: parsed.data.assigneeId, dueOn: parsed.data.dueOn || null },
     );
+    // Only a newly assigned person hears about it (never someone assigning themselves).
+    if (assigneeChanged && assignment.assigneeId) {
+      await notifyAboutEntry(parsed.data.siteId, parsed.data.entryId, user.id, {
+        kind: "assigned",
+        dueOn: assignment.dueOn,
+      });
+    }
     refresh();
     return { ok: true, assignment };
   } catch (error) {

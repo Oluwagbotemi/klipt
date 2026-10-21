@@ -123,7 +123,12 @@ describe("setAssignment", () => {
       assigneeId: "author",
       dueOn: due,
     });
-    assert.deepEqual(state, { assigneeId: "author", assigneeName: "User author", dueOn: due });
+    assert.deepEqual(state, {
+      assigneeId: "author",
+      assigneeName: "User author",
+      dueOn: due,
+      assigneeChanged: true,
+    });
     const after = await doc(id);
     assert.equal(after.entry.updatedAt, before, "updatedAt unchanged");
     assert.equal(after.entry.assigneeName, "User author");

@@ -344,7 +344,11 @@ export async function acceptTransfer(
         previousOwnerRetainsAdmin: transfer.previousOwnerRetainsAdmin,
       },
     });
-    return { siteId };
+    return {
+      siteId,
+      fromUserId: transfer.fromUserId,
+      previousOwnerRetainsAdmin: transfer.previousOwnerRetainsAdmin,
+    };
   });
 }
 
@@ -353,7 +357,7 @@ export async function declineTransfer(
   user: { id: string; email: string },
   token: string,
 ) {
-  await db.transaction(async (tx) => {
+  return db.transaction(async (tx) => {
     const transfer = await openTransferForRecipient(tx, user, token);
     await tx
       .update(siteOwnershipTransfers)
@@ -367,5 +371,6 @@ export async function declineTransfer(
       targetId: transfer.id,
       metadata: {},
     });
+    return { siteId: transfer.siteId, fromUserId: transfer.fromUserId };
   });
 }

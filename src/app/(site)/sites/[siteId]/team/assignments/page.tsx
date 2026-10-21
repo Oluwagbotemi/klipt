@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PermissionDenied } from "@/components/permission-denied";
 import { AssignmentBoardView } from "@/components/team/assignment-board";
+import { isEmailEnabled } from "@/lib/data/email";
 import { getAssignmentBoard } from "@/lib/data/assignments";
 import { requireUser } from "@/lib/data/session";
 import { getSite } from "@/lib/data/sites";
@@ -30,6 +31,7 @@ export default async function AssignmentsPage({
       siteId={site.id}
       board={board}
       me={{ userId: user.id, role: site.currentUserRole }}
+      emailEnabled={isEmailEnabled()}
     />
   );
 }

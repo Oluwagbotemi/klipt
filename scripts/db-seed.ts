@@ -8,6 +8,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { createAuth } from "@/server/auth";
+import { setEmailTransport } from "@/server/email/transport";
 import { getDb } from "@/server/db";
 import {
   auditEvents,
@@ -303,6 +304,8 @@ async function main() {
     return;
   }
 
+  // Demo accounts don't need confirmation emails: send none, and mark them verified below.
+  setEmailTransport(async () => {});
   const ids: string[] = [];
   for (const user of DEMO_USERS) {
     const result = await auth.api.signUpEmail({ body: { ...user, password: DEMO_PASSWORD } });
@@ -310,6 +313,8 @@ async function main() {
   }
   // Sign-up signs the user in; drop those sessions so Security › Signed-in devices starts empty.
   await db.delete(sessions).where(inArray(sessions.userId, ids));
+  await db.update(users).set({ emailVerified: true }).where(inArray(users.id, ids));
+  setEmailTransport(null);
   const [samId, morganId, rileyId] = ids;
 
   const northwind = await createSite(db, samId, {

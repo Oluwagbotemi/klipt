@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Clock, Link2, Loader2, MoreHorizontal, RefreshCw, UserPlus, X } from "lucide-react";
+import { Clock, Link2, Loader2, Mail, MoreHorizontal, RefreshCw, UserPlus, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   cancelInvitationAction,
@@ -9,6 +9,7 @@ import {
   invitationLinkAction,
   removeMemberAction,
   renewInvitationAction,
+  resendInvitationEmailAction,
 } from "@/app/(site)/sites/[siteId]/team/actions";
 import { InviteDialog } from "@/components/team/invite-dialog";
 import {
@@ -52,11 +53,13 @@ export function TeamMembers({
   siteName,
   team,
   me,
+  emailEnabled,
 }: {
   siteId: string;
   siteName: string;
   team: Team;
   me: { userId: string; role: SiteRole };
+  emailEnabled: boolean;
 }) {
   const [inviting, setInviting] = useState(false);
   const [inviteKey, setInviteKey] = useState(0);
@@ -255,6 +258,24 @@ export function TeamMembers({
                   </div>
                   <Badge variant="outline">{ROLE_LABELS[invitation.role]}</Badge>
                   <div className="flex gap-1">
+                    {emailEnabled && !invitation.expired && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={pending}
+                        aria-label={`Resend email to ${invitation.email}`}
+                        onClick={() =>
+                          run(
+                            () => resendInvitationEmailAction(siteId, invitation.id),
+                            () =>
+                              toast.success(`Emailed the invitation to ${invitation.email} again.`),
+                          )
+                        }
+                      >
+                        <Mail aria-hidden />
+                        <span className="hidden sm:inline">Resend email</span>
+                      </Button>
+                    )}
                     {!invitation.expired && (
                       <Button
                         variant="outline"
@@ -277,10 +298,15 @@ export function TeamMembers({
                       disabled={pending}
                       aria-label={`New link for ${invitation.email}`}
                       onClick={() =>
-                        run<{ ok: true; url: string }>(
+                        run<{ ok: true; url: string; emailed: boolean }>(
                           () => renewInvitationAction(siteId, invitation.id),
                           (result) =>
-                            void copy(result.url, "New link copied. The old link no longer works."),
+                            void copy(
+                              result.url,
+                              result.emailed
+                                ? `New link copied and emailed to ${invitation.email}. The old link no longer works.`
+                                : "New link copied. The old link no longer works.",
+                            ),
                         )
                       }
                     >
@@ -310,6 +336,7 @@ export function TeamMembers({
           siteId={siteId}
           siteName={siteName}
           roles={roles}
+          emailEnabled={emailEnabled}
           onInviteAnother={() => setInviteKey((n) => n + 1)}
         />
       </Dialog>

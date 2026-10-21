@@ -69,6 +69,7 @@ export function EntryEditor({
   taxonomies = [],
   assignees = [],
   today,
+  emailEnabled = false,
 }: {
   siteId: string;
   siteName: string;
@@ -84,6 +85,8 @@ export function EntryEditor({
   assignees?: Assignee[];
   /** Today in the site's time zone, "YYYY-MM-DD" (for due dates). */
   today: string;
+  /** Whether Klipt emails people about assignments and reviews. */
+  emailEnabled?: boolean;
 }) {
   const { entry } = doc;
   const [state, setState] = useState<EntryState>({
@@ -366,6 +369,7 @@ export function EntryEditor({
             status={state.status}
             pending={workflowPending}
             suggestions={suggestions}
+            emailEnabled={emailEnabled}
             onAction={runWorkflow}
           />
           <EntryActionsMenu
@@ -494,6 +498,7 @@ export function EntryEditor({
             assignees={assignees}
             today={today}
             assignmentsHref={siteHref(siteId, "team", "assignments")}
+            emailEnabled={emailEnabled}
             onChange={setAssignment}
           />
           <UrlPanel

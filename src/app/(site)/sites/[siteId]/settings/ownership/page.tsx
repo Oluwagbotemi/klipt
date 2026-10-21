@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { PermissionDenied } from "@/components/permission-denied";
 import { OwnershipPanel } from "@/components/settings/ownership-panel";
 import { SettingsCard } from "@/components/settings/settings-card";
+import { isEmailEnabled } from "@/lib/data/email";
 import { getOwnership } from "@/lib/data/settings";
 import { getSite } from "@/lib/data/sites";
 import { getTeam } from "@/lib/data/team";
@@ -58,6 +59,7 @@ export default async function OwnershipPage({
           siteId={site.id}
           siteName={site.name}
           pending={ownership.pending}
+          emailEnabled={isEmailEnabled()}
           members={team.members
             .filter((member) => member.role !== "owner")
             .map((member) => ({ email: member.email, name: member.name }))}

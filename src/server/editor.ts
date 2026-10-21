@@ -411,7 +411,7 @@ export async function transitionEntry(
     note?: string | null;
     expectedUpdatedAt: string;
   },
-): Promise<EntryState> {
+): Promise<EntryState & { previousStatus: EntryState["status"] }> {
   const note = String(input.note ?? "").trim();
   if (note.length > MAX_REVIEW_NOTE) {
     throw new EditorValidationError(
@@ -533,6 +533,6 @@ export async function transitionEntry(
       const event = isLive ? "entry.published" : "entry.unpublished";
       await enqueueEntryEvent(tx, siteId, event, { ...updated, modelKey });
     }
-    return stateOf(updated);
+    return { ...stateOf(updated), previousStatus: entry.status };
   });
 }

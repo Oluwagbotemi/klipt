@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { EntryEditor } from "@/components/editor/entry-editor";
+import { isEmailEnabled } from "@/lib/data/email";
 import { getAssignees } from "@/lib/data/assignments";
 import { getEntryDocument } from "@/lib/data/content";
 import { getSitePreviewUrl } from "@/lib/data/previews";
@@ -41,6 +42,7 @@ export default async function EntryPage({
       taxonomies={taxonomies}
       assignees={assignees}
       today={today}
+      emailEnabled={isEmailEnabled()}
     />
   );
 }
