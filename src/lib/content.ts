@@ -172,21 +172,48 @@ export type WorkflowAction =
   "publish" | "schedule" | "unpublish" | "submit" | "withdraw" | "request_changes";
 
 /** Publishing transitions available to a member for an entry's current status. */
+/** Site-wide publishing rules (Settings › Publishing) that affect the workflow. */
+export interface WorkflowRules {
+  /** Publishing needs a review first; owners and admins (who set the rule) are exempt. */
+  requireReview: boolean;
+}
+
+export const NO_WORKFLOW_RULES: WorkflowRules = { requireReview: false };
+
+/** Whether the require-review rule applies to this role. */
+export function reviewRequired(role: SiteRole, rules: WorkflowRules): boolean {
+  return rules.requireReview && !can(role, "site.update");
+}
+
+/**
+ * Workflow actions a member may take. With "Require review" on, editors send
+ * drafts for review like authors do, and may approve only entries someone
+ * else sent; owners and admins can still publish directly.
+ */
 export function workflowActions(
   role: SiteRole,
   userId: string,
-  entry: PolicyEntry,
+  entry: PolicyEntry & { reviewRequestedById?: string | null },
+  rules: WorkflowRules = NO_WORKFLOW_RULES,
 ): Record<WorkflowAction, boolean> {
   const editable = canEditEntry(role, userId, entry);
   const publisher = editable && can(role, "content.publish");
+  const gated = reviewRequired(role, rules);
+  const requester = !can(role, "content.publish") || gated;
   const s = entry.status;
+  const ownRequest = entry.reviewRequestedById != null && entry.reviewRequestedById === userId;
+  // In review and sent by someone else: approving it is the review.
+  const approvable = s === "in_review" && !(gated && ownRequest);
   return {
-    publish: publisher && s !== "published",
-    schedule: publisher && (s === "draft" || s === "in_review" || s === "scheduled"),
+    publish: publisher && s !== "published" && (!gated || approvable || s === "scheduled"),
+    schedule:
+      publisher &&
+      ((s === "draft" && !gated) || (s === "in_review" && approvable) || s === "scheduled"),
     unpublish: publisher && (s === "published" || s === "scheduled"),
-    submit: editable && !can(role, "content.publish") && s === "draft",
-    withdraw: editable && !can(role, "content.publish") && s === "in_review",
-    request_changes: publisher && s === "in_review",
+    submit: editable && requester && s === "draft",
+    withdraw:
+      editable && s === "in_review" && (!can(role, "content.publish") || (gated && ownRequest)),
+    request_changes: publisher && s === "in_review" && !(gated && ownRequest),
   };
 }
 

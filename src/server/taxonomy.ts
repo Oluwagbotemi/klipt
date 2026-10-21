@@ -10,6 +10,7 @@ import {
   terms,
 } from "@/server/db/schema";
 import { NotAllowedError } from "@/server/errors";
+import { findPathClash } from "@/server/publishing";
 import { getSiteRole } from "@/server/sites";
 import { enqueueEntryEvent } from "@/server/webhooks";
 import { canEditEntry } from "@/lib/content";
@@ -29,6 +30,7 @@ import {
   type TermOption,
   type TermSummary,
 } from "@/lib/taxonomy";
+import { termArchivePattern } from "@/lib/url-patterns";
 
 /*
  * Taxonomies and their terms. Every member can read them; terms need
@@ -151,6 +153,22 @@ export async function createTaxonomy(
         .limit(1);
       if (model) {
         throw new TaxonomyValidationError("A content type already uses this key.", "key");
+      }
+      const [existing] = await tx
+        .select({ id: taxonomies.id })
+        .from(taxonomies)
+        .where(and(eq(taxonomies.siteId, siteId), eq(taxonomies.key, key)))
+        .limit(1);
+      if (existing) {
+        throw new TaxonomyValidationError("Another taxonomy already uses this key.", "key");
+      }
+      // Its archive pages live at /<key>/slug; that mustn't overlap a content type's URLs.
+      const clash = await findPathClash(tx, siteId, termArchivePattern(key));
+      if (clash) {
+        throw new TaxonomyValidationError(
+          `Addresses like /${key}/… are already used by ${clash}. Choose another key.`,
+          "key",
+        );
       }
       const modelKeys = await checkModelKeys(tx, siteId, details.modelKeys);
       const [row] = await tx

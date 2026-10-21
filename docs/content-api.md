@@ -115,6 +115,21 @@ A single entry adds `body` and `seo`:
   `canonicalUrl` are `null` until the site has a domain in Klipt.
 - `/resolve` for an old URL returns `{ "redirect": { "to": "/posts/new-slug", "statusCode": 301 } }`.
 
+### URL patterns
+
+Every `path` and `url` Klipt returns (entries, linked entries, menus, the sitemap, webhooks and
+previews) follows the site's **URL patterns** in **Settings › Publishing**. The defaults are pages
+at `/{slug}`, posts at `/posts/{slug}` and other content types at `/<type key>/{slug}`. An owner or
+admin can change a type's pattern, e.g. posts to `/blog/{slug}` or `/blog/{yyyy}/{mm}/{slug}`
+(`{yyyy}` and `{mm}` are the year and month the entry was first published, in the site's time
+zone). Category and tag pages keep `/category/{slug}`, `/tag/{slug}`, `/<taxonomy key>/{slug}`.
+
+- Use `GET /resolve?path=…` to route any URL instead of rebuilding paths yourself, and use each
+  entry's `path` when linking to it. Then a pattern change needs no code change on your website.
+- When a pattern changes, every published entry of that type moves. Klipt adds a 301 redirect from
+  each old path (returned by `/resolve` and `/redirects`) and sends `entry.slug_changed` for each
+  one, with `previousPath`.
+
 ### Fields (custom content types)
 
 In **Content models**, owners and admins can create content types such as _Product_ or _Event_ and
@@ -344,6 +359,10 @@ export async function klipt<T>(path: string): Promise<T | null> {
 }
 ```
 
+This example assumes the default post pattern, `/posts/{slug}`. If you change it in Settings ›
+Publishing, move the route to match, or use one catch-all route (`app/[...path]/page.tsx`) that
+passes the whole path to `/resolve`.
+
 ```tsx
 // app/posts/[slug]/page.tsx
 import type { Metadata } from "next";
@@ -495,12 +514,13 @@ it more often.
 Editors can see a draft exactly as it will look on your website before publishing.
 
 1. Add a route on your website that turns preview mode on (below), e.g. `/api/preview`.
-2. In Klipt, open **Settings › Integrations › Draft previews** and enter its full address, e.g.
+2. In Klipt, open **Settings › Publishing › Environments** and enter its full address under
+   **Draft previews**, e.g.
    `https://myblog.com/api/preview` (an owner or admin can do this).
 3. The editor's **Preview on website** button now opens
    `https://myblog.com/api/preview?token=…&type=post&slug=hello&path=/posts/hello`.
 
-The `token` works for **one hour** and only for that entry. Your website exchanges it, together with
+The `token` works for **one hour** and only for that entry. `path` follows the site's URL patterns. Your website exchanges it, together with
 its API key, for the entry's current content:
 
 ```bash

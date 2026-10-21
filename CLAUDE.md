@@ -162,5 +162,20 @@ before creating or changing any screen.
   with daily caps in `web_vitals_usage`; p75 is interpolated within a bucket. The daily cron prunes
   rows older than 90 days. Pages, Assets (media checks) and Recommendations (fixed rules) need
   `performance.view` (owner/admin/editor).
-- Default public paths (`entryPath`): pages `/slug`, posts `/posts/slug`, until URL patterns exist.
+- Public paths: every entry path comes from `entryPath(rules, modelKey, slug, entryDate(entry))` in
+  `src/lib/url-patterns.ts`, with the site's `PathRules` (`sites.url_patterns` + time zone, loaded by
+  `loadPathRules()` in `src/server/path-rules.ts`; delivery carries them on `DeliverySite.pathRules`).
+  Defaults: pages `/{slug}`, posts `/posts/{slug}`, other types `/<key>/{slug}`; term archives stay
+  `termPath()`. Patterns end with `{slug}` and may use `{yyyy}`/`{mm}` (first publish date, site time
+  zone); `/resolve` matches with `matchPath()` then checks the entry's own path. Never build a path by
+  hand.
+- Publishing (`src/server/publishing.ts`, Settings › Publishing, `site.update`): `saveUrlPatterns` stores
+  only non-default patterns, refuses overlaps (`validatePatterns`, term archives included) and, for every
+  published entry that moves, adds a one-hop 301 (re-points redirects to the old path, deletes redirects
+  from now-live paths) and queues `entry.slug_changed`, in one transaction. New model and taxonomy keys
+  are checked with `findPathClash`. `sites.require_review` (`WorkflowRules`, passed to
+  `workflowActions`): editors must request review and can't approve entries they sent
+  (`content_entries.review_requested_by_id`); owners/admins bypass; `transitionEntry` enforces it.
+  `sites.default_model_key` drives the split "New" button on All content. The preview route is edited
+  here (Environments), not under Integrations.
 - Pin new dependencies to versions published at least two weeks ago.

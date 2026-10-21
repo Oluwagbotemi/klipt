@@ -23,7 +23,8 @@ import { NotAllowedError } from "@/server/errors";
 import { createSite } from "@/server/sites";
 import { canEditEntry, workflowActions } from "@/lib/content";
 import { isSafeHref, sanitizeDoc, wordCount } from "@/lib/editor/rich-text";
-import { entryPath, resolveSeo } from "@/lib/seo";
+import { resolveSeo } from "@/lib/seo";
+import { DEFAULT_PATH_RULES, entryPath } from "@/lib/url-patterns";
 
 let db: Database;
 let siteId: string;
@@ -111,8 +112,8 @@ describe("SEO helpers", () => {
     const seo = resolveSeo({ index: false }, "Title");
     assert.equal(seo.title, "Title");
     assert.equal(seo.includeInSitemap, false, "noindex pages leave the sitemap");
-    assert.equal(entryPath("page", "about"), "/about");
-    assert.equal(entryPath("post", "hello"), "/posts/hello");
+    assert.equal(entryPath(DEFAULT_PATH_RULES, "page", "about"), "/about");
+    assert.equal(entryPath(DEFAULT_PATH_RULES, "post", "hello"), "/posts/hello");
   });
 });
 

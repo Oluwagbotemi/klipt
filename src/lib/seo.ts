@@ -54,16 +54,6 @@ export const slugSchema = z
   .max(80, "Keep the slug to 80 characters or fewer.")
   .regex(SLUG_PATTERN, "Use lowercase letters, numbers and single hyphens, e.g. spring-sale.");
 
-/**
- * Public path of an entry. Default URL pattern until per-site URL patterns
- * exist: pages at /slug, posts at /posts/slug, other models at /model/slug.
- */
-export function entryPath(modelKey: string, slug: string): string {
-  if (modelKey === "page") return `/${slug}`;
-  if (modelKey === "post") return `/posts/${slug}`;
-  return `/${modelKey}/${slug}`;
-}
-
 /** "/Posts/Hello/?x=1#top" → "/Posts/Hello". Returns null for anything that isn't a path. */
 export function normalizePath(input: string): string | null {
   const path = input.trim().split(/[?#]/)[0];

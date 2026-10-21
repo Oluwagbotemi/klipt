@@ -21,7 +21,8 @@ import {
 } from "@/lib/overview";
 import { can } from "@/lib/permissions";
 import { PAGE_ISSUE_KEYS } from "@/lib/seo-audit";
-import { entryPath } from "@/lib/seo";
+import { entryDate, entryPath, type PathRules } from "@/lib/url-patterns";
+import { loadPathRules } from "@/server/path-rules";
 import { loadSiteAudit } from "@/server/seo";
 
 /*
@@ -38,6 +39,7 @@ const entryColumns = {
   authorName: users.name,
   updatedAt: contentEntries.updatedAt,
   scheduledAt: contentEntries.scheduledAt,
+  publishedAt: contentEntries.publishedAt,
 };
 
 type EntryRow = {
@@ -49,18 +51,21 @@ type EntryRow = {
   authorName: string | null;
   updatedAt: Date;
   scheduledAt: Date | null;
+  publishedAt: Date | null;
 };
 
-const toEntry = (row: EntryRow): OverviewEntry => ({
-  id: row.id,
-  title: row.title,
-  status: row.status,
-  modelKey: row.modelKey,
-  path: entryPath(row.modelKey, row.slug),
-  authorName: row.authorName,
-  updatedAt: row.updatedAt.toISOString(),
-  scheduledAt: row.scheduledAt?.toISOString() ?? null,
-});
+const toEntry =
+  (rules: PathRules) =>
+  (row: EntryRow): OverviewEntry => ({
+    id: row.id,
+    title: row.title,
+    status: row.status,
+    modelKey: row.modelKey,
+    path: entryPath(rules, row.modelKey, row.slug, entryDate(row)),
+    authorName: row.authorName,
+    updatedAt: row.updatedAt.toISOString(),
+    scheduledAt: row.scheduledAt?.toISOString() ?? null,
+  });
 
 export async function getSiteOverview(
   db: DbOrTx,
@@ -68,6 +73,7 @@ export async function getSiteOverview(
   siteId: string,
 ): Promise<SiteOverview> {
   const role = await getSiteRole(db, userId, siteId);
+  const rules = await loadPathRules(db, siteId);
   if (!role) throw new NotAllowedError("Not a member of this site.");
   await publishDueEntries(db, siteId);
 
@@ -155,9 +161,9 @@ export async function getSiteOverview(
   return {
     counts,
     media,
-    inReview: inReview.map(toEntry),
-    upcoming: upcoming.map(toEntry),
-    recent: recent.map(toEntry),
+    inReview: inReview.map(toEntry(rules)),
+    upcoming: upcoming.map(toEntry(rules)),
+    recent: recent.map(toEntry(rules)),
     seoIssues: PAGE_ISSUE_KEYS.filter((key) => audit.issueCounts[key] > 0).map((key) => ({
       key,
       count: audit.issueCounts[key],

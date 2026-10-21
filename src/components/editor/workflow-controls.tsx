@@ -47,6 +47,7 @@ export function WorkflowControls({
   pending,
   suggestions,
   emailEnabled = false,
+  reviewRequired = false,
   onAction,
 }: {
   allowed: Record<WorkflowAction, boolean>;
@@ -54,6 +55,8 @@ export function WorkflowControls({
   pending: boolean;
   suggestions: string[];
   emailEnabled?: boolean;
+  /** A publisher on a site with "Require review" on (Settings › Publishing). */
+  reviewRequired?: boolean;
   onAction: (
     action: WorkflowAction,
     options?: { scheduledAt?: string; note?: string },
@@ -75,7 +78,15 @@ export function WorkflowControls({
 
   if (allowed.submit || allowed.withdraw) {
     return allowed.submit ? (
-      <Button onClick={() => run("submit")} disabled={pending}>
+      <Button
+        onClick={() => run("submit")}
+        disabled={pending}
+        title={
+          reviewRequired
+            ? "This site requires a review before publishing. Someone else approves it."
+            : undefined
+        }
+      >
         {spinner ?? <Send aria-hidden />}
         Request review
       </Button>

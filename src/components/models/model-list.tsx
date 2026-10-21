@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/dialog";
 import { keyFromLabel, type ModelSummary } from "@/lib/models";
 import { siteHref } from "@/lib/navigation";
-import { entryPath } from "@/lib/seo";
 import {
   DescriptionField,
   ReadOnlyNote,
@@ -136,7 +135,7 @@ function ModelGroup({
                   {model.schemaType && <Badge variant="outline">{model.schemaType}</Badge>}
                 </span>
                 <span className="text-muted-foreground block truncate text-sm">
-                  {model.description || `URLs like ${entryPath(model.key, "example")}`}
+                  {model.description || `URLs like ${model.urlPattern}`}
                 </span>
               </span>
               <span className="text-muted-foreground hidden shrink-0 text-right text-xs sm:block">

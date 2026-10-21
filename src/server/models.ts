@@ -10,6 +10,8 @@ import {
   type ContentFieldDefinition,
 } from "@/server/db/schema";
 import { NotAllowedError } from "@/server/errors";
+import { loadPathRules } from "@/server/path-rules";
+import { findPathClash } from "@/server/publishing";
 import { getSiteRole } from "@/server/sites";
 import {
   fieldListSchema,
@@ -22,7 +24,7 @@ import {
   type ModelSummary,
 } from "@/lib/models";
 import { can } from "@/lib/permissions";
-import { entryPath } from "@/lib/seo";
+import { defaultPattern, entryDate, entryPath, patternFor } from "@/lib/url-patterns";
 
 /*
  * Content models (content types) and their fields. Every member can read
@@ -77,10 +79,12 @@ async function summaries(db: DbOrTx, siteId: string, modelId?: string): Promise<
     )
     .groupBy(contentModels.id)
     .orderBy(desc(contentModels.isSystem), asc(contentModels.name));
+  const rules = await loadPathRules(db, siteId);
   return rows.map((row) => ({
     ...row,
     updatedAt: row.updatedAt.toISOString(),
     entryCount: Number(row.entryCount),
+    urlPattern: patternFor(rules, row.key),
   }));
 }
 
@@ -120,6 +124,22 @@ export async function createModel(
         .where(and(eq(taxonomies.siteId, siteId), eq(taxonomies.key, key)))
         .limit(1);
       if (taxonomy) throw new ModelValidationError("A taxonomy already uses this key.", "key");
+      const [existing] = await tx
+        .select({ id: contentModels.id })
+        .from(contentModels)
+        .where(and(eq(contentModels.siteId, siteId), eq(contentModels.key, key)))
+        .limit(1);
+      if (existing) {
+        throw new ModelValidationError("Another content type already uses this key.", "key");
+      }
+      // Its entries start at /<key>/slug; that mustn't overlap another type's URL pattern.
+      const clash = await findPathClash(tx, siteId, defaultPattern(key));
+      if (clash) {
+        throw new ModelValidationError(
+          `Addresses like /${key}/… are already used by ${clash}. Choose another key.`,
+          "key",
+        );
+      }
       const [model] = await tx
         .insert(contentModels)
         .values({ siteId, key, ...details, fields: [] })
@@ -441,6 +461,8 @@ export async function searchLinkTargets(
       status: contentEntries.status,
       modelKey: contentModels.key,
       modelName: contentModels.name,
+      publishedAt: contentEntries.publishedAt,
+      scheduledAt: contentEntries.scheduledAt,
     })
     .from(contentEntries)
     .innerJoin(contentModels, eq(contentModels.id, contentEntries.modelId))
@@ -457,5 +479,9 @@ export async function searchLinkTargets(
     )
     .orderBy(desc(contentEntries.updatedAt))
     .limit(20);
-  return rows.map(({ slug, modelKey, ...row }) => ({ ...row, path: entryPath(modelKey, slug) }));
+  const rules = await loadPathRules(db, siteId);
+  return rows.map(({ slug, modelKey, publishedAt, scheduledAt, ...row }) => ({
+    ...row,
+    path: entryPath(rules, modelKey, slug, entryDate({ publishedAt, scheduledAt })),
+  }));
 }

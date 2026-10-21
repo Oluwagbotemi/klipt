@@ -12,6 +12,7 @@ import {
 } from "@/server/db/schema";
 import { NotAllowedError } from "@/server/errors";
 import { assertFieldTargets, fieldRefsFor } from "@/server/models";
+import { loadPathRules, loadWorkflowRules } from "@/server/path-rules";
 import { getSiteRole } from "@/server/sites";
 import { enqueueEntryEvent } from "@/server/webhooks";
 import { canEditEntry, workflowActions, type WorkflowAction } from "@/lib/content";
@@ -24,7 +25,8 @@ import {
   type FieldValue,
 } from "@/lib/models";
 import type { EntryDocument, EntryState } from "@/lib/editor/types";
-import { entryPath, entrySeoSchema, slugSchema } from "@/lib/seo";
+import { entrySeoSchema, slugSchema } from "@/lib/seo";
+import { entryDate, entryPath } from "@/lib/url-patterns";
 
 export type { EntryDocument, EntryState };
 
@@ -79,6 +81,7 @@ export async function publishDueEntries(db: DbOrTx, siteId: string) {
         slug: contentEntries.slug,
         title: contentEntries.title,
         modelId: contentEntries.modelId,
+        publishedAt: contentEntries.publishedAt,
       });
     if (promoted.length === 0) return;
     const models = await tx
@@ -143,6 +146,7 @@ export async function getEntryDocument(
     // Never block opening an entry because of malformed legacy content.
   }
   const values = readFieldValues(row.modelFields, entry.data);
+  const pathRules = await loadPathRules(db, siteId);
   return {
     entry: {
       id: entry.id,
@@ -165,7 +169,10 @@ export async function getEntryDocument(
     body,
     seo: entrySeoSchema.catch({}).parse(entry.seo),
     schemaType: row.schemaType,
-    path: entryPath(row.modelKey, entry.slug),
+    path: entryPath(pathRules, row.modelKey, entry.slug, entryDate(entry)),
+    pathRules,
+    workflowRules: await loadWorkflowRules(db, siteId),
+    reviewRequestedById: entry.reviewRequestedById,
     fields: row.modelFields,
     values,
     refs: await fieldRefsFor(db, siteId, row.modelFields, values),
@@ -207,6 +214,7 @@ function stateOf(entry: typeof contentEntries.$inferSelect): EntryState {
     publishedAt: iso(entry.publishedAt),
     scheduledAt: iso(entry.scheduledAt),
     slug: entry.slug,
+    reviewRequestedById: entry.reviewRequestedById,
   };
 }
 
@@ -321,9 +329,11 @@ export async function changeSlug(
         ),
       )
       .limit(1);
+    const rules = await loadPathRules(tx, siteId);
+    const date = entryDate(entry);
     if (clash) {
       throw new EditorValidationError(
-        `Another ${modelName.toLowerCase()} already uses ${entryPath(modelKey, slug)}.`,
+        `Another ${modelName.toLowerCase()} already uses ${entryPath(rules, modelKey, slug, date)}.`,
         "slug",
       );
     }
@@ -334,8 +344,8 @@ export async function changeSlug(
       .where(eq(contentEntries.id, entryId))
       .returning();
 
-    const from = entryPath(modelKey, entry.slug);
-    const to = entryPath(modelKey, slug);
+    const from = entryPath(rules, modelKey, entry.slug, date);
+    const to = entryPath(rules, modelKey, slug, date);
     const redirectCreated = Boolean(entry.publishedAt) && input.createRedirect;
     if (redirectCreated) {
       // The new URL must not redirect anywhere (e.g. when moving back to an old slug).
@@ -427,7 +437,19 @@ export async function transitionEntry(
       entryId,
       input.expectedUpdatedAt,
     );
-    if (!workflowActions(role, userId, entry)[input.action]) {
+    const rules = await loadWorkflowRules(tx, siteId);
+    if (!workflowActions(role, userId, entry, rules)[input.action]) {
+      if (
+        rules.requireReview &&
+        (input.action === "publish" || input.action === "schedule") &&
+        entry.status !== "in_review" &&
+        workflowActions(role, userId, entry)[input.action]
+      ) {
+        throw new EditorValidationError(
+          "This site requires a review before publishing. Request a review instead.",
+          "review",
+        );
+      }
       throw new NotAllowedError("That change isn't available for this entry.");
     }
     if (input.action === "publish" || input.action === "schedule") {
@@ -453,6 +475,7 @@ export async function transitionEntry(
           publishedAt: entry.publishedAt ?? now,
           scheduledAt: null,
           reviewFeedback: null,
+          reviewRequestedById: null,
         };
         break;
       case "schedule": {
@@ -464,17 +487,22 @@ export async function transitionEntry(
         if (when.getTime() > now.getTime() + maxAhead) {
           throw new EditorValidationError("Schedule within the next five years.", "scheduledAt");
         }
-        changes = { status: "scheduled", scheduledAt: when, reviewFeedback: null };
+        changes = {
+          status: "scheduled",
+          scheduledAt: when,
+          reviewFeedback: null,
+          reviewRequestedById: null,
+        };
         break;
       }
       case "unpublish":
         changes = { status: "draft", scheduledAt: null };
         break;
       case "submit":
-        changes = { status: "in_review", reviewFeedback: null };
+        changes = { status: "in_review", reviewFeedback: null, reviewRequestedById: userId };
         break;
       case "withdraw":
-        changes = { status: "draft" };
+        changes = { status: "draft", reviewRequestedById: null };
         break;
       case "request_changes": {
         const [reviewer] = await tx
@@ -484,6 +512,7 @@ export async function transitionEntry(
           .limit(1);
         changes = {
           status: "draft",
+          reviewRequestedById: null,
           reviewFeedback: {
             kind: "changes_requested",
             note,
