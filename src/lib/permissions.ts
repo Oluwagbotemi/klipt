@@ -20,12 +20,15 @@ export const PERMISSIONS = {
   "content.create": ["owner", "admin", "editor", "author"],
   "content.edit_any": ["owner", "admin", "editor"],
   "content.publish": ["owner", "admin", "editor"],
+  "content.assign": ["owner", "admin", "editor"],
   "seo.manage": ["owner", "admin", "editor"],
   "taxonomy.manage": ["owner", "admin", "editor"],
   "navigation.manage": ["owner", "admin", "editor"],
   "media.upload": ["owner", "admin", "editor", "author"],
   "api_keys.manage": ["owner", "admin"],
   "webhooks.manage": ["owner", "admin"],
+  "activity.view": ["owner", "admin", "editor"],
+  "activity.view_all": ["owner", "admin"],
 } as const satisfies Record<string, readonly SiteRole[]>;
 
 export type SitePermission = keyof typeof PERMISSIONS;

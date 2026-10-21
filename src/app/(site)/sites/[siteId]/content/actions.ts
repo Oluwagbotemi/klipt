@@ -15,6 +15,8 @@ import {
 import type { WorkflowAction } from "@/lib/content";
 import { applyBulkAction, createEntry, NotAllowedError } from "@/server/content";
 import { searchLinkTargets } from "@/server/models";
+import { AssignmentError, setAssignment } from "@/server/assignments";
+import type { AssignmentState } from "@/lib/assignments";
 import type { LinkTarget } from "@/lib/models";
 import { ForbiddenError, requireSitePermission } from "@/lib/data/sites";
 import { siteHref } from "@/lib/navigation";
@@ -165,12 +167,18 @@ export async function changeSlugAction(
 export async function entryWorkflowAction(
   siteId: string,
   entryId: string,
-  input: { action: WorkflowAction; scheduledAt?: string | null; expectedUpdatedAt: string },
+  input: {
+    action: WorkflowAction;
+    scheduledAt?: string | null;
+    note?: string | null;
+    expectedUpdatedAt: string;
+  },
 ): Promise<EditorResult> {
   const parsed = z
     .object({
-      action: z.enum(["publish", "schedule", "unpublish", "submit", "withdraw"]),
+      action: z.enum(["publish", "schedule", "unpublish", "submit", "withdraw", "request_changes"]),
       scheduledAt: z.string().max(40).nullish(),
+      note: z.string().max(2000).nullish(),
       expectedUpdatedAt: version,
     })
     .safeParse(input);
@@ -199,4 +207,46 @@ export async function searchLinkTargetsAction(
   const { siteId: site, ...query } = parsed.data;
   const { user } = await requireSitePermission(site, "site.view");
   return searchLinkTargets(await getDb(), user.id, site, query);
+}
+
+// ---------------------------------------------------------------------------
+// Assignments
+// ---------------------------------------------------------------------------
+
+export type AssignmentResult =
+  { ok: true; assignment: AssignmentState } | { ok: false; error: string };
+
+/** Sets an entry's assignee and due date. Never changes the entry's version (no autosave conflicts). */
+export async function setAssignmentAction(
+  siteId: string,
+  entryId: string,
+  input: { assigneeId: string | null; dueOn: string | null },
+): Promise<AssignmentResult> {
+  const parsed = z
+    .object({
+      siteId: id,
+      entryId: id,
+      assigneeId: id.nullable(),
+      dueOn: z.string().max(10).nullable(),
+    })
+    .safeParse({ siteId, entryId, ...input });
+  if (!parsed.success) return { ok: false, error: "That assignment isn't valid." };
+  const { user } = await requireSitePermission(parsed.data.siteId, "site.view");
+  try {
+    const assignment = await setAssignment(
+      await getDb(),
+      user.id,
+      parsed.data.siteId,
+      parsed.data.entryId,
+      { assigneeId: parsed.data.assigneeId, dueOn: parsed.data.dueOn || null },
+    );
+    refresh();
+    return { ok: true, assignment };
+  } catch (error) {
+    if (error instanceof AssignmentError) return { ok: false, error: error.message };
+    if (error instanceof NotAllowedError) {
+      return { ok: false, error: "You don't have permission to change this assignment." };
+    }
+    throw error;
+  }
 }

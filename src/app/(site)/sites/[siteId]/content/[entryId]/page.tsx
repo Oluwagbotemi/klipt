@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { EntryEditor } from "@/components/editor/entry-editor";
+import { getAssignees } from "@/lib/data/assignments";
 import { getEntryDocument } from "@/lib/data/content";
 import { getSitePreviewUrl } from "@/lib/data/previews";
 import { requireUser } from "@/lib/data/session";
@@ -18,12 +19,13 @@ export default async function EntryPage({
   params,
 }: PageProps<"/sites/[siteId]/content/[entryId]">) {
   const { siteId, entryId } = await params;
-  const [user, site, doc, previewUrl, taxonomies] = await Promise.all([
+  const [user, site, doc, previewUrl, taxonomies, { assignees, today }] = await Promise.all([
     requireUser(),
     getSite(siteId),
     getEntryDocument(siteId, entryId),
     getSitePreviewUrl(siteId),
     getEntryTaxonomies(siteId, entryId),
+    getAssignees(siteId),
   ]);
 
   return (
@@ -37,6 +39,8 @@ export default async function EntryPage({
       doc={doc}
       previewHost={previewUrl ? new URL(previewUrl).host : null}
       taxonomies={taxonomies}
+      assignees={assignees}
+      today={today}
     />
   );
 }

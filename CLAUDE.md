@@ -127,9 +127,23 @@ before creating or changing any screen.
   Deleting an account needs the password and the typed email, is refused while the user owns any
   site (archived included), and relies on FKs: memberships/sessions cascade, authorship and
   "created by" columns (content, media, keys, webhooks, transfers) are set to null.
+- Activity (`src/server/activity.ts`, vocabulary in `src/lib/activity.ts`): the log is `audit_events`, written in
+  the same transaction as the change (`recordActivity` or a module's audit helper) with display snapshots
+  (title, name, email…) in `metadata`. Give new actions a sentence in `describeActivity()` and a kind via
+  `KIND_PREFIXES`. Autosave goes through `recordEntryEdit` (one "edited" per person/entry per 15 min).
+  `activity.view` (owner/admin/editor) sees content, media and structure; `activity.view_all` (owner/admin)
+  sees team, settings and integrations too. `keepActorName` runs before an account is deleted; the daily
+  cron prunes rows older than a year.
+- Assignments (`src/server/assignments.ts`, rules in `src/lib/assignments.ts`): `content_entries.assignee_id`
+  and `due_on`; changing them keeps `updatedAt` (no autosave conflicts) and is logged. `content.assign`
+  assigns anyone who creates content (authors: drafts/in review only); authors may only take on their own
+  entries or let go. An assigned author can edit the entry like their own (`canEditEntry`). Reviewers send
+  in-review entries back with `request_changes` (+ note in `review_feedback`, cleared on resubmit/publish).
+  `clearAssignments` runs when a member leaves, is removed or loses `content.create`. Lists filter with
+  `assignee=me|none|<userId>`.
 - **Planned, not built — email (Resend):** Klipt sends no email yet. When added, send invitation
   links from `createInvitation`/`renewInvitation` (keep the copyable link as a fallback), then
-  password reset (Better Auth `sendResetPassword`), email verification, ownership-transfer and
-  review notifications. Needs `RESEND_API_KEY` and a verified sending domain.
+  password reset (Better Auth `sendResetPassword`), email verification, ownership-transfer, review
+  (requested / changes requested) and assignment notifications. Needs `RESEND_API_KEY` and a verified sending domain.
 - Default public paths (`entryPath`): pages `/slug`, posts `/posts/slug`, until URL patterns exist.
 - Pin new dependencies to versions published at least two weeks ago.

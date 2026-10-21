@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Archive,
   ArchiveRestore,
+  CalendarClock,
   ChevronLeft,
   ChevronRight,
   FileText,
@@ -14,6 +15,7 @@ import {
   Search,
   SearchX,
   Trash2,
+  UserRound,
   X,
 } from "lucide-react";
 import { ContentStatusBadge } from "@/components/content/status-badge";
@@ -45,6 +47,7 @@ import {
   type EntrySummary,
   type StatusFilter,
 } from "@/lib/content";
+import { formatDue, isOverdue } from "@/lib/assignments";
 import { formatDate } from "@/lib/format";
 import type { CollectionType } from "@/lib/models";
 import { siteHref } from "@/lib/navigation";
@@ -72,6 +75,7 @@ function listHref(
   if (next.sort !== "updated_desc") query.set("sort", next.sort);
   if (next.page > 1) query.set("page", String(next.page));
   if (next.term) query.set("term", next.term);
+  if (next.assignee) query.set("assignee", next.assignee);
   const qs = query.toString();
   return qs ? `${pathname}?${qs}` : pathname;
 }
@@ -84,6 +88,7 @@ export function ContentList({
   list,
   params,
   collections,
+  today,
 }: {
   siteId: string;
   type: ContentType;
@@ -91,6 +96,8 @@ export function ContentList({
   userId: string;
   list: EntryList;
   params: ContentListParams;
+  /** Today in the site's time zone, for overdue due dates. */
+  today: string;
   /** Custom content types, for the New button. */
   collections: CollectionType[];
 }) {
@@ -161,7 +168,11 @@ export function ContentList({
   // while an empty status view only counts as filtered if anything exists at all.
   const totalAll = Object.values(list.counts).reduce((a, b) => a + b, 0);
   const filtered =
-    params.q !== "" || params.term !== "" || (params.status !== "active" && totalAll > 0);
+    params.q !== "" ||
+    params.term !== "" ||
+    params.assignee !== "" ||
+    (params.status !== "active" && totalAll > 0);
+  const assignedToMe = params.assignee === "me";
   const first = (list.page - 1) * PAGE_SIZE + 1;
   const last = first + list.items.length - 1;
 
@@ -206,6 +217,40 @@ export function ContentList({
           {canCreate && newButton}
         </div>
       </div>
+
+      {can(role, "content.create") && (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <Link
+            href={listHref(pathname, params, { assignee: assignedToMe ? "" : "me" })}
+            replace
+            scroll={false}
+            aria-pressed={assignedToMe}
+            className={cn(
+              "focus-visible:ring-ring/50 flex h-8 items-center gap-1.5 rounded-full border px-3 transition-colors outline-none focus-visible:ring-[3px]",
+              assignedToMe
+                ? "border-primary bg-primary/10 text-primary"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent",
+            )}
+          >
+            <UserRound className="size-3.5" aria-hidden />
+            Assigned to me
+          </Link>
+          {params.assignee && !assignedToMe && (
+            <Badge variant="secondary" className="max-w-full gap-1">
+              {params.assignee === "none"
+                ? "Unassigned"
+                : `Assigned to ${list.assigneeName ?? "a former member"}`}
+              <Link
+                href={listHref(pathname, params, { assignee: "" })}
+                aria-label="Remove assignee filter"
+                className="hover:text-foreground focus-visible:ring-ring/50 -mr-1 rounded-sm outline-none focus-visible:ring-[3px]"
+              >
+                <X className="size-3.5" aria-hidden />
+              </Link>
+            </Badge>
+          )}
+        </div>
+      )}
 
       {params.term && (
         <p className="flex flex-wrap items-center gap-2 text-sm">
@@ -302,6 +347,7 @@ export function ContentList({
               siteId={siteId}
               entries={list.items}
               showType={type === "all" || type === "collection"}
+              today={today}
               selected={selected}
               allSelected={allSelected}
               onToggle={toggle}
@@ -319,6 +365,7 @@ export function ContentList({
               siteId={siteId}
               entries={list.items}
               showType={type === "all" || type === "collection"}
+              today={today}
               selected={selected}
               onToggle={toggle}
               rowActions={(entry) => (
@@ -557,13 +604,33 @@ function UpdatedCell({ entry }: { entry: EntrySummary }) {
   return <time dateTime={entry.updatedAt}>{formatDate(entry.updatedAt)}</time>;
 }
 
-function StatusCell({ entry }: { entry: EntrySummary }) {
+function StatusCell({ entry, today }: { entry: EntrySummary; today: string }) {
+  const overdue = isOverdue(entry, today);
   return (
-    <span className="flex flex-col items-start gap-1">
+    <span className="flex min-w-0 flex-col items-start gap-1">
       <ContentStatusBadge status={entry.status} />
       {entry.status === "scheduled" && entry.scheduledAt && (
         <span className="text-muted-foreground text-xs">
           for <time dateTime={entry.scheduledAt}>{formatDate(entry.scheduledAt)}</time>
+        </span>
+      )}
+      {entry.assigneeId && (
+        <span className="text-muted-foreground flex max-w-full items-center gap-1 text-xs">
+          <UserRound className="size-3 shrink-0" aria-hidden />
+          <span className="sr-only">Assigned to</span>
+          <span className="truncate">{entry.assigneeName ?? "Former member"}</span>
+        </span>
+      )}
+      {entry.dueOn && entry.status !== "published" && entry.status !== "archived" && (
+        <span
+          className={cn(
+            "flex items-center gap-1 text-xs",
+            overdue ? "text-warning" : "text-muted-foreground",
+          )}
+        >
+          <CalendarClock className="size-3 shrink-0" aria-hidden />
+          {overdue ? "Overdue: " : "Due "}
+          {formatDue(entry.dueOn)}
         </span>
       )}
     </span>
@@ -574,6 +641,7 @@ function EntryTable({
   siteId,
   entries,
   showType,
+  today,
   selected,
   allSelected,
   onToggle,
@@ -583,6 +651,7 @@ function EntryTable({
   siteId: string;
   entries: EntrySummary[];
   showType: boolean;
+  today: string;
   selected: Set<string>;
   allSelected: boolean;
   onToggle: (id: string) => void;
@@ -664,7 +733,7 @@ function EntryTable({
                 </td>
               )}
               <td className="px-3 py-3 align-top">
-                <StatusCell entry={entry} />
+                <StatusCell entry={entry} today={today} />
               </td>
               <td className="text-muted-foreground hidden truncate px-3 py-3 align-top lg:table-cell">
                 {entry.authorName ?? "—"}
@@ -685,6 +754,7 @@ function EntryCards({
   siteId,
   entries,
   showType,
+  today,
   selected,
   onToggle,
   rowActions,
@@ -692,6 +762,7 @@ function EntryCards({
   siteId: string;
   entries: EntrySummary[];
   showType: boolean;
+  today: string;
   selected: Set<string>;
   onToggle: (id: string) => void;
   rowActions: (entry: EntrySummary) => React.ReactNode;
@@ -719,7 +790,7 @@ function EntryCards({
             </Link>
             <p className="text-muted-foreground truncate font-mono text-xs">/{entry.slug}</p>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <StatusCell entry={entry} />
+              <StatusCell entry={entry} today={today} />
               <span className="text-muted-foreground text-xs">
                 {showType && `${entry.modelName} · `}
                 {entry.authorName ? `${entry.authorName} · ` : ""}

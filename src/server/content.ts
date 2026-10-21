@@ -7,11 +7,13 @@ import {
   exists,
   ilike,
   inArray,
+  isNull,
   ne,
   or,
   sql,
   type SQL,
 } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import type { DbOrTx } from "@/server/db";
 import { isUniqueViolation } from "@/server/db/errors";
 import {
@@ -49,6 +51,8 @@ import { can } from "@/lib/permissions";
 
 export { NotAllowedError };
 
+const assignee = alias(users, "assignee");
+
 const entryFields = {
   id: contentEntries.id,
   title: contentEntries.title,
@@ -59,24 +63,28 @@ const entryFields = {
   isSystemModel: contentModels.isSystem,
   authorId: contentEntries.authorId,
   authorName: users.name,
+  assigneeId: contentEntries.assigneeId,
+  assigneeName: assignee.name,
+  dueOn: contentEntries.dueOn,
   createdAt: contentEntries.createdAt,
   updatedAt: contentEntries.updatedAt,
   publishedAt: contentEntries.publishedAt,
   scheduledAt: contentEntries.scheduledAt,
 };
 
-/** Base query for entry summaries (entry + model + author). */
-function selectEntries(db: DbOrTx) {
+/** Base query for entry summaries (entry + model + author + assignee). */
+export function selectEntries(db: DbOrTx) {
   return db
     .select(entryFields)
     .from(contentEntries)
     .innerJoin(contentModels, eq(contentModels.id, contentEntries.modelId))
-    .leftJoin(users, eq(users.id, contentEntries.authorId));
+    .leftJoin(users, eq(users.id, contentEntries.authorId))
+    .leftJoin(assignee, eq(assignee.id, contentEntries.assigneeId));
 }
 
 type EntryRow = Awaited<ReturnType<typeof selectEntries>>[number];
 
-function toSummary(row: EntryRow): EntrySummary {
+export function toSummary(row: EntryRow): EntrySummary {
   return {
     ...row,
     createdAt: row.createdAt.toISOString(),
@@ -146,6 +154,11 @@ export async function listEntries(
       ? or(ilike(contentEntries.title, needle), ilike(contentEntries.slug, needle))
       : undefined,
     params.term ? hasTerm(db, siteId, params.term) : undefined,
+    params.assignee === "none"
+      ? isNull(contentEntries.assigneeId)
+      : params.assignee
+        ? eq(contentEntries.assigneeId, params.assignee === "me" ? userId : params.assignee)
+        : undefined,
   );
 
   const countRows = await db
@@ -187,7 +200,17 @@ export async function listEntries(
     .limit(PAGE_SIZE)
     .offset((page - 1) * PAGE_SIZE);
 
-  return { items: rows.map(toSummary), total, page, pageCount, counts };
+  let assigneeName: string | null = null;
+  if (params.assignee && params.assignee !== "me" && params.assignee !== "none") {
+    const [person] = await db
+      .select({ name: users.name })
+      .from(users)
+      .where(eq(users.id, params.assignee))
+      .limit(1);
+    assigneeName = person?.name ?? null;
+  }
+
+  return { items: rows.map(toSummary), total, page, pageCount, counts, assigneeName };
 }
 
 export async function getEntry(

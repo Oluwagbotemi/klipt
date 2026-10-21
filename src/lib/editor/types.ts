@@ -15,6 +15,17 @@ export interface EntryDocument {
   fields: ContentFieldDefinition[];
   values: Record<string, FieldValue>;
   refs: FieldRefs;
+  /** Set when a reviewer sent the entry back with requested changes. */
+  reviewFeedback: ReviewFeedback | null;
+}
+
+/** A reviewer's response (mirrors the review_feedback column). */
+export interface ReviewFeedback {
+  kind: "changes_requested";
+  note: string;
+  byId: string;
+  byName: string;
+  at: string;
 }
 
 /** An entry's version and lifecycle fields after a write. */

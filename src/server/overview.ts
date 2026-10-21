@@ -117,7 +117,8 @@ export async function getSiteOverview(
         targetId: auditEvents.targetId,
         metadata: auditEvents.metadata,
         createdAt: auditEvents.createdAt,
-        actorName: users.name,
+        // A deleted account's name is kept on its activity.
+        actorName: sql<string | null>`coalesce(${users.name}, ${auditEvents.actorName})`,
         entryTitle: contentEntries.title,
         entryId: contentEntries.id,
       })

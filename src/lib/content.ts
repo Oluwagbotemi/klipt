@@ -37,6 +37,11 @@ export interface EntrySummary {
   isSystemModel: boolean;
   authorId: string | null;
   authorName: string | null;
+  /** The member working on it, if anyone (Team › Assignments). */
+  assigneeId: string | null;
+  assigneeName: string | null;
+  /** Optional due date, "YYYY-MM-DD". */
+  dueOn: string | null;
   createdAt: string;
   updatedAt: string;
   publishedAt: string | null;
@@ -50,6 +55,8 @@ export interface EntryList {
   pageCount: number;
   /** Entries per status for the current type and search (ignoring the status filter). */
   counts: Record<ContentStatus, number>;
+  /** Name of the member in an `assignee=<userId>` filter, for its label. */
+  assigneeName?: string | null;
 }
 
 export const PAGE_SIZE = 20;
@@ -73,6 +80,11 @@ export const contentListParams = z.object({
     .string()
     .regex(/^[a-z][a-z0-9-]{0,39}:[a-z0-9-]{1,80}$/)
     .catch(""),
+  /** "me", "none" (unassigned) or a member's user id. */
+  assignee: z
+    .string()
+    .regex(/^[A-Za-z0-9_-]{1,64}$/)
+    .catch(""),
 });
 export type ContentListParams = z.output<typeof contentListParams>;
 
@@ -89,6 +101,7 @@ export function parseContentListParams(
     sort: first(searchParams.sort) ?? "updated_desc",
     page: first(searchParams.page) ?? 1,
     term: first(searchParams.term) ?? "",
+    assignee: first(searchParams.assignee) ?? "",
   });
 }
 
@@ -119,20 +132,26 @@ export function entryActions(
 
 type PolicyEntry = Pick<EntrySummary, "status" | "authorId"> & {
   publishedAt: string | Date | null;
+  assigneeId?: string | null;
 };
+
+/** Authors work on entries they wrote or that are assigned to them. */
+const isOwnWork = (userId: string, entry: PolicyEntry) =>
+  entry.authorId === userId || (entry.assigneeId != null && entry.assigneeId === userId);
 
 /**
  * Whether a member may edit an entry's content, URL and SEO. Editors and
- * above edit anything that isn't archived. Authors edit their own entries
- * while they are drafts or in review; live and scheduled content needs
- * publish rights. Archived entries are read-only until restored.
+ * above edit anything that isn't archived. Authors edit their own entries,
+ * and entries assigned to them, while they are drafts or in review; live and
+ * scheduled content needs publish rights. Archived entries are read-only until
+ * restored.
  */
 export function canEditEntry(role: SiteRole, userId: string, entry: PolicyEntry): boolean {
   if (entry.status === "archived") return false;
   if (can(role, "content.edit_any")) return true;
   return (
     can(role, "content.create") &&
-    entry.authorId === userId &&
+    isOwnWork(userId, entry) &&
     (entry.status === "draft" || entry.status === "in_review")
   );
 }
@@ -144,11 +163,13 @@ export function readOnlyReason(role: SiteRole, userId: string, entry: PolicyEntr
     return "This entry is archived. Restore it as a draft to edit it.";
   if (!can(role, "content.create"))
     return "Your role on this site can view content but not edit it.";
-  if (entry.authorId !== userId) return "Authors can only edit their own drafts.";
+  if (!isOwnWork(userId, entry))
+    return "Authors can only edit their own drafts and drafts assigned to them.";
   return "Published and scheduled content can only be changed by an editor, admin or owner.";
 }
 
-export type WorkflowAction = "publish" | "schedule" | "unpublish" | "submit" | "withdraw";
+export type WorkflowAction =
+  "publish" | "schedule" | "unpublish" | "submit" | "withdraw" | "request_changes";
 
 /** Publishing transitions available to a member for an entry's current status. */
 export function workflowActions(
@@ -165,6 +186,7 @@ export function workflowActions(
     unpublish: publisher && (s === "published" || s === "scheduled"),
     submit: editable && !can(role, "content.publish") && s === "draft",
     withdraw: editable && !can(role, "content.publish") && s === "in_review",
+    request_changes: publisher && s === "in_review",
   };
 }
 
