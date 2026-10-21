@@ -447,6 +447,35 @@ export async function enqueueEntryEvent(
   }
 }
 
+/** Queues a site-level event that isn't about one entry (e.g. "menu.updated"). */
+export async function enqueueSiteEvent(
+  tx: DbOrTx,
+  siteId: string,
+  event: Exclude<WebhookEvent, "ping" | `entry.${string}`>,
+  data: Record<string, unknown>,
+) {
+  const hooks = await tx
+    .select({ id: webhooks.id })
+    .from(webhooks)
+    .where(
+      and(
+        eq(webhooks.siteId, siteId),
+        eq(webhooks.enabled, true),
+        sql`${webhooks.events} @> ${JSON.stringify([event])}::jsonb`,
+      ),
+    );
+  if (hooks.length === 0) return;
+  const [site] = await tx
+    .select({ name: sites.name })
+    .from(sites)
+    .where(eq(sites.id, siteId))
+    .limit(1);
+  const payload = { site: { id: siteId, name: site?.name ?? "" }, data };
+  await tx
+    .insert(webhookDeliveries)
+    .values(hooks.map((hook) => ({ siteId, webhookId: hook.id, event, payload })));
+}
+
 // ---------------------------------------------------------------------------
 // Sending
 // ---------------------------------------------------------------------------

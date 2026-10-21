@@ -584,3 +584,51 @@ export const siteInvitations = pgTable(
     index("site_invitations_site_idx").on(t.siteId, t.createdAt),
   ],
 );
+
+// ---------------------------------------------------------------------------
+// Navigation menus
+// ---------------------------------------------------------------------------
+
+/** A menu the website shows, e.g. "header", "footer", or a custom one. */
+export const menus = pgTable(
+  "menus",
+  {
+    id: id(),
+    siteId: text("site_id")
+      .notNull()
+      .references(() => sites.id, { onDelete: "cascade" }),
+    /** Stable API identifier: "header", "footer", or a custom key like "legal". */
+    key: text("key").notNull(),
+    name: text("name").notNull(),
+    createdAt: createdAt(),
+    /** Compared on save so two people editing a menu can't overwrite each other. */
+    updatedAt: updatedAt(),
+  },
+  (t) => [uniqueIndex("menus_site_key_unique").on(t.siteId, t.key)],
+);
+
+/** One link in a menu. Items are replaced as a whole when a menu is saved. */
+export const menuItems = pgTable(
+  "menu_items",
+  {
+    id: id(),
+    menuId: text("menu_id")
+      .notNull()
+      .references(() => menus.id, { onDelete: "cascade" }),
+    siteId: text("site_id")
+      .notNull()
+      .references(() => sites.id, { onDelete: "cascade" }),
+    /** Parent item in the same menu (null for top level). */
+    parentId: text("parent_id"),
+    position: integer("position").notNull(),
+    label: text("label").notNull(),
+    /** "entry" links to content (follows its URL); "url" is a fixed address. */
+    kind: text("kind").$type<"entry" | "url">().notNull(),
+    /** Null when the linked entry was deleted (the item is then left out of the API). */
+    entryId: text("entry_id").references(() => contentEntries.id, { onDelete: "set null" }),
+    url: text("url"),
+    openInNewTab: boolean("open_in_new_tab").notNull().default(false),
+    createdAt: createdAt(),
+  },
+  (t) => [index("menu_items_menu_idx").on(t.menuId, t.position)],
+);

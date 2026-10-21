@@ -85,4 +85,4 @@ Content models: custom content types (e.g. Product) and extra fields on any type
 
 Taxonomy: nested categories (up to three levels), tags and custom taxonomies (e.g. Region, for the content types you choose), with entry counts, search, and a "Categories & tags" panel in the editor that saves on its own. Authors can assign terms to their own drafts and create new tags; editors and above manage all terms. The content API returns each entry's terms, filters by `category`, `tag` or `term`, lists terms with counts (`/taxonomies/{key}`), resolves archive paths like `/category/news`, and adds archive pages with published entries to the sitemap.
 
-Next: navigation menus.
+Navigation: header and footer menus plus custom menus, with links to entries (they follow URL changes) or URLs, two levels of nesting, keyboard-friendly reordering, warnings for links to unpublished or deleted entries, save conflict detection, and `GET /api/v1/menus/{key}` for your website (plus an opt-in `menu.updated` webhook).
