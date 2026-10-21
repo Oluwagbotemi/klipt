@@ -45,6 +45,7 @@ import {
   type StatusFilter,
 } from "@/lib/content";
 import { formatDate } from "@/lib/format";
+import type { CollectionType } from "@/lib/models";
 import { siteHref } from "@/lib/navigation";
 import { can } from "@/lib/permissions";
 import type { SiteRole } from "@/lib/types";
@@ -80,6 +81,7 @@ export function ContentList({
   userId,
   list,
   params,
+  collections,
 }: {
   siteId: string;
   type: ContentType;
@@ -87,6 +89,8 @@ export function ContentList({
   userId: string;
   list: EntryList;
   params: ContentListParams;
+  /** Custom content types, for the New button. */
+  collections: CollectionType[];
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -94,7 +98,15 @@ export function ContentList({
   const [query, setQuery] = useState(params.q);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const noun = TYPE_NOUN[type];
-  const canCreate = can(role, "content.create") && type !== "collection";
+  const canCreate =
+    can(role, "content.create") && (type !== "collection" || collections.length > 0);
+  const newButton = (
+    <NewEntryButton
+      siteId={siteId}
+      type={type === "all" ? "choose" : type}
+      collections={collections}
+    />
+  );
 
   const actions = useEntryActions({
     siteId,
@@ -188,7 +200,7 @@ export function ContentList({
               </option>
             ))}
           </select>
-          {canCreate && <NewEntryButton siteId={siteId} type={type === "all" ? "choose" : type} />}
+          {canCreate && newButton}
         </div>
       </div>
 
@@ -240,11 +252,11 @@ export function ContentList({
               }
               className="py-12 sm:py-16"
             />
-          ) : type === "collection" ? (
+          ) : type === "collection" && collections.length === 0 ? (
             <EmptyState
               icon={FileText}
-              title="No collections yet"
-              description="Collections hold entries of your own content models, like Products or Events. They'll appear here once Content models are built."
+              title="No custom content types yet"
+              description="Collections hold entries of your own content types, like Products or Events. Owners and admins set them up in Content models."
               action={
                 <Button variant="outline" asChild>
                   <Link href={siteHref(siteId, "models")}>Go to Content models</Link>
@@ -258,14 +270,10 @@ export function ContentList({
               title={`No ${noun.many} yet`}
               description={
                 canCreate
-                  ? `Create your first ${type === "all" ? "page or post" : noun.one} to get started.`
+                  ? `Create your first ${type === "all" ? "page or post" : type === "collection" ? "entry" : noun.one} to get started.`
                   : `When your team adds ${noun.many}, they'll appear here.`
               }
-              action={
-                canCreate ? (
-                  <NewEntryButton siteId={siteId} type={type === "all" ? "choose" : type} />
-                ) : undefined
-              }
+              action={canCreate ? newButton : undefined}
               className="py-12 sm:py-16"
             />
           )

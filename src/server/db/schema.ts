@@ -206,7 +206,16 @@ export const siteOwnershipTransfers = pgTable(
 export interface ContentFieldDefinition {
   key: string;
   label: string;
-  type: "text" | "rich_text" | "number" | "date" | "boolean" | "select" | "media" | "reference";
+  type:
+    | "text"
+    | "long_text"
+    | "rich_text"
+    | "number"
+    | "date"
+    | "boolean"
+    | "select"
+    | "media"
+    | "reference";
   required: boolean;
   helpText?: string;
   options?: string[];

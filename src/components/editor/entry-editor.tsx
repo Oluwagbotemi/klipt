@@ -12,6 +12,7 @@ import { EntryActionsMenu } from "@/components/content/entry-actions-menu";
 import { ContentStatusBadge } from "@/components/content/status-badge";
 import { PreviewButton } from "@/components/editor/preview-button";
 import { RichTextEditor } from "@/components/editor/rich-text-editor";
+import { FieldsPanel } from "@/components/editor/fields-panel";
 import { AdvancedPanel, SearchPanel, SocialPanel, seoChecks } from "@/components/editor/seo-panels";
 import { UrlPanel } from "@/components/editor/url-panel";
 import { WorkflowControls } from "@/components/editor/workflow-controls";
@@ -20,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { canEditEntry, readOnlyReason, workflowActions, type WorkflowAction } from "@/lib/content";
 import { imageAltSummary, wordCount, type RichTextDoc } from "@/lib/editor/rich-text";
 import type { EntryDocument, EntryState } from "@/lib/editor/types";
+import type { FieldRefs, FieldValue } from "@/lib/models";
 import { can } from "@/lib/permissions";
 import { formatDate } from "@/lib/format";
 import { siteHref } from "@/lib/navigation";
@@ -80,6 +82,9 @@ export function EntryEditor({
   const [title, setTitle] = useState(entry.title);
   const [body, setBody] = useState<RichTextDoc>(doc.body);
   const [seo, setSeo] = useState<EntrySeoInput>(doc.seo);
+  const [fields, setFields] = useState<Record<string, FieldValue>>(doc.values);
+  const [refs, setRefs] = useState<FieldRefs>(doc.refs);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const [saveError, setSaveError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
@@ -102,7 +107,7 @@ export function EntryEditor({
     }
   }
 
-  const draft = useMemo(() => ({ title, body, seo }), [title, body, seo]);
+  const draft = useMemo(() => ({ title, body, seo, fields }), [title, body, seo, fields]);
   const snapshot = useMemo(() => JSON.stringify(draft), [draft]);
   const [savedSnapshot, setSavedSnapshot] = useState(snapshot);
   const dirty = snapshot !== savedSnapshot;
@@ -132,6 +137,16 @@ export function EntryEditor({
     if (state.updatedAt > version.current) version.current = state.updatedAt;
   }, [state.updatedAt]);
 
+  /** Shows a content type field's error under it and brings it into view. */
+  const showFieldError = useCallback((key: string, message: string) => {
+    setFieldErrors({ [key]: message.replace(/^[^:]+: /, "") });
+    requestAnimationFrame(() => {
+      const wrapper = document.querySelector<HTMLElement>(`[data-field="${CSS.escape(key)}"]`);
+      wrapper?.scrollIntoView({ block: "center" });
+      wrapper?.querySelector<HTMLElement>("input, textarea, select, button")?.focus();
+    });
+  }, []);
+
   const save = useCallback(async (): Promise<boolean> => {
     // One save at a time; a queued save picks up whatever changed meanwhile.
     while (inflight.current) await inflight.current;
@@ -139,7 +154,12 @@ export function EntryEditor({
     if (snap === savedRef.current) return true;
     // Send plain JSON: editor output can contain null-prototype objects,
     // which Server Actions can't serialize.
-    const data = JSON.parse(snap) as { title: string; body: RichTextDoc; seo: EntrySeoInput };
+    const data = JSON.parse(snap) as {
+      title: string;
+      body: RichTextDoc;
+      seo: EntrySeoInput;
+      fields: Record<string, FieldValue>;
+    };
 
     setSaveStatus("saving");
     const run = (async () => {
@@ -155,9 +175,11 @@ export function EntryEditor({
           setSavedSnapshot(snap);
           setSavedAt(result.state.updatedAt);
           setSaveError(null);
+          setFieldErrors({});
           setSaveStatus("saved");
           return true;
         }
+        if (result.fieldKey) showFieldError(result.fieldKey, result.error);
         setSaveError(result.error);
         setSaveStatus(result.conflict ? "conflict" : "error");
         return false;
@@ -173,7 +195,7 @@ export function EntryEditor({
     } finally {
       inflight.current = null;
     }
-  }, [siteId, entry.id]);
+  }, [siteId, entry.id, showFieldError]);
 
   // Autosave shortly after changes stop; retry after a failure.
   useEffect(() => {
@@ -214,6 +236,7 @@ export function EntryEditor({
       });
       if (!result.ok) {
         if (result.conflict) setSaveStatus("conflict");
+        if (result.fieldKey) showFieldError(result.fieldKey, result.error);
         return result.error;
       }
       version.current = result.state.updatedAt;
@@ -394,6 +417,31 @@ export function EntryEditor({
           <p className="text-muted-foreground mt-2 text-xs" aria-live="off">
             {words} {words === 1 ? "word" : "words"}
           </p>
+          <FieldsPanel
+            siteId={siteId}
+            entryId={entry.id}
+            modelName={entry.modelName}
+            fields={doc.fields}
+            values={fields}
+            refs={refs}
+            errors={fieldErrors}
+            readOnly={!editable}
+            canUpload={can(role, "media.upload")}
+            onChange={(key, value) => {
+              setFieldErrors((errors) => {
+                const rest = { ...errors };
+                delete rest[key];
+                return rest;
+              });
+              setFields((current) => {
+                const next = { ...current };
+                if (value === null) delete next[key];
+                else next[key] = value;
+                return next;
+              });
+            }}
+            onRefs={(patch) => setRefs((current) => ({ ...current, ...patch }))}
+          />
         </div>
 
         <aside aria-label="Entry settings" className="flex flex-col gap-3">

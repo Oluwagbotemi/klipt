@@ -1,6 +1,7 @@
 import { ContentList } from "@/components/content/content-list";
 import { parseContentListParams, type ContentType } from "@/lib/content";
 import { getEntries } from "@/lib/data/content";
+import { getCollectionTypes } from "@/lib/data/models";
 import { requireUser } from "@/lib/data/session";
 import { getSite } from "@/lib/data/sites";
 
@@ -16,10 +17,11 @@ export async function ContentListPage({
 }) {
   const [{ siteId }, query] = await Promise.all([params, searchParams]);
   const listParams = parseContentListParams(query);
-  const [user, site, list] = await Promise.all([
+  const [user, site, list, collections] = await Promise.all([
     requireUser(),
     getSite(siteId),
     getEntries(siteId, type, listParams),
+    getCollectionTypes(siteId),
   ]);
 
   return (
@@ -30,6 +32,7 @@ export async function ContentListPage({
       userId={user.id}
       list={list}
       params={listParams}
+      collections={collections}
     />
   );
 }

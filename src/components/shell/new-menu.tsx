@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FileText, Globe, Loader2, Newspaper, Plus } from "lucide-react";
+import { Boxes, FileText, Globe, Loader2, Newspaper, Plus } from "lucide-react";
 import { useCreateEntry } from "@/components/content/new-entry-button";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import type { CollectionType } from "@/lib/models";
 import { can } from "@/lib/permissions";
 import type { SiteRole } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -23,11 +24,14 @@ import { cn } from "@/lib/utils";
 export function NewMenu({
   siteId,
   role,
+  collections = [],
   rail = false,
   className,
 }: {
   siteId: string;
   role: SiteRole;
+  /** Custom content types, offered after Page and Post. */
+  collections?: CollectionType[];
   rail?: boolean;
   className?: string;
 }) {
@@ -59,6 +63,12 @@ export function NewMenu({
               <Newspaper aria-hidden />
               Post
             </DropdownMenuItem>
+            {collections.map((type) => (
+              <DropdownMenuItem key={type.key} onSelect={() => create(type.key)}>
+                <Boxes aria-hidden />
+                <span className="truncate">{type.name}</span>
+              </DropdownMenuItem>
+            ))}
             <DropdownMenuSeparator />
           </>
         )}

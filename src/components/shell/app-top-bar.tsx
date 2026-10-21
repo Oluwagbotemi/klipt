@@ -4,6 +4,7 @@ import { OpenSitesBar } from "@/components/shell/open-sites-bar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/user-menu";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getCollectionTypes } from "@/lib/data/models";
 import { requireUser } from "@/lib/data/session";
 import { getSite, getSites } from "@/lib/data/sites";
 
@@ -13,10 +14,11 @@ import { getSite, getSites } from "@/lib/data/sites";
  * button that opens section navigation below the lg breakpoint.
  */
 export async function AppTopBar({ siteId }: { siteId?: Promise<string> }) {
-  const [user, sites, site] = await Promise.all([
+  const [user, sites, site, collections] = await Promise.all([
     requireUser(),
     getSites(),
     siteId ? siteId.then(getSite) : null,
+    siteId ? siteId.then(getCollectionTypes) : [],
   ]);
   const barSites = sites.map(({ id, name, domain }) => ({ id, name, domain }));
 
@@ -26,7 +28,12 @@ export async function AppTopBar({ siteId }: { siteId?: Promise<string> }) {
       sites={barSites}
       leading={
         site ? (
-          <MobileSiteNav siteId={site.id} siteName={site.name} role={site.currentUserRole} />
+          <MobileSiteNav
+            siteId={site.id}
+            siteName={site.name}
+            role={site.currentUserRole}
+            collections={collections}
+          />
         ) : undefined
       }
     >

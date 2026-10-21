@@ -9,10 +9,18 @@ import {
   users,
 } from "@/server/db/schema";
 import { NotAllowedError } from "@/server/errors";
+import { assertFieldTargets, fieldRefsFor } from "@/server/models";
 import { getSiteRole } from "@/server/sites";
 import { enqueueEntryEvent } from "@/server/webhooks";
 import { canEditEntry, workflowActions, type WorkflowAction } from "@/lib/content";
 import { EMPTY_DOC, sanitizeDoc, type RichTextDoc } from "@/lib/editor/rich-text";
+import {
+  FieldValueError,
+  firstMissingRequired,
+  readFieldValues,
+  validateFieldValues,
+  type FieldValue,
+} from "@/lib/models";
 import type { EntryDocument, EntryState } from "@/lib/editor/types";
 import { entryPath, entrySeoSchema, slugSchema } from "@/lib/seo";
 
@@ -33,7 +41,9 @@ export class ConflictError extends Error {
 export class EditorValidationError extends Error {
   constructor(
     message: string,
-    readonly field: "title" | "slug" | "seo" | "body" | "scheduledAt",
+    readonly field: "title" | "slug" | "seo" | "body" | "scheduledAt" | "fields",
+    /** For "fields": the key of the content type field that's wrong. */
+    readonly fieldKey?: string,
   ) {
     super(message);
   }
@@ -110,6 +120,7 @@ export async function getEntryDocument(
       modelName: contentModels.name,
       isSystemModel: contentModels.isSystem,
       schemaType: contentModels.schemaType,
+      modelFields: contentModels.fields,
       authorName: users.name,
     })
     .from(contentEntries)
@@ -126,6 +137,7 @@ export async function getEntryDocument(
   } catch {
     // Never block opening an entry because of malformed legacy content.
   }
+  const values = readFieldValues(row.modelFields, entry.data);
   return {
     entry: {
       id: entry.id,
@@ -146,6 +158,9 @@ export async function getEntryDocument(
     seo: entrySeoSchema.catch({}).parse(entry.seo),
     schemaType: row.schemaType,
     path: entryPath(row.modelKey, entry.slug),
+    fields: row.modelFields,
+    values,
+    refs: await fieldRefsFor(db, siteId, row.modelFields, values),
   };
 }
 
@@ -160,7 +175,12 @@ async function lockForEdit(
   const role = await getSiteRole(tx, userId, siteId);
   if (!role) throw new NotAllowedError("Not a member.");
   const [row] = await tx
-    .select({ entry: contentEntries, modelKey: contentModels.key, modelName: contentModels.name })
+    .select({
+      entry: contentEntries,
+      modelKey: contentModels.key,
+      modelName: contentModels.name,
+      modelFields: contentModels.fields,
+    })
     .from(contentEntries)
     .innerJoin(contentModels, eq(contentModels.id, contentEntries.modelId))
     .where(and(eq(contentEntries.siteId, siteId), eq(contentEntries.id, entryId)))
@@ -181,13 +201,29 @@ function stateOf(entry: typeof contentEntries.$inferSelect): EntryState {
   };
 }
 
-/** Saves title, body and SEO (autosave). Returns the new version. */
+function fieldError(error: unknown): never {
+  if (error instanceof FieldValueError) {
+    throw new EditorValidationError(error.message, "fields", error.fieldKey);
+  }
+  throw error;
+}
+
+/**
+ * Saves title, body, SEO and (when given) the content type's field values
+ * (autosave). Drafts may leave required fields empty. Returns the new version.
+ */
 export async function saveEntry(
   db: DbOrTx,
   userId: string,
   siteId: string,
   entryId: string,
-  input: { title: string; body: unknown; seo: unknown; expectedUpdatedAt: string },
+  input: {
+    title: string;
+    body: unknown;
+    seo: unknown;
+    fields?: unknown;
+    expectedUpdatedAt: string;
+  },
 ): Promise<EntryState> {
   const title = String(input.title ?? "").trim();
   if (title.length > 200) {
@@ -203,7 +239,7 @@ export async function saveEntry(
   if (!seo.success) throw new EditorValidationError(seo.error.issues[0].message, "seo");
 
   return db.transaction(async (tx) => {
-    const { role, entry, modelKey } = await lockForEdit(
+    const { role, entry, modelKey, modelFields } = await lockForEdit(
       tx,
       userId,
       siteId,
@@ -211,9 +247,22 @@ export async function saveEntry(
       input.expectedUpdatedAt,
     );
     if (!canEditEntry(role, userId, entry)) throw new NotAllowedError("Can't edit this entry.");
+    const data: Record<string, unknown> = { ...entry.data, body };
+    if (input.fields !== undefined) {
+      let values: Record<string, FieldValue> = {};
+      try {
+        values = validateFieldValues(modelFields, input.fields);
+        await assertFieldTargets(tx, siteId, entryId, modelFields, values);
+      } catch (error) {
+        fieldError(error);
+      }
+      // Current fields are replaced; values of removed fields are kept, unseen.
+      for (const field of modelFields) delete data[field.key];
+      Object.assign(data, values);
+    }
     const [updated] = await tx
       .update(contentEntries)
-      .set({ title, data: { ...entry.data, body }, seo: seo.data, updatedAt: new Date() })
+      .set({ title, data, seo: seo.data, updatedAt: new Date() })
       .where(eq(contentEntries.id, entryId))
       .returning();
     if (updated.status === "published") {
@@ -342,7 +391,7 @@ export async function transitionEntry(
   input: { action: WorkflowAction; scheduledAt?: string | null; expectedUpdatedAt: string },
 ): Promise<EntryState> {
   return db.transaction(async (tx) => {
-    const { role, entry, modelKey } = await lockForEdit(
+    const { role, entry, modelKey, modelFields } = await lockForEdit(
       tx,
       userId,
       siteId,
@@ -352,8 +401,18 @@ export async function transitionEntry(
     if (!workflowActions(role, userId, entry)[input.action]) {
       throw new NotAllowedError("That change isn't available for this entry.");
     }
-    if ((input.action === "publish" || input.action === "schedule") && !entry.title.trim()) {
-      throw new EditorValidationError("Add a title before publishing.", "title");
+    if (input.action === "publish" || input.action === "schedule") {
+      if (!entry.title.trim()) {
+        throw new EditorValidationError("Add a title before publishing.", "title");
+      }
+      const missing = firstMissingRequired(modelFields, readFieldValues(modelFields, entry.data));
+      if (missing) {
+        throw new EditorValidationError(
+          `Fill in “${missing.label}” before publishing. It's required.`,
+          "fields",
+          missing.key,
+        );
+      }
     }
 
     const now = new Date();

@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { AppTopBar, AppTopBarSkeleton } from "@/components/shell/app-top-bar";
 import { SiteSidebar, SiteSidebarPlaceholder } from "@/components/shell/site-sidebar";
 import { SkipLink } from "@/components/shell/skip-link";
+import { getCollectionTypes } from "@/lib/data/models";
 import { getSite } from "@/lib/data/sites";
 
 /**
@@ -35,6 +36,7 @@ export default function SiteLayout({ children, params }: LayoutProps<"/sites/[si
 }
 
 async function SidebarLoader({ siteId }: { siteId: Promise<string> }) {
-  const site = await getSite(await siteId);
-  return <SiteSidebar siteId={site.id} role={site.currentUserRole} />;
+  const id = await siteId;
+  const [site, collections] = await Promise.all([getSite(id), getCollectionTypes(id)]);
+  return <SiteSidebar siteId={site.id} role={site.currentUserRole} collections={collections} />;
 }

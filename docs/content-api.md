@@ -60,7 +60,8 @@ Lists:
       "excerpt": "A friendly first post.",
       "author": { "name": "Sam Rivera" },
       "publishedAt": "2026-10-18T09:00:00.000Z",
-      "updatedAt": "2026-10-18T09:05:00.000Z"
+      "updatedAt": "2026-10-18T09:05:00.000Z",
+      "fields": {}
     }
   ],
   "pagination": { "page": 1, "limit": 20, "total": 11, "hasMore": false }
@@ -106,6 +107,63 @@ A single entry adds `body` and `seo`:
 - SEO values already include fallbacks (e.g. the title when no SEO title is set). `url` and
   `canonicalUrl` are `null` until the site has a domain in Klipt.
 - `/resolve` for an old URL returns `{ "redirect": { "to": "/posts/new-slug", "statusCode": 301 } }`.
+
+### Fields (custom content types)
+
+In **Content models**, owners and admins can create content types such as _Product_ or _Event_ and
+give any type (Page and Post too) its own fields. Every entry, in lists and on its own, then carries
+a `fields` object with one key per field, in the order they're defined. Empty fields are `null`.
+
+```bash
+curl "https://klipt.example.com/api/v1/entries?type=product" \
+  -H "Authorization: Bearer $KLIPT_API_KEY"
+```
+
+```json
+{
+  "id": "…",
+  "type": "product",
+  "title": "Red kettle",
+  "slug": "red-kettle",
+  "path": "/product/red-kettle",
+  "fields": {
+    "price": 49,
+    "tagline": "Boils in two minutes",
+    "launch_date": "2026-11-01",
+    "in_stock": true,
+    "size": "1.5 litres",
+    "photo": {
+      "url": "https://klipt.example.com/media/…/kettle.jpg",
+      "alt": "A red kettle on a stove",
+      "width": 1600,
+      "height": 1200
+    },
+    "review": {
+      "id": "…",
+      "type": "post",
+      "title": "We tested 12 kettles",
+      "slug": "kettle-test",
+      "path": "/posts/kettle-test"
+    }
+  }
+}
+```
+
+| Field type      | In `fields`                                                        |
+| --------------- | ------------------------------------------------------------------ |
+| Text, Long text | A string                                                           |
+| Number          | A number                                                           |
+| Date            | `"YYYY-MM-DD"`                                                     |
+| Yes / no        | `true` or `false`                                                  |
+| Dropdown        | The chosen option's text                                           |
+| Image           | `{ url, alt, width, height }` with an absolute URL and current alt |
+| Link to content | `{ id, type, title, slug, path }`, or `null` unless it's published |
+
+- A linked entry only appears once it's published, so drafts never leak to your website. Fetch it
+  with `GET /entries/{type}/{slug}` if you need more than its title and path.
+- Entries of a custom type live at `/{type}/{slug}` (e.g. `/product/red-kettle`), and `/resolve`
+  finds them there.
+- A field's key never changes. Removing a field stops it appearing in `fields`.
 
 Errors use `{ "error": { "code": "…", "message": "…" } }` with status `400` (bad query), `401`
 (missing, invalid or revoked key), `404` or `500`.
@@ -351,5 +409,5 @@ To leave preview mode, add a route that calls `(await draftMode()).disable()`.
 
 ## Not yet available
 
-- A media endpoint and image fields outside the body (e.g. a featured image); taxonomies.
+- A media endpoint; taxonomies; fields that hold several values (e.g. a list of links).
 - Per-key rate limits.

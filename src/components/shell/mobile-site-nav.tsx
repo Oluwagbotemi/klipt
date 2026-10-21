@@ -14,6 +14,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import type { CollectionType } from "@/lib/models";
 import type { SiteRole } from "@/lib/types";
 
 /** Drawer with the site's sections, for viewports where the sidebar is hidden (below lg). */
@@ -21,10 +22,12 @@ export function MobileSiteNav({
   siteId,
   siteName,
   role,
+  collections,
 }: {
   siteId: string;
   siteName: string;
   role: SiteRole;
+  collections: CollectionType[];
 }) {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
@@ -48,7 +51,7 @@ export function MobileSiteNav({
         </SheetDescription>
         <Logo className="px-1 pt-1.5" />
         <p className="truncate px-1 text-sm font-semibold">{siteName}</p>
-        <NewMenu siteId={siteId} role={role} className="w-full" />
+        <NewMenu siteId={siteId} role={role} collections={collections} className="w-full" />
         <SiteNav siteId={siteId} role={role} onNavigate={close} />
         <div className="border-sidebar-border mt-auto flex items-center justify-between gap-2 border-t pt-3">
           <span className="text-sidebar-muted-foreground px-1 text-sm">Theme</span>
