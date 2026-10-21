@@ -13,6 +13,7 @@ export function SignInForm() {
   const router = useRouter();
   const params = useSearchParams();
   const next = safeRedirectPath(params.get("next"));
+  const notice = params.get("deleted") === "1" ? "Your account was deleted." : null;
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -44,6 +45,11 @@ export function SignInForm() {
   return (
     <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
       {error && <InlineAlert>{error}</InlineAlert>}
+      {!error && notice && (
+        <p role="status" className="bg-success-soft text-success rounded-xl px-4 py-3 text-sm">
+          {notice}
+        </p>
+      )}
       <FormField
         id="email"
         name="email"

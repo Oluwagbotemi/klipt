@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut } from "lucide-react";
+import Link from "next/link";
+import { Globe, LogOut, ShieldCheck, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -16,7 +17,7 @@ import { authClient } from "@/lib/auth-client";
 import type { UserSummary } from "@/lib/types";
 import { cn, initials } from "@/lib/utils";
 
-/** Account menu. Profile, security and notification settings will be added here. */
+/** Account menu: profile, security, sites and sign out. */
 export function UserMenu({
   user,
   showName = false,
@@ -67,6 +68,25 @@ export function UserMenu({
           <p className="truncate text-sm font-medium">{user.name}</p>
           <p className="text-muted-foreground truncate text-xs">{user.email}</p>
         </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/account">
+            <UserRound aria-hidden />
+            Profile
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/account/security">
+            <ShieldCheck aria-hidden />
+            Security
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/sites">
+            <Globe aria-hidden />
+            All sites
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           disabled={signingOut}

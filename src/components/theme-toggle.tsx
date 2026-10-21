@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { THEME_STORAGE_KEY, type ThemePreference } from "@/lib/theme";
 
-function readPreference(): ThemePreference {
+export function readPreference(): ThemePreference {
   try {
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
     if (stored === "dark" || stored === "system") return stored;
@@ -21,7 +21,7 @@ function readPreference(): ThemePreference {
   return "light";
 }
 
-function applyPreference(preference: ThemePreference) {
+export function applyPreference(preference: ThemePreference) {
   const dark =
     preference === "dark" ||
     (preference === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);

@@ -6,12 +6,13 @@
  * first when using local PGlite (single-process).
  */
 import { createHash, randomBytes } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { createAuth } from "@/server/auth";
 import { getDb } from "@/server/db";
 import {
   contentEntries,
   contentModels,
+  sessions,
   siteMembers,
   siteOwnershipTransfers,
   users,
@@ -185,6 +186,8 @@ async function main() {
     const result = await auth.api.signUpEmail({ body: { ...user, password: DEMO_PASSWORD } });
     ids.push(result.user.id);
   }
+  // Sign-up signs the user in; drop those sessions so Security › Signed-in devices starts empty.
+  await db.delete(sessions).where(inArray(sessions.userId, ids));
   const [samId, morganId, rileyId] = ids;
 
   const northwind = await createSite(db, samId, {
