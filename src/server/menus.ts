@@ -325,7 +325,11 @@ export async function saveMenu(
     await enqueueSiteEvent(tx, siteId, "menu.updated", {
       menu: { key: menu.key, name: menu.name },
     });
-    await audit(tx, siteId, userId, "menu.saved", menu.id, { key, items: rows.length });
+    await audit(tx, siteId, userId, "menu.saved", menu.id, {
+      key,
+      name: menu.name,
+      items: rows.length,
+    });
   });
 
   const saved = await getMenu(db, userId, siteId, key);

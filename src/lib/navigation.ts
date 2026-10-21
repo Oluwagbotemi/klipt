@@ -255,12 +255,13 @@ export const SITE_NAV: SiteNavGroup[] = [
           {
             segment: "assignments",
             label: "Assignments",
+            permission: "content.create",
             planned: ["Who is working on what"],
           },
           {
             segment: "activity",
             label: "Activity",
-            permission: "members.manage",
+            permission: "activity.view",
             planned: ["Audit log of changes on this site"],
           },
         ],

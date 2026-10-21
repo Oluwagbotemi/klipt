@@ -300,9 +300,19 @@ export default async function OverviewPage({ params }: PageProps<"/sites/[siteId
         </section>
 
         <section aria-labelledby="activity-heading" className={card}>
-          <h2 id="activity-heading" className="p-5 pb-3 text-base font-semibold sm:px-6">
-            Activity
-          </h2>
+          <div className="flex items-baseline justify-between gap-3 p-5 pb-3 sm:px-6">
+            <h2 id="activity-heading" className="text-base font-semibold">
+              Activity
+            </h2>
+            {can(site.currentUserRole, "activity.view") && (
+              <Link
+                href={siteHref(site.id, "team", "activity")}
+                className="text-primary text-sm underline-offset-4 hover:underline"
+              >
+                View all
+              </Link>
+            )}
+          </div>
           {overview.activity.length === 0 ? (
             <p className="text-muted-foreground border-t px-5 py-5 text-sm sm:px-6">
               Changes your team makes will appear here.

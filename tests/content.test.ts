@@ -28,6 +28,7 @@ const params = (overrides: Partial<ContentListParams> = {}): ContentListParams =
   sort: "updated_desc",
   page: 1,
   term: "",
+  assignee: "",
   ...overrides,
 });
 

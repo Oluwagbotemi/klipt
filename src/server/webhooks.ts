@@ -187,9 +187,9 @@ async function updateOwned(
       .update(webhooks)
       .set({ ...changes, updatedAt: new Date() })
       .where(and(eq(webhooks.siteId, siteId), eq(webhooks.id, webhookId)))
-      .returning({ id: webhooks.id });
+      .returning({ id: webhooks.id, url: webhooks.url });
     if (!hook) throw new NotAllowedError("Webhook not found.");
-    await audit(tx, siteId, userId, action, webhookId, metadata);
+    await audit(tx, siteId, userId, action, webhookId, { url: hook.url, ...metadata });
   });
 }
 

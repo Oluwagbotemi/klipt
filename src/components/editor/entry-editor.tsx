@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { CircleAlert, CloudOff, Loader2, Lock, RotateCw } from "lucide-react";
+import { CircleAlert, CloudOff, Loader2, Lock, MessageSquareWarning, RotateCw } from "lucide-react";
 import { toast } from "sonner";
 import {
   changeSlugAction,
@@ -10,6 +10,7 @@ import {
 } from "@/app/(site)/sites/[siteId]/content/actions";
 import { EntryActionsMenu } from "@/components/content/entry-actions-menu";
 import { ContentStatusBadge } from "@/components/content/status-badge";
+import { AssignmentPanel } from "@/components/editor/assignment-panel";
 import { PreviewButton } from "@/components/editor/preview-button";
 import { RichTextEditor } from "@/components/editor/rich-text-editor";
 import { FieldsPanel } from "@/components/editor/fields-panel";
@@ -19,6 +20,7 @@ import { UrlPanel } from "@/components/editor/url-panel";
 import { WorkflowControls } from "@/components/editor/workflow-controls";
 import { Breadcrumbs } from "@/components/shell/breadcrumbs";
 import { Button } from "@/components/ui/button";
+import type { Assignee, AssignmentState } from "@/lib/assignments";
 import { canEditEntry, readOnlyReason, workflowActions, type WorkflowAction } from "@/lib/content";
 import { imageAltSummary, wordCount, type RichTextDoc } from "@/lib/editor/rich-text";
 import type { EntryDocument, EntryState } from "@/lib/editor/types";
@@ -39,8 +41,9 @@ const DONE: Record<WorkflowAction, string> = {
   publish: "Published.",
   schedule: "Scheduled.",
   unpublish: "Unpublished. It's a draft again.",
-  submit: "Submitted for review.",
+  submit: "Review requested. Editors see it in Team › Assignments.",
   withdraw: "Withdrawn from review. It's a draft again.",
+  request_changes: "Sent back to the writer with your requested changes.",
 };
 
 const timeFormat = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" });
@@ -64,6 +67,8 @@ export function EntryEditor({
   doc,
   previewHost = null,
   taxonomies = [],
+  assignees = [],
+  today,
 }: {
   siteId: string;
   siteName: string;
@@ -75,6 +80,10 @@ export function EntryEditor({
   previewHost?: string | null;
   /** Taxonomies the entry's content type uses, with its terms. */
   taxonomies?: EntryTaxonomy[];
+  /** Members who can be assigned the entry. */
+  assignees?: Assignee[];
+  /** Today in the site's time zone, "YYYY-MM-DD" (for due dates). */
+  today: string;
 }) {
   const { entry } = doc;
   const [state, setState] = useState<EntryState>({
@@ -94,6 +103,11 @@ export function EntryEditor({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [workflowPending, setWorkflowPending] = useState(false);
+  const [assignment, setAssignment] = useState<AssignmentState>({
+    assigneeId: entry.assigneeId,
+    assigneeName: entry.assigneeName,
+    dueOn: entry.dueOn,
+  });
   const hydrated = useHydrated();
 
   // Lifecycle changes made elsewhere on this page (e.g. Archive in the menu)
@@ -120,6 +134,7 @@ export function EntryEditor({
   const policyEntry = {
     status: state.status,
     authorId: entry.authorId,
+    assigneeId: assignment.assigneeId,
     publishedAt: state.publishedAt,
   };
   const editable = canEditEntry(role, userId, policyEntry) && saveStatus !== "conflict";
@@ -230,13 +245,17 @@ export function EntryEditor({
     };
   }, [save]);
 
-  async function runWorkflow(action: WorkflowAction, scheduledAt?: string) {
+  async function runWorkflow(
+    action: WorkflowAction,
+    options: { scheduledAt?: string; note?: string } = {},
+  ) {
     setWorkflowPending(true);
     try {
       if (!(await save())) return "Save your latest changes first.";
       const result = await entryWorkflowAction(siteId, entry.id, {
         action,
-        scheduledAt,
+        scheduledAt: options.scheduledAt,
+        note: options.note,
         expectedUpdatedAt: version.current,
       });
       if (!result.ok) {
@@ -375,6 +394,17 @@ export function EntryEditor({
           </Banner>
         )
       )}
+      {doc.reviewFeedback && state.status === "draft" && (
+        <Banner tone="warning" icon={MessageSquareWarning}>
+          <span className="min-w-0 flex-1 break-words">
+            <span className="font-medium">{doc.reviewFeedback.byName} requested changes</span>
+            {doc.reviewFeedback.note ? `: “${doc.reviewFeedback.note}”` : "."}{" "}
+            <span className="text-muted-foreground">
+              {formatDate(doc.reviewFeedback.at)}. Request review again when it&apos;s ready.
+            </span>
+          </span>
+        </Banner>
+      )}
 
       <div className="grid flex-1 grid-cols-[minmax(0,1fr)] gap-8 px-4 py-6 sm:px-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="mx-auto flex w-full max-w-3xl min-w-0 flex-col">
@@ -450,6 +480,22 @@ export function EntryEditor({
         </div>
 
         <aside aria-label="Entry settings" className="flex flex-col gap-3">
+          <AssignmentPanel
+            siteId={siteId}
+            entryId={entry.id}
+            role={role}
+            userId={userId}
+            entry={{
+              status: state.status,
+              authorId: entry.authorId,
+              publishedAt: state.publishedAt,
+            }}
+            assignment={assignment}
+            assignees={assignees}
+            today={today}
+            assignmentsHref={siteHref(siteId, "team", "assignments")}
+            onChange={setAssignment}
+          />
           <UrlPanel
             modelKey={entry.modelKey}
             slug={state.slug}
@@ -551,7 +597,7 @@ function Banner({
   icon: Icon,
   children,
 }: {
-  tone: "error" | "muted";
+  tone: "error" | "muted" | "warning";
   icon: typeof Lock;
   children: React.ReactNode;
 }) {
@@ -561,7 +607,9 @@ function Banner({
       className={
         tone === "error"
           ? "border-destructive/30 bg-destructive/5 text-destructive flex flex-wrap items-center gap-3 border-b px-4 py-3 text-sm sm:px-8"
-          : "bg-muted text-muted-foreground flex items-center gap-2 border-b px-4 py-3 text-sm sm:px-8"
+          : tone === "warning"
+            ? "border-warning/40 bg-warning-soft [&>svg]:text-warning flex items-start gap-2 border-b px-4 py-3 text-sm sm:px-8 [&>svg]:mt-0.5"
+            : "bg-muted text-muted-foreground flex items-center gap-2 border-b px-4 py-3 text-sm sm:px-8"
       }
     >
       <Icon className="size-4 shrink-0" aria-hidden />

@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
   boolean,
+  date,
   index,
   integer,
   jsonb,
@@ -12,6 +13,7 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import type { ReviewFeedback } from "@/lib/editor/types";
 
 /*
  * Database schema. Every site-scoped table carries `site_id`, and every query
@@ -284,6 +286,12 @@ export const contentEntries = pgTable(
     data: jsonb("data").$type<Record<string, unknown>>().notNull().default({}),
     seo: jsonb("seo").$type<EntrySeo>().notNull().default({}),
     authorId: text("author_id").references(() => users.id, { onDelete: "set null" }),
+    /** The member working on it (see src/server/assignments.ts). Changing it keeps updatedAt. */
+    assigneeId: text("assignee_id").references(() => users.id, { onDelete: "set null" }),
+    /** Optional due date (a calendar day, no time). */
+    dueOn: date("due_on", { mode: "string" }),
+    /** A reviewer's response; cleared when it's sent for review again or published. */
+    reviewFeedback: jsonb("review_feedback").$type<ReviewFeedback>(),
     scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
     publishedAt: timestamp("published_at", { withTimezone: true }),
     createdAt: createdAt(),
@@ -291,6 +299,7 @@ export const contentEntries = pgTable(
   },
   (t) => [
     uniqueIndex("content_entries_site_model_slug_unique").on(t.siteId, t.modelId, t.slug),
+    index("content_entries_site_assignee_idx").on(t.siteId, t.assigneeId),
     index("content_entries_site_status_idx").on(t.siteId, t.status),
     index("content_entries_site_updated_idx").on(t.siteId, t.updatedAt),
   ],
@@ -442,12 +451,18 @@ export const mediaAssets = pgTable(
   ],
 );
 
+/**
+ * The site's activity log (Team › Activity, src/server/activity.ts). Writes record a row in
+ * the same transaction as the change they describe; metadata carries display snapshots.
+ */
 export const auditEvents = pgTable(
   "audit_events",
   {
     id: id(),
     siteId: text("site_id").references(() => sites.id, { onDelete: "cascade" }),
     actorId: text("actor_id").references(() => users.id, { onDelete: "set null" }),
+    /** The actor's name, kept when their account is deleted (actor_id becomes null). */
+    actorName: text("actor_name"),
     /** Dotted action name, e.g. "site.created", "ownership.transfer_requested". */
     action: text("action").notNull(),
     targetType: text("target_type"),

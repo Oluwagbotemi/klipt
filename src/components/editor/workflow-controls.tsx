@@ -1,7 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarClock, ChevronDown, Loader2, Send, Undo2, Upload } from "lucide-react";
+import {
+  CalendarClock,
+  ChevronDown,
+  Loader2,
+  MessageSquareWarning,
+  Send,
+  Undo2,
+  Upload,
+} from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,9 +37,9 @@ function localInputValue(minutesFromNow: number) {
 }
 
 /**
- * Publish / schedule / unpublish for publishers; submit / withdraw for authors.
- * Publishing is confirmed with a summary of open SEO suggestions, which never
- * block it.
+ * Publish / schedule / unpublish for publishers, plus "Request changes" on
+ * entries in review; request review / withdraw for authors. Publishing is
+ * confirmed with a summary of open SEO suggestions, which never block it.
  */
 export function WorkflowControls({
   allowed,
@@ -44,15 +52,19 @@ export function WorkflowControls({
   status: string;
   pending: boolean;
   suggestions: string[];
-  onAction: (action: WorkflowAction, scheduledAt?: string) => Promise<string | null>;
+  onAction: (
+    action: WorkflowAction,
+    options?: { scheduledAt?: string; note?: string },
+  ) => Promise<string | null>;
 }) {
-  const [dialog, setDialog] = useState<"publish" | "schedule" | null>(null);
+  const [dialog, setDialog] = useState<"publish" | "schedule" | "changes" | null>(null);
   const [when, setWhen] = useState(() => localInputValue(60));
+  const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  async function run(action: WorkflowAction, scheduledAt?: string) {
+  async function run(action: WorkflowAction, options?: { scheduledAt?: string; note?: string }) {
     setError(null);
-    const failure = await onAction(action, scheduledAt);
+    const failure = await onAction(action, options);
     if (failure) setError(failure);
     else setDialog(null);
   }
@@ -63,7 +75,7 @@ export function WorkflowControls({
     return allowed.submit ? (
       <Button onClick={() => run("submit")} disabled={pending}>
         {spinner ?? <Send aria-hidden />}
-        Submit for review
+        Request review
       </Button>
     ) : (
       <Button variant="outline" onClick={() => run("withdraw")} disabled={pending}>
@@ -73,7 +85,7 @@ export function WorkflowControls({
     );
   }
 
-  const menu = allowed.schedule || allowed.unpublish;
+  const menu = allowed.schedule || allowed.unpublish || allowed.request_changes;
   if (!allowed.publish && !menu) return null;
 
   return (
@@ -86,7 +98,11 @@ export function WorkflowControls({
             className={menu ? "rounded-r-none" : undefined}
           >
             {spinner ?? <Upload aria-hidden />}
-            {status === "scheduled" ? "Publish now" : "Publish"}
+            {status === "scheduled"
+              ? "Publish now"
+              : status === "in_review"
+                ? "Approve and publish"
+                : "Publish"}
           </Button>
         ) : (
           <Button variant="outline" disabled className={menu ? "rounded-r-none" : undefined}>
@@ -107,6 +123,18 @@ export function WorkflowControls({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
+              {allowed.request_changes && (
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setNote("");
+                    setError(null);
+                    setDialog("changes");
+                  }}
+                >
+                  <MessageSquareWarning aria-hidden />
+                  Request changes…
+                </DropdownMenuItem>
+              )}
               {allowed.schedule && (
                 <DropdownMenuItem
                   onSelect={() => {
@@ -204,12 +232,57 @@ export function WorkflowControls({
                   setError("Pick a date and time.");
                   return;
                 }
-                void run("schedule", date.toISOString());
+                void run("schedule", { scheduledAt: date.toISOString() });
               }}
               disabled={pending}
             >
               {spinner}
               Schedule
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={dialog === "changes"} onOpenChange={(open) => !open && setDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogTitle>Request changes</AlertDialogTitle>
+          <AlertDialogDescription>
+            It goes back to draft so the writer can edit it again. They&apos;ll see your note at the
+            top of the entry. Klipt doesn&apos;t send email yet, so let them know if it&apos;s
+            urgent.
+          </AlertDialogDescription>
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="review-note" className="text-sm font-medium">
+              What should change?{" "}
+              <span className="text-muted-foreground font-normal">(optional)</span>
+            </label>
+            <textarea
+              id="review-note"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              maxLength={1000}
+              rows={4}
+              className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 rounded-lg border px-3 py-2 text-sm outline-none focus-visible:ring-[3px]"
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? "review-note-error" : undefined}
+            />
+            {error && (
+              <p id="review-note-error" className="text-destructive text-sm" role="alert">
+                {error}
+              </p>
+            )}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void run("request_changes", { note: note.trim() });
+              }}
+              disabled={pending}
+            >
+              {spinner}
+              Send back
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

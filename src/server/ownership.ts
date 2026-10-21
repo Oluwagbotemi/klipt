@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { and, eq, gt, isNull, sql } from "drizzle-orm";
+import { clearAssignments } from "@/server/assignments";
 import type { DbOrTx } from "@/server/db";
 import { isUniqueViolation } from "@/server/db/errors";
 import { auditEvents, siteMembers, siteOwnershipTransfers, sites, users } from "@/server/db/schema";
@@ -318,6 +319,7 @@ export async function acceptTransfer(
       await tx
         .delete(siteMembers)
         .where(and(eq(siteMembers.siteId, siteId), eq(siteMembers.userId, currentOwner.userId)));
+      await clearAssignments(tx, siteId, currentOwner.userId, user.id, null);
     }
     await tx
       .insert(siteMembers)

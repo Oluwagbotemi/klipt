@@ -6,10 +6,11 @@
  * first when using local PGlite (single-process).
  */
 import { createHash, randomBytes } from "node:crypto";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { createAuth } from "@/server/auth";
 import { getDb } from "@/server/db";
 import {
+  auditEvents,
   contentEntries,
   contentModels,
   sessions,
@@ -163,6 +164,127 @@ async function seedEntries(
   );
 }
 
+/** Demo assignments, a review request and a week of activity on Northwind. */
+async function seedTeamWork(
+  db: SeedDb,
+  siteId: string,
+  people: { sam: string; morgan: string; riley: string },
+) {
+  const rows = await db
+    .select({ id: contentEntries.id, title: contentEntries.title })
+    .from(contentEntries)
+    .where(eq(contentEntries.siteId, siteId));
+  const byTitle = new Map(rows.map((row) => [row.title, row.id]));
+  const entry = (title: string) => {
+    const id = byTitle.get(title);
+    if (!id) throw new Error(`Seed entry missing: ${title}`);
+    return { id, title };
+  };
+  const day = (offset: number) => new Date(Date.now() + offset * DAY).toISOString().slice(0, 10);
+
+  const spring = entry("Spring planting guide for small gardens");
+  const tides = entry("What the tide tables don't tell you");
+  const lights = entry("How we photograph the northern lights");
+  const festival = entry("Notes from a rainy festival weekend");
+  const winter = entry("Winter reading list");
+  const assign = (id: string, assigneeId: string, dueOn: string | null) =>
+    db
+      .update(contentEntries)
+      .set({ assigneeId, dueOn, updatedAt: sql`${contentEntries.updatedAt}` })
+      .where(eq(contentEntries.id, id));
+  await assign(spring.id, people.riley, day(3));
+  await assign(tides.id, people.sam, day(-1));
+  await assign(lights.id, people.riley, null);
+  await assign(festival.id, people.morgan, day(2));
+
+  const at = (daysAgo: number, hour = 0) => new Date(Date.now() - daysAgo * DAY - hour * 3600_000);
+  const content = (targetId: string) => ({ targetType: "content_entry", targetId });
+  await db.insert(auditEvents).values(
+    [
+      {
+        action: "member.joined",
+        actorId: people.riley,
+        targetType: "member",
+        targetId: people.riley,
+        metadata: { role: "author" },
+        createdAt: at(6, 3),
+      },
+      {
+        action: "member.joined",
+        actorId: people.morgan,
+        targetType: "member",
+        targetId: people.morgan,
+        metadata: { role: "editor" },
+        createdAt: at(6, 1),
+      },
+      {
+        action: "seo.defaults_changed",
+        actorId: people.sam,
+        targetType: "site",
+        targetId: siteId,
+        metadata: {},
+        createdAt: at(5, 2),
+      },
+      {
+        action: "content.published",
+        actorId: people.sam,
+        ...content(winter.id),
+        metadata: { title: winter.title, from: "draft", to: "published" },
+        createdAt: at(4, 5),
+      },
+      {
+        action: "content.created",
+        actorId: people.riley,
+        ...content(spring.id),
+        metadata: { title: spring.title, model: "post" },
+        createdAt: at(3, 6),
+      },
+      {
+        action: "content.assigned",
+        actorId: people.sam,
+        ...content(spring.id),
+        metadata: { title: spring.title, assigneeId: people.riley, assigneeName: "Riley Chen" },
+        createdAt: at(3, 2),
+      },
+      {
+        action: "content.due_changed",
+        actorId: people.sam,
+        ...content(spring.id),
+        metadata: { title: spring.title, dueOn: day(3) },
+        createdAt: at(3, 2),
+      },
+      {
+        action: "content.submitted_for_review",
+        actorId: people.riley,
+        ...content(lights.id),
+        metadata: { title: lights.title, from: "draft", to: "in_review" },
+        createdAt: at(2, 4),
+      },
+      {
+        action: "content.assigned",
+        actorId: people.sam,
+        ...content(festival.id),
+        metadata: { title: festival.title, assigneeId: people.morgan, assigneeName: "Morgan Lee" },
+        createdAt: at(1, 8),
+      },
+      {
+        action: "content.updated",
+        actorId: people.riley,
+        ...content(spring.id),
+        metadata: { title: spring.title },
+        createdAt: at(1, 3),
+      },
+      {
+        action: "content.assigned",
+        actorId: people.sam,
+        ...content(tides.id),
+        metadata: { title: tides.title, assigneeId: people.sam, assigneeName: "Sam Rivera" },
+        createdAt: at(0, 5),
+      },
+    ].map((event) => ({ siteId, ...event })),
+  );
+}
+
 async function main() {
   if (process.env.DATABASE_URL && !process.argv.includes("--force")) {
     console.error("DATABASE_URL is set. Refusing to seed demo data without --force.");
@@ -194,7 +316,10 @@ async function main() {
     name: "Northwind Journal",
     domain: "northwindjournal.example",
   });
-  await db.insert(siteMembers).values({ siteId: northwind.id, userId: rileyId, role: "author" });
+  await db.insert(siteMembers).values([
+    { siteId: northwind.id, userId: rileyId, role: "author" },
+    { siteId: northwind.id, userId: morganId, role: "editor" },
+  ]);
   const harbor = await createSite(db, samId, {
     name: "Harbor & Pine Studio",
     domain: "harborpine.example",
@@ -242,6 +367,7 @@ async function main() {
     ["page", "Store locations", "archived", morganId],
   ]);
   await seedTaxonomy(db, northwind.id, samId);
+  await seedTeamWork(db, northwind.id, { sam: samId, morgan: morganId, riley: rileyId });
   await seedEntries(db, harbor.id, [
     ["page", "Home", "published", samId],
     ["page", "Our work", "draft", samId],

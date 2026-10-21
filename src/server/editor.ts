@@ -1,4 +1,6 @@
 import { and, eq, lte, ne, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
+import { recordEntryEdit } from "@/server/activity";
 import type { DbOrTx } from "@/server/db";
 import {
   auditEvents,
@@ -41,7 +43,7 @@ export class ConflictError extends Error {
 export class EditorValidationError extends Error {
   constructor(
     message: string,
-    readonly field: "title" | "slug" | "seo" | "body" | "scheduledAt" | "fields",
+    readonly field: "title" | "slug" | "seo" | "body" | "scheduledAt" | "fields" | "review",
     /** For "fields": the key of the content type field that's wrong. */
     readonly fieldKey?: string,
   ) {
@@ -50,6 +52,7 @@ export class EditorValidationError extends Error {
 }
 
 const iso = (date: Date | null) => date?.toISOString() ?? null;
+const assignee = alias(users, "assignee");
 
 /**
  * Publishes scheduled entries whose time has come. Runs before reads until a
@@ -122,10 +125,12 @@ export async function getEntryDocument(
       schemaType: contentModels.schemaType,
       modelFields: contentModels.fields,
       authorName: users.name,
+      assigneeName: assignee.name,
     })
     .from(contentEntries)
     .innerJoin(contentModels, eq(contentModels.id, contentEntries.modelId))
     .leftJoin(users, eq(users.id, contentEntries.authorId))
+    .leftJoin(assignee, eq(assignee.id, contentEntries.assigneeId))
     .where(and(eq(contentEntries.siteId, siteId), eq(contentEntries.id, entryId)))
     .limit(1);
   if (!row) return null;
@@ -149,6 +154,9 @@ export async function getEntryDocument(
       isSystemModel: row.isSystemModel,
       authorId: entry.authorId,
       authorName: row.authorName,
+      assigneeId: entry.assigneeId,
+      assigneeName: row.assigneeName,
+      dueOn: entry.dueOn,
       createdAt: entry.createdAt.toISOString(),
       updatedAt: entry.updatedAt.toISOString(),
       publishedAt: iso(entry.publishedAt),
@@ -161,6 +169,7 @@ export async function getEntryDocument(
     fields: row.modelFields,
     values,
     refs: await fieldRefsFor(db, siteId, row.modelFields, values),
+    reviewFeedback: entry.reviewFeedback ?? null,
   };
 }
 
@@ -268,6 +277,7 @@ export async function saveEntry(
     if (updated.status === "published") {
       await enqueueEntryEvent(tx, siteId, "entry.updated", { ...updated, modelKey });
     }
+    await recordEntryEdit(tx, siteId, userId, updated);
     return stateOf(updated);
   });
 }
@@ -359,7 +369,7 @@ export async function changeSlug(
       action: "content.slug_changed",
       targetType: "content_entry",
       targetId: entryId,
-      metadata: { from, to, redirect: redirectCreated },
+      metadata: { title: updated.title, from, to, redirect: redirectCreated },
     });
     if (updated.status === "published") {
       await enqueueEntryEvent(
@@ -380,16 +390,35 @@ const AUDIT_ACTION: Record<WorkflowAction, string> = {
   unpublish: "content.unpublished",
   submit: "content.submitted_for_review",
   withdraw: "content.withdrawn_from_review",
+  request_changes: "content.changes_requested",
 };
 
-/** Publish, schedule, unpublish, submit for review, or withdraw from review. */
+export const MAX_REVIEW_NOTE = 1000;
+
+/**
+ * Publish, schedule, unpublish, submit for review, withdraw from review, or
+ * (for reviewers) send it back with requested changes and an optional note.
+ * Sending for review again, publishing or scheduling clears that feedback.
+ */
 export async function transitionEntry(
   db: DbOrTx,
   userId: string,
   siteId: string,
   entryId: string,
-  input: { action: WorkflowAction; scheduledAt?: string | null; expectedUpdatedAt: string },
+  input: {
+    action: WorkflowAction;
+    scheduledAt?: string | null;
+    note?: string | null;
+    expectedUpdatedAt: string;
+  },
 ): Promise<EntryState> {
+  const note = String(input.note ?? "").trim();
+  if (note.length > MAX_REVIEW_NOTE) {
+    throw new EditorValidationError(
+      `Keep the note to ${MAX_REVIEW_NOTE} characters or fewer.`,
+      "review",
+    );
+  }
   return db.transaction(async (tx) => {
     const { role, entry, modelKey, modelFields } = await lockForEdit(
       tx,
@@ -419,7 +448,12 @@ export async function transitionEntry(
     let changes: Partial<typeof contentEntries.$inferInsert>;
     switch (input.action) {
       case "publish":
-        changes = { status: "published", publishedAt: entry.publishedAt ?? now, scheduledAt: null };
+        changes = {
+          status: "published",
+          publishedAt: entry.publishedAt ?? now,
+          scheduledAt: null,
+          reviewFeedback: null,
+        };
         break;
       case "schedule": {
         const when = input.scheduledAt ? new Date(input.scheduledAt) : null;
@@ -430,18 +464,36 @@ export async function transitionEntry(
         if (when.getTime() > now.getTime() + maxAhead) {
           throw new EditorValidationError("Schedule within the next five years.", "scheduledAt");
         }
-        changes = { status: "scheduled", scheduledAt: when };
+        changes = { status: "scheduled", scheduledAt: when, reviewFeedback: null };
         break;
       }
       case "unpublish":
         changes = { status: "draft", scheduledAt: null };
         break;
       case "submit":
-        changes = { status: "in_review" };
+        changes = { status: "in_review", reviewFeedback: null };
         break;
       case "withdraw":
         changes = { status: "draft" };
         break;
+      case "request_changes": {
+        const [reviewer] = await tx
+          .select({ name: users.name })
+          .from(users)
+          .where(eq(users.id, userId))
+          .limit(1);
+        changes = {
+          status: "draft",
+          reviewFeedback: {
+            kind: "changes_requested",
+            note,
+            byId: userId,
+            byName: reviewer?.name ?? "A reviewer",
+            at: now.toISOString(),
+          },
+        };
+        break;
+      }
     }
 
     const [updated] = await tx
@@ -472,6 +524,7 @@ export async function transitionEntry(
         from: entry.status,
         to: updated.status,
         ...(updated.scheduledAt ? { scheduledAt: updated.scheduledAt.toISOString() } : {}),
+        ...(input.action === "request_changes" && note ? { note } : {}),
       },
     });
     const wasLive = entry.status === "published";

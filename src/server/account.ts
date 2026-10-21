@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, gt, ne, sql } from "drizzle-orm";
 import type { DbOrTx } from "@/server/db";
 import { isUniqueViolation } from "@/server/db/errors";
+import { keepActorName } from "@/server/activity";
 import { sessions, siteMembers, sites, users } from "@/server/db/schema";
 import { describeDevice, type AccountSession, type OwnedSite } from "@/lib/account";
 
@@ -122,7 +123,7 @@ export async function listOwnedSites(db: DbOrTx, userId: string): Promise<OwnedS
  * Permanently deletes the account. Refused while the user owns a site. Their
  * memberships, sessions and sign-in details go with it; content, media,
  * redirects, keys, webhooks and history they created stay on the sites with
- * the author cleared (the foreign keys set it to null).
+ * the author cleared (the foreign keys set it to null). Activity keeps their name.
  */
 export async function deleteAccount(db: DbOrTx, userId: string, confirmEmail: string) {
   return db.transaction(async (tx) => {
@@ -143,6 +144,8 @@ export async function deleteAccount(db: DbOrTx, userId: string, confirmEmail: st
       .for("update");
     const owned = await listOwnedSites(tx, userId);
     if (owned.length > 0) throw new OwnsSitesError(owned);
+    // Site activity keeps their name; actor_id is cleared by the foreign key.
+    await keepActorName(tx, userId);
     await tx.delete(users).where(eq(users.id, userId));
   });
 }

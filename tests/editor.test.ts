@@ -133,6 +133,7 @@ describe("editing policy", () => {
       unpublish: false,
       submit: true,
       withdraw: false,
+      request_changes: false,
     });
     assert.equal(workflowActions("editor", "editor", draft).publish, true);
     assert.equal(workflowActions("editor", "editor", draft).submit, false);

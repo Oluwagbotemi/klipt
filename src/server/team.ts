@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { and, asc, count, desc, eq, gt, isNull, sql } from "drizzle-orm";
+import { clearAssignments } from "@/server/assignments";
 import type { DbOrTx } from "@/server/db";
 import { isUniqueViolation } from "@/server/db/errors";
 import { auditEvents, siteInvitations, siteMembers, sites, users } from "@/server/db/schema";
@@ -281,6 +282,9 @@ export async function changeMemberRole(
       from: member.role,
       to: role,
     });
+    if (!can(role as InvitableRole, "content.create")) {
+      await clearAssignments(tx, siteId, memberId, userId, member.name);
+    }
   });
 }
 
@@ -307,6 +311,7 @@ export async function removeMember(db: DbOrTx, userId: string, siteId: string, m
       memberId,
       { name: member.name, role: member.role },
     );
+    await clearAssignments(tx, siteId, memberId, userId, member.name);
   });
 }
 
