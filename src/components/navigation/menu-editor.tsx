@@ -101,7 +101,9 @@ export function MenuEditor({
   const [announcement, setAnnouncement] = useState("");
   const [saving, startSaving] = useTransition();
   const [reloading, startReloading] = useTransition();
+  const [leaving, setLeaving] = useState<string | null>(null);
   const focusAfter = useRef<{ key: string; action: Action | "edit" } | null>(null);
+  const latestItems = useRef(items);
 
   // Newer data from the server (after a save elsewhere and "Load latest") replaces local state.
   const [syncedVersion, setSyncedVersion] = useState(menu.updatedAt);
@@ -118,10 +120,31 @@ export function MenuEditor({
   const dirty = snapshot(items) !== snapshot(savedItems);
 
   useEffect(() => {
+    latestItems.current = items;
+  }, [items]);
+
+  useEffect(() => {
     if (!dirty) return;
     const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    // In-app links don't unload the page, so ask before following them too.
+    const guardLinks = (event: MouseEvent) => {
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return;
+      }
+      const link = (event.target as Element | null)?.closest?.("a[href]");
+      if (!(link instanceof HTMLAnchorElement) || link.target === "_blank" || link.download) return;
+      const url = new URL(link.href);
+      if (url.origin !== window.location.origin) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setLeaving(url.pathname + url.search + url.hash);
+    };
     window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
+    document.addEventListener("click", guardLinks, true);
+    return () => {
+      window.removeEventListener("beforeunload", warn);
+      document.removeEventListener("click", guardLinks, true);
+    };
   }, [dirty]);
 
   // Keep keyboard focus on the button that was used, wherever the item moved.
@@ -157,6 +180,7 @@ export function MenuEditor({
 
   function save() {
     setError(null);
+    const submitted = snapshot(items);
     startSaving(async () => {
       const result = await saveMenuAction(siteId, menu.key, {
         items: toInput(items),
@@ -165,8 +189,9 @@ export function MenuEditor({
       if (result.ok) {
         setVersion(result.menu.updatedAt);
         setSyncedVersion(result.menu.updatedAt);
-        setItems(result.menu.items);
         setSavedItems(result.menu.items);
+        // Keep edits made while the save was running; they stay unsaved.
+        if (snapshot(latestItems.current) === submitted) setItems(result.menu.items);
         toast.success(`${menu.name} menu saved.`);
       } else {
         setError({ message: result.error, conflict: result.conflict, index: result.index });
@@ -380,6 +405,27 @@ export function MenuEditor({
               }}
             >
               Remove links
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={leaving !== null} onOpenChange={(open) => !open && setLeaving(null)}>
+        <AlertDialogContent>
+          <AlertDialogTitle>Leave without saving?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Your changes to the {menu.name} menu haven&apos;t been saved and will be lost.
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep editing</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                if (leaving) router.push(leaving);
+                setLeaving(null);
+              }}
+            >
+              Discard changes
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
