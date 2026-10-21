@@ -10,7 +10,7 @@ import { FormField } from "@/components/form-field";
 import { InlineAlert } from "@/components/inline-alert";
 import { Button } from "@/components/ui/button";
 import { DialogClose, DialogFooter } from "@/components/ui/dialog";
-import { WEBHOOK_EVENT_KEYS, WEBHOOK_EVENTS, type WebhookSummary } from "@/lib/webhooks";
+import { DEFAULT_WEBHOOK_EVENTS, WEBHOOK_EVENTS, type WebhookSummary } from "@/lib/webhooks";
 
 /** Add or edit a webhook. Used inside a dialog; `onSaved` closes it after an edit. */
 export function WebhookForm({
@@ -26,7 +26,7 @@ export function WebhookForm({
     values: {
       url: webhook?.url ?? "",
       description: webhook?.description ?? "",
-      events: webhook?.events ?? [...WEBHOOK_EVENT_KEYS],
+      events: webhook?.events ?? [...DEFAULT_WEBHOOK_EVENTS],
     },
   } satisfies WebhookFormState);
 

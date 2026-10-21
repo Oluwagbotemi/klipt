@@ -22,6 +22,7 @@ export const PERMISSIONS = {
   "content.publish": ["owner", "admin", "editor"],
   "seo.manage": ["owner", "admin", "editor"],
   "taxonomy.manage": ["owner", "admin", "editor"],
+  "navigation.manage": ["owner", "admin", "editor"],
   "media.upload": ["owner", "admin", "editor", "author"],
   "api_keys.manage": ["owner", "admin"],
   "webhooks.manage": ["owner", "admin"],

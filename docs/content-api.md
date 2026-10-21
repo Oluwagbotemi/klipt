@@ -40,6 +40,8 @@ curl "https://klipt.example.com/api/v1/entries?type=post" \
 | `GET /resolve?path=/posts/hello` | What's at a URL on your site: an entry, a term archive, a redirect, or 404                         |
 | `GET /sitemap`                   | `kind`, `path`, `url` and `lastModified` for every page that belongs in sitemap                    |
 | `GET /redirects`                 | Every redirect: `from`, `to`, `statusCode`                                                         |
+| `GET /menus`                     | The site's menus: `key`, `name`, `updatedAt` (links not included)                                  |
+| `GET /menus/{key}`               | One menu's links, nested (see [Menus](#menus))                                                     |
 | `GET /preview?token=…`           | An entry's current content, drafts included, for a preview link (§ 5)                              |
 
 `type` is a content type key: `page`, `post`, or a custom model's key.
@@ -228,6 +230,103 @@ Errors use `{ "error": { "code": "…", "message": "…" } }` with status `400` 
 Responses are sent with `Cache-Control: private, no-store`. Cache on your side, and use
 [webhooks](#4-webhooks) to refresh as soon as something changes.
 
+### Menus
+
+Every site has a `header` and a `footer` menu; editors can add custom ones (e.g. `legal`) under
+**Navigation** in Klipt. `GET /menus/header` returns:
+
+```json
+{
+  "data": {
+    "key": "header",
+    "name": "Header",
+    "updatedAt": "2026-10-21T09:05:00.000Z",
+    "items": [
+      {
+        "label": "Company",
+        "url": "/about",
+        "openInNewTab": false,
+        "children": [
+          { "label": "Careers", "url": "/careers", "openInNewTab": false, "children": [] }
+        ]
+      },
+      { "label": "Docs", "url": "https://docs.example.com", "openInNewTab": true, "children": [] }
+    ]
+  }
+}
+```
+
+- Menus nest **two levels deep**: top-level links and one level of `children`.
+- A link to an entry is returned as the entry's current path (`/about`, `/posts/hello`), so it
+  follows URL changes. Other links are returned as entered: `https://…` URLs, site paths such as
+  `/pricing`, `#fragments`, `mailto:` or `tel:`.
+- Links to entries that aren't published (or were deleted) are left out, together with their
+  children, until the entry is live again.
+- An unknown key returns `404`.
+
+Example: a Next.js header (server component) that refreshes when the menu changes, using the
+`menu.updated` webhook (§ 4) and a cache tag:
+
+```tsx
+// app/components/site-header.tsx
+import Link from "next/link";
+
+type MenuItem = { label: string; url: string; openInNewTab: boolean; children: MenuItem[] };
+
+async function getMenu(key: string): Promise<MenuItem[]> {
+  const res = await fetch(`${process.env.KLIPT_API_URL}/menus/${key}`, {
+    headers: { Authorization: `Bearer ${process.env.KLIPT_API_KEY}` },
+    next: { tags: [`menu:${key}`] },
+  });
+  if (!res.ok) return [];
+  return (await res.json()).data.items;
+}
+
+function MenuLink({ item }: { item: MenuItem }) {
+  const external = !item.url.startsWith("/") && !item.url.startsWith("#");
+  const props = item.openInNewTab ? { target: "_blank", rel: "noopener noreferrer" } : {};
+  return external ? (
+    <a href={item.url} {...props}>
+      {item.label}
+    </a>
+  ) : (
+    <Link href={item.url} {...props}>
+      {item.label}
+    </Link>
+  );
+}
+
+export async function SiteHeader() {
+  const items = await getMenu("header");
+  return (
+    <nav aria-label="Main">
+      <ul>
+        {items.map((item) => (
+          <li key={item.label + item.url}>
+            <MenuLink item={item} />
+            {item.children.length > 0 && (
+              <ul>
+                {item.children.map((child) => (
+                  <li key={child.label + child.url}>
+                    <MenuLink item={child} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+```
+
+Then, in your webhook route (§ 4), refresh the menu when it's saved:
+
+```ts
+if (body.event === "menu.updated") revalidateTag(`menu:${body.data.menu.key}`, "max");
+```
+
 ## 3. Example: a Next.js blog
 
 ```ts
@@ -309,13 +408,14 @@ Instead of checking Klipt for changes, let Klipt tell your website. In **Setting
 Add webhook**, enter an address on your website (it must be `https://` and publicly reachable) and
 choose the events.
 
-| Event                | Sent when                                                                |
-| -------------------- | ------------------------------------------------------------------------ |
-| `entry.published`    | An entry goes live (including scheduled entries when their time comes)   |
-| `entry.updated`      | A live entry is edited. Combined: at most one every 30 seconds per entry |
-| `entry.unpublished`  | A live entry is unpublished or archived                                  |
-| `entry.slug_changed` | A live entry moves to a new URL; `previousPath` holds the old one        |
-| `ping`               | You press **Send test event**                                            |
+| Event                | Sent when                                                                           |
+| -------------------- | ----------------------------------------------------------------------------------- |
+| `entry.published`    | An entry goes live (including scheduled entries when their time comes)              |
+| `entry.updated`      | A live entry is edited. Combined: at most one every 30 seconds per entry            |
+| `entry.unpublished`  | A live entry is unpublished or archived                                             |
+| `entry.slug_changed` | A live entry moves to a new URL; `previousPath` holds the old one                   |
+| `menu.updated`       | A menu is saved. `data.menu` holds `key` and `name`. Opt-in: not checked by default |
+| `ping`               | You press **Send test event**                                                       |
 
 Klipt sends a `POST` with a JSON body:
 

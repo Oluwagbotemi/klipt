@@ -113,6 +113,12 @@ before creating or changing any screen.
   share one namespace (both are URL prefixes). Assigning terms (`setEntryTerms`) needs edit rights,
   never bumps the entry's `updatedAt` (no autosave conflicts) and queues `entry.updated` for live
   entries; term edits/deletes queue it for the live entries using them. Archive paths: `termPath()`.
+- Navigation (`src/server/menus.ts`, `src/lib/menus.ts`): header/footer menus are created lazily per
+  site; custom menus need `navigation.manage`. Max depth 2 (`MAX_MENU_DEPTH`). The editor sends a flat
+  ordered list with `depth`; `saveMenu` replaces all items, checks `expectedUpdatedAt` (conflict, never
+  overwrite) and queues the opt-in `menu.updated` webhook via `enqueueSiteEvent`. Entry items store
+  `entryId` (links follow URL changes); the API (`/api/v1/menus/{key}`) omits unpublished or deleted
+  targets and their children. Reorder logic is pure in `src/lib/menu-tree.ts`.
 - **Planned, not built — email (Resend):** Klipt sends no email yet. When added, send invitation
   links from `createInvitation`/`renewInvitation` (keep the copyable link as a fallback), then
   password reset (Better Auth `sendResetPassword`), email verification, ownership-transfer and

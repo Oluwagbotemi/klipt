@@ -23,11 +23,21 @@ export const WEBHOOK_EVENTS = [
     label: "URL changed",
     description: "A live entry moves to a new URL. Includes the previous path.",
   },
+  {
+    key: "menu.updated",
+    label: "Menu changed",
+    description: "A navigation menu is saved. Includes the menu key. Not on by default.",
+  },
 ] as const;
 
 export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number]["key"] | "ping";
 
 export const WEBHOOK_EVENT_KEYS = WEBHOOK_EVENTS.map((event) => event.key);
+
+/** Events checked when adding a webhook; menu changes are opt-in. */
+export const DEFAULT_WEBHOOK_EVENTS: string[] = WEBHOOK_EVENT_KEYS.filter(
+  (key) => key !== "menu.updated",
+);
 
 export const MAX_WEBHOOKS = 10;
 

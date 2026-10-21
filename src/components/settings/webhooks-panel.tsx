@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { formatDateTime } from "@/lib/format";
 import {
+  DEFAULT_WEBHOOK_EVENTS,
   eventLabel,
   MAX_WEBHOOKS,
   WEBHOOK_EVENT_KEYS,
@@ -25,6 +26,7 @@ import {
 
 function eventsSummary(events: string[]) {
   if (WEBHOOK_EVENT_KEYS.every((key) => events.includes(key))) return "All events";
+  if (DEFAULT_WEBHOOK_EVENTS.every((key) => events.includes(key))) return "All entry events";
   return events.map(eventLabel).join(", ");
 }
 
