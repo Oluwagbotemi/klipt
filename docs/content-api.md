@@ -31,15 +31,16 @@ curl "https://klipt.example.com/api/v1/entries?type=post" \
 
 ### Endpoints
 
-| Request                          | Returns                                                                 |
-| -------------------------------- | ----------------------------------------------------------------------- |
-| `GET /site`                      | Site name, domain, URL, language, timezone and `allowIndexing`          |
-| `GET /entries`                   | Published entries, newest first. Query: `type`, `page`, `limit` (≤ 100) |
-| `GET /entries/{type}/{slug}`     | One published entry with its body and SEO                               |
-| `GET /resolve?path=/posts/hello` | What's at a URL on your site: an entry, a redirect, or 404              |
-| `GET /sitemap`                   | `path`, `url` and `lastModified` for every page that belongs in sitemap |
-| `GET /redirects`                 | Every redirect: `from`, `to`, `statusCode`                              |
-| `GET /preview?token=…`           | An entry's current content, drafts included, for a preview link (§ 5)   |
+| Request                          | Returns                                                                                            |
+| -------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `GET /site`                      | Site name, domain, URL, language, timezone and `allowIndexing`                                     |
+| `GET /entries`                   | Published entries, newest first. Query: `type`, `page`, `limit` (≤ 100), `category`, `tag`, `term` |
+| `GET /entries/{type}/{slug}`     | One published entry with its body and SEO                                                          |
+| `GET /taxonomies/{key}`          | A taxonomy's terms with published-entry counts (a tree when nested)                                |
+| `GET /resolve?path=/posts/hello` | What's at a URL on your site: an entry, a term archive, a redirect, or 404                         |
+| `GET /sitemap`                   | `kind`, `path`, `url` and `lastModified` for every page that belongs in sitemap                    |
+| `GET /redirects`                 | Every redirect: `from`, `to`, `statusCode`                                                         |
+| `GET /preview?token=…`           | An entry's current content, drafts included, for a preview link (§ 5)                              |
 
 `type` is a content type key: `page`, `post`, or a custom model's key.
 
@@ -61,7 +62,11 @@ Lists:
       "author": { "name": "Sam Rivera" },
       "publishedAt": "2026-10-18T09:00:00.000Z",
       "updatedAt": "2026-10-18T09:05:00.000Z",
-      "fields": {}
+      "fields": {},
+      "taxonomies": {
+        "category": [{ "name": "News", "slug": "news", "path": "/category/news" }],
+        "tag": []
+      }
     }
   ],
   "pagination": { "page": 1, "limit": 20, "total": 11, "hasMore": false }
@@ -164,6 +169,58 @@ curl "https://klipt.example.com/api/v1/entries?type=product" \
 - Entries of a custom type live at `/{type}/{slug}` (e.g. `/product/red-kettle`), and `/resolve`
   finds them there.
 - A field's key never changes. Removing a field stops it appearing in `fields`.
+
+### Categories, tags and custom taxonomies
+
+Every site has **Categories** (nested, up to three levels) and **Tags** (flat), managed under
+Structure › Taxonomy. Owners and admins can add custom taxonomies such as _Region_ and choose which
+content types use them. Every entry carries a `taxonomies` object with one key per taxonomy its type
+uses (`category`, `tag`, then custom keys); each is a list of `{ name, slug, path }`, `[]` when none.
+
+Filter lists by term. Filters combine (an entry must match all of them), and a parent category also
+matches entries in the categories below it:
+
+```bash
+curl "https://klipt.example.com/api/v1/entries?type=post&category=outdoors&tag=photography" \
+  -H "Authorization: Bearer $KLIPT_API_KEY"
+# Custom taxonomies: ?term=<taxonomy key>:<slug>
+curl "https://klipt.example.com/api/v1/entries?term=region:europe" \
+  -H "Authorization: Bearer $KLIPT_API_KEY"
+```
+
+An unknown taxonomy or term returns `404`. List a taxonomy's terms, e.g. for a category menu:
+
+```json
+GET /api/v1/taxonomies/category
+{
+  "taxonomy": { "key": "category", "name": "Categories", "hierarchical": true },
+  "data": [
+    {
+      "name": "Outdoors",
+      "slug": "outdoors",
+      "path": "/category/outdoors",
+      "description": null,
+      "seo": { "title": "Outdoors", "description": "" },
+      "count": 3,
+      "children": [
+        { "name": "Wildlife", "slug": "wildlife", "path": "/category/wildlife", "count": 2, "children": [], "…": "…" }
+      ]
+    }
+  ]
+}
+```
+
+- `count` is the number of published entries that `?category=<slug>` returns, so a parent counts its
+  children's entries too. Terms with no published entries are included (`count: 0`); hide them if
+  you like. Flat taxonomies have no `children`.
+- Term archive pages live at `/category/<slug>`, `/tag/<slug>` and `/<taxonomy key>/<slug>`.
+  `/resolve?path=/category/news` returns `{ "term": { "taxonomy": "category", "name": "News",
+"slug": "news", "path": "/category/news" } }`; render the page with `/entries?category=news`.
+- **Sitemap:** `/sitemap` also lists archive pages that have at least one published entry, marked
+  `"kind": "term"` (entries are `"kind": "entry"`). Their `lastModified` is the newest of those
+  entries. Leave them out if your website doesn't build archive pages.
+- Changing an entry's terms, or renaming, moving or deleting a term a live entry uses, sends
+  `entry.updated` webhooks for the live entries affected.
 
 Errors use `{ "error": { "code": "…", "message": "…" } }` with status `400` (bad query), `401`
 (missing, invalid or revoked key), `404` or `500`.
@@ -409,5 +466,5 @@ To leave preview mode, add a route that calls `(await draftMode()).disable()`.
 
 ## Not yet available
 
-- A media endpoint; taxonomies; fields that hold several values (e.g. a list of links).
+- A media endpoint; fields that hold several values (e.g. a list of links).
 - Per-key rate limits.

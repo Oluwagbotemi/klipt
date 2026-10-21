@@ -83,4 +83,6 @@ Settings: general (name, language, time zone), your website's domain, SEO defaul
 
 Content models: custom content types (e.g. Product) and extra fields on any type (text, long text, number, date, yes/no, dropdown, image, link to content), with required fields checked on publish. Entries of custom types live under Content › Collections, and the content API returns every entry's `fields` with images and published links resolved.
 
-Next: taxonomy and navigation menus.
+Taxonomy: nested categories (up to three levels), tags and custom taxonomies (e.g. Region, for the content types you choose), with entry counts, search, and a "Categories & tags" panel in the editor that saves on its own. Authors can assign terms to their own drafts and create new tags; editors and above manage all terms. The content API returns each entry's terms, filters by `category`, `tag` or `term`, lists terms with counts (`/taxonomies/{key}`), resolves archive paths like `/category/news`, and adds archive pages with published entries to the sitemap.
+
+Next: navigation menus.

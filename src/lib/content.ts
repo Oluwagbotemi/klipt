@@ -68,6 +68,11 @@ export const contentListParams = z.object({
   status: z.enum(["active", ...CONTENT_STATUSES]).catch("active"),
   sort: z.enum(Object.keys(SORTS) as [ContentSort, ...ContentSort[]]).catch("updated_desc"),
   page: z.coerce.number().int().min(1).max(10_000).catch(1),
+  /** "taxonomyKey:slug", e.g. "category:news": entries that have that term. */
+  term: z
+    .string()
+    .regex(/^[a-z][a-z0-9-]{0,39}:[a-z0-9-]{1,80}$/)
+    .catch(""),
 });
 export type ContentListParams = z.output<typeof contentListParams>;
 
@@ -83,6 +88,7 @@ export function parseContentListParams(
     status: first(searchParams.status) ?? "active",
     sort: first(searchParams.sort) ?? "updated_desc",
     page: first(searchParams.page) ?? 1,
+    term: first(searchParams.term) ?? "",
   });
 }
 

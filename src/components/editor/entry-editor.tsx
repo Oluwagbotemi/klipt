@@ -14,6 +14,7 @@ import { PreviewButton } from "@/components/editor/preview-button";
 import { RichTextEditor } from "@/components/editor/rich-text-editor";
 import { FieldsPanel } from "@/components/editor/fields-panel";
 import { AdvancedPanel, SearchPanel, SocialPanel, seoChecks } from "@/components/editor/seo-panels";
+import { TermsPanel } from "@/components/editor/terms-panel";
 import { UrlPanel } from "@/components/editor/url-panel";
 import { WorkflowControls } from "@/components/editor/workflow-controls";
 import { Breadcrumbs } from "@/components/shell/breadcrumbs";
@@ -26,6 +27,7 @@ import { can } from "@/lib/permissions";
 import { formatDate } from "@/lib/format";
 import { siteHref } from "@/lib/navigation";
 import { entryPath, type EntrySeoInput } from "@/lib/seo";
+import type { EntryTaxonomy } from "@/lib/taxonomy";
 import type { SiteRole } from "@/lib/types";
 
 type SaveStatus = "saved" | "saving" | "error" | "conflict";
@@ -61,6 +63,7 @@ export function EntryEditor({
   userId,
   doc,
   previewHost = null,
+  taxonomies = [],
 }: {
   siteId: string;
   siteName: string;
@@ -70,6 +73,8 @@ export function EntryEditor({
   doc: EntryDocument;
   /** Host of the site's preview address on its own website, if one is set. */
   previewHost?: string | null;
+  /** Taxonomies the entry's content type uses, with its terms. */
+  taxonomies?: EntryTaxonomy[];
 }) {
   const { entry } = doc;
   const [state, setState] = useState<EntryState>({
@@ -453,6 +458,13 @@ export function EntryEditor({
             hasBeenPublished={state.publishedAt !== null}
             readOnly={!editable}
             onApply={applySlug}
+          />
+          <TermsPanel
+            siteId={siteId}
+            entryId={entry.id}
+            taxonomies={taxonomies}
+            readOnly={!editable}
+            taxonomyHref={siteHref(siteId, "taxonomy")}
           />
           <SearchPanel {...seoProps} />
           <SocialPanel {...seoProps} />

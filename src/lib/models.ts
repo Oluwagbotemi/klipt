@@ -40,8 +40,11 @@ export const SCHEMA_TYPES = [
   "HowTo",
 ] as const;
 
-/** Addresses Klipt or common websites already use; a model key becomes part of URLs. */
-const RESERVED_MODEL_KEYS = new Set([
+/**
+ * Addresses Klipt or common websites already use; a model key becomes part of
+ * URLs (and so does a taxonomy key: /category/…, /tag/…).
+ */
+export const RESERVED_MODEL_KEYS = new Set([
   "page",
   "pages",
   "post",
@@ -55,6 +58,8 @@ const RESERVED_MODEL_KEYS = new Set([
   "preview",
   "static",
   "assets",
+  "category",
+  "tag",
 ]);
 /** Field keys that would clash with an entry's own properties in the API. */
 const RESERVED_FIELD_KEYS = new Set([

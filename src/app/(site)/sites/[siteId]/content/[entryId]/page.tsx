@@ -4,6 +4,7 @@ import { getEntryDocument } from "@/lib/data/content";
 import { getSitePreviewUrl } from "@/lib/data/previews";
 import { requireUser } from "@/lib/data/session";
 import { getSite } from "@/lib/data/sites";
+import { getEntryTaxonomies } from "@/lib/data/taxonomy";
 
 export async function generateMetadata({
   params,
@@ -17,11 +18,12 @@ export default async function EntryPage({
   params,
 }: PageProps<"/sites/[siteId]/content/[entryId]">) {
   const { siteId, entryId } = await params;
-  const [user, site, doc, previewUrl] = await Promise.all([
+  const [user, site, doc, previewUrl, taxonomies] = await Promise.all([
     requireUser(),
     getSite(siteId),
     getEntryDocument(siteId, entryId),
     getSitePreviewUrl(siteId),
+    getEntryTaxonomies(siteId, entryId),
   ]);
 
   return (
@@ -34,6 +36,7 @@ export default async function EntryPage({
       userId={user.id}
       doc={doc}
       previewHost={previewUrl ? new URL(previewUrl).host : null}
+      taxonomies={taxonomies}
     />
   );
 }

@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   boolean,
   index,
   integer,
@@ -312,6 +313,81 @@ export const contentRevisions = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index("content_revisions_entry_idx").on(t.entryId, t.createdAt)],
+);
+
+// ---------------------------------------------------------------------------
+// Taxonomy
+// ---------------------------------------------------------------------------
+
+/**
+ * A way of grouping entries. Every site has the system "category"
+ * (hierarchical) and "tag" taxonomies; custom ones (e.g. "region") apply to
+ * the content types listed in `modelKeys`. System taxonomies apply to all types.
+ */
+export const taxonomies = pgTable(
+  "taxonomies",
+  {
+    id: id(),
+    siteId: text("site_id")
+      .notNull()
+      .references(() => sites.id, { onDelete: "cascade" }),
+    /** Stable API identifier and archive URL prefix, e.g. "category", "region". */
+    key: text("key").notNull(),
+    name: text("name").notNull(),
+    description: text("description"),
+    hierarchical: boolean("hierarchical").notNull().default(false),
+    /** Content type keys that use it; ignored for system taxonomies. */
+    modelKeys: jsonb("model_keys").$type<string[]>().notNull().default([]),
+    isSystem: boolean("is_system").notNull().default(false),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [uniqueIndex("taxonomies_site_key_unique").on(t.siteId, t.key)],
+);
+
+export const terms = pgTable(
+  "terms",
+  {
+    id: id(),
+    siteId: text("site_id")
+      .notNull()
+      .references(() => sites.id, { onDelete: "cascade" }),
+    taxonomyId: text("taxonomy_id")
+      .notNull()
+      .references(() => taxonomies.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    slug: text("slug").notNull(),
+    description: text("description"),
+    /** Hierarchical taxonomies only; at most three levels, never a cycle. */
+    parentId: text("parent_id").references((): AnyPgColumn => terms.id, { onDelete: "set null" }),
+    seoTitle: text("seo_title"),
+    seoDescription: text("seo_description"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex("terms_taxonomy_slug_unique").on(t.taxonomyId, t.slug),
+    index("terms_parent_idx").on(t.parentId),
+  ],
+);
+
+export const entryTerms = pgTable(
+  "entry_terms",
+  {
+    entryId: text("entry_id")
+      .notNull()
+      .references(() => contentEntries.id, { onDelete: "cascade" }),
+    termId: text("term_id")
+      .notNull()
+      .references(() => terms.id, { onDelete: "cascade" }),
+    siteId: text("site_id")
+      .notNull()
+      .references(() => sites.id, { onDelete: "cascade" }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.entryId, t.termId] }),
+    index("entry_terms_term_idx").on(t.termId),
+  ],
 );
 
 // ---------------------------------------------------------------------------

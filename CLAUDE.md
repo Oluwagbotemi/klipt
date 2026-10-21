@@ -106,6 +106,13 @@ before creating or changing any screen.
   Delivery resolves `fields` in batch: images → absolute URL/alt/size, links → published targets only.
   Changing models needs `models.manage`; a custom model can be deleted only with no entries and no
   links to it.
+- Taxonomy (`src/server/taxonomy.ts`, rules in `src/lib/taxonomy.ts`): every site has system `category`
+  (nested, max 3 levels, no cycles) and `tag` taxonomies (created in `createSite`, backfilled by
+  migration 0008); custom ones list their `modelKeys` and need `models.manage`. Terms need
+  `taxonomy.manage`, except authors may create tags (`canCreateTerm`). Taxonomy keys and model keys
+  share one namespace (both are URL prefixes). Assigning terms (`setEntryTerms`) needs edit rights,
+  never bumps the entry's `updatedAt` (no autosave conflicts) and queues `entry.updated` for live
+  entries; term edits/deletes queue it for the live entries using them. Archive paths: `termPath()`.
 - **Planned, not built — email (Resend):** Klipt sends no email yet. When added, send invitation
   links from `createInvitation`/`renewInvitation` (keep the copyable link as a fallback), then
   password reset (Better Auth `sendResetPassword`), email verification, ownership-transfer and

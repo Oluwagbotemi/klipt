@@ -6,6 +6,7 @@ import {
   contentEntries,
   contentModels,
   mediaAssets,
+  taxonomies,
   type ContentFieldDefinition,
 } from "@/server/db/schema";
 import { NotAllowedError } from "@/server/errors";
@@ -112,6 +113,13 @@ export async function createModel(
   const { key, ...details } = parsed.data;
   try {
     return await db.transaction(async (tx) => {
+      // Both become URL prefixes (/region/…), so a content type can't share a taxonomy's key.
+      const [taxonomy] = await tx
+        .select({ id: taxonomies.id })
+        .from(taxonomies)
+        .where(and(eq(taxonomies.siteId, siteId), eq(taxonomies.key, key)))
+        .limit(1);
+      if (taxonomy) throw new ModelValidationError("A taxonomy already uses this key.", "key");
       const [model] = await tx
         .insert(contentModels)
         .values({ siteId, key, ...details, fields: [] })
