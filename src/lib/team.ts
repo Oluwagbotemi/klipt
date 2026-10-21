@@ -87,6 +87,7 @@ export const PERMISSION_LABELS: Record<SitePermission, string> = {
   "content.edit_any": "Edit anyone's content",
   "content.publish": "Publish, schedule and unpublish",
   "seo.manage": "Manage SEO settings and redirects",
+  "taxonomy.manage": "Manage categories, tags and other terms",
   "media.upload": "Upload media",
   "models.manage": "Manage content models",
   "members.manage": "Invite and manage members",

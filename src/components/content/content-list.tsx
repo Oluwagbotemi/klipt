@@ -20,6 +20,7 @@ import { ContentStatusBadge } from "@/components/content/status-badge";
 import { NewEntryButton } from "@/components/content/new-entry-button";
 import { useEntryActions } from "@/components/content/use-entry-actions";
 import { EmptyState } from "@/components/empty-state";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -70,6 +71,7 @@ function listHref(
   if (next.status !== "active") query.set("status", next.status);
   if (next.sort !== "updated_desc") query.set("sort", next.sort);
   if (next.page > 1) query.set("page", String(next.page));
+  if (next.term) query.set("term", next.term);
   const qs = query.toString();
   return qs ? `${pathname}?${qs}` : pathname;
 }
@@ -158,7 +160,8 @@ export function ContentList({
   // Counts are scoped to the search, so a search with no hits is "no matches",
   // while an empty status view only counts as filtered if anything exists at all.
   const totalAll = Object.values(list.counts).reduce((a, b) => a + b, 0);
-  const filtered = params.q !== "" || (params.status !== "active" && totalAll > 0);
+  const filtered =
+    params.q !== "" || params.term !== "" || (params.status !== "active" && totalAll > 0);
   const first = (list.page - 1) * PAGE_SIZE + 1;
   const last = first + list.items.length - 1;
 
@@ -203,6 +206,22 @@ export function ContentList({
           {canCreate && newButton}
         </div>
       </div>
+
+      {params.term && (
+        <p className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-muted-foreground">Showing entries with</span>
+          <Badge variant="secondary" className="max-w-full gap-1 font-mono break-all">
+            {params.term.replace(":", " › ")}
+            <Link
+              href={listHref(pathname, params, { term: "" })}
+              aria-label="Remove term filter"
+              className="hover:text-foreground focus-visible:ring-ring/50 -mr-1 rounded-sm outline-none focus-visible:ring-[3px]"
+            >
+              <X className="size-3.5" aria-hidden />
+            </Link>
+          </Badge>
+        </p>
+      )}
 
       <StatusFilters
         counts={list.counts}

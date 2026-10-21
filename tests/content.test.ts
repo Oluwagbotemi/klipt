@@ -27,6 +27,7 @@ const params = (overrides: Partial<ContentListParams> = {}): ContentListParams =
   status: "active",
   sort: "updated_desc",
   page: 1,
+  term: "",
   ...overrides,
 });
 

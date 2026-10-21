@@ -4,11 +4,13 @@ import { isUniqueViolation } from "@/server/db/errors";
 import {
   auditEvents,
   contentModels,
+  taxonomies,
   siteMembers,
   siteOwnershipTransfers,
   sites,
   users,
 } from "@/server/db/schema";
+import { SYSTEM_TAXONOMIES } from "@/lib/taxonomy";
 import type { SiteRole, SiteSummary } from "@/lib/types";
 import type { CreateSiteInput } from "@/lib/validation/site";
 
@@ -175,6 +177,9 @@ function insertSite(db: DbOrTx, userId: string, input: CreateSiteInput) {
     await tx
       .insert(contentModels)
       .values(SYSTEM_MODELS.map((model) => ({ ...model, siteId: site.id, isSystem: true })));
+    await tx
+      .insert(taxonomies)
+      .values(SYSTEM_TAXONOMIES.map((item) => ({ ...item, siteId: site.id, isSystem: true })));
     await tx.insert(auditEvents).values({
       siteId: site.id,
       actorId: userId,

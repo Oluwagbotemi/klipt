@@ -1,12 +1,15 @@
-import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, exists, inArray, max, sql } from "drizzle-orm";
 import { generateHTML } from "@tiptap/html/server";
 import type { DbOrTx } from "@/server/db";
 import {
   contentEntries,
   contentModels,
+  entryTerms,
   mediaAssets,
   redirects,
   sites,
+  taxonomies,
+  terms,
   users,
   type ContentFieldDefinition,
 } from "@/server/db/schema";
@@ -23,6 +26,7 @@ import {
 import { readFieldValues } from "@/lib/models";
 import { entryPath, entrySeoSchema, normalizePath, resolveSeo } from "@/lib/seo";
 import { applyTitleTemplate } from "@/lib/site-settings";
+import { appliesTo, descendantIds, termPath } from "@/lib/taxonomy";
 
 export { normalizePath };
 
@@ -62,6 +66,15 @@ export interface DeliveryEntrySummary {
   updatedAt: string;
   /** The content type's own fields; every field is present, `null` when empty. */
   fields: Record<string, DeliveryFieldValue>;
+  /** Terms by taxonomy key; every taxonomy the type uses is present, `[]` when none. */
+  taxonomies: Record<string, DeliveryTerm[]>;
+}
+
+export interface DeliveryTerm {
+  name: string;
+  slug: string;
+  /** Archive path on the site, e.g. /category/news. */
+  path: string;
 }
 
 export type DeliveryFieldValue =
@@ -108,6 +121,7 @@ export interface DeliveryList {
 
 export type ResolveResult =
   | { kind: "entry"; entry: DeliveryEntry }
+  | { kind: "term"; taxonomy: string; term: DeliveryTerm }
   | { kind: "redirect"; to: string; statusCode: number }
   | null;
 
@@ -154,6 +168,59 @@ type EntryRow = {
 };
 
 type FieldMap = Map<string, Record<string, DeliveryFieldValue>>;
+type TermMap = Map<string, Record<string, DeliveryTerm[]>>;
+
+/** Each entry's terms, grouped by taxonomy key (taxonomies its type uses only). */
+async function resolveTerms(db: DbOrTx, siteId: string, rows: EntryRow[]): Promise<TermMap> {
+  const out: TermMap = new Map();
+  if (rows.length === 0) return out;
+  const [all, assigned] = await Promise.all([
+    db
+      .select({
+        key: taxonomies.key,
+        isSystem: taxonomies.isSystem,
+        modelKeys: taxonomies.modelKeys,
+      })
+      .from(taxonomies)
+      .where(eq(taxonomies.siteId, siteId))
+      .orderBy(desc(taxonomies.isSystem), asc(taxonomies.key)),
+    db
+      .select({
+        entryId: entryTerms.entryId,
+        key: taxonomies.key,
+        name: terms.name,
+        slug: terms.slug,
+      })
+      .from(entryTerms)
+      .innerJoin(terms, eq(terms.id, entryTerms.termId))
+      .innerJoin(taxonomies, eq(taxonomies.id, terms.taxonomyId))
+      .where(
+        and(
+          eq(entryTerms.siteId, siteId),
+          inArray(
+            entryTerms.entryId,
+            rows.map((row) => row.entry.id),
+          ),
+        ),
+      )
+      .orderBy(asc(terms.name)),
+  ]);
+  for (const row of rows) {
+    const groups: Record<string, DeliveryTerm[]> = {};
+    for (const taxonomy of all) {
+      if (appliesTo(taxonomy, row.modelKey)) groups[taxonomy.key] = [];
+    }
+    out.set(row.entry.id, groups);
+  }
+  for (const term of assigned) {
+    out.get(term.entryId)?.[term.key]?.push({
+      name: term.name,
+      slug: term.slug,
+      path: termPath(term.key, term.slug),
+    });
+  }
+  return out;
+}
 
 /**
  * Field values for a batch of entries, with images resolved to absolute URLs
@@ -252,7 +319,12 @@ function excerptOf(description: string, body: RichTextDoc, max = 200): string {
   return `${cut.slice(0, cut.lastIndexOf(" ") > 0 ? cut.lastIndexOf(" ") : max)}…`;
 }
 
-function toSummary(row: EntryRow, domain: string | null, fields: FieldMap): DeliveryEntrySummary {
+function toSummary(
+  row: EntryRow,
+  domain: string | null,
+  fields: FieldMap,
+  taxonomyTerms: TermMap,
+): DeliveryEntrySummary {
   const { entry } = row;
   const path = entryPath(row.modelKey, entry.slug);
   const seo = entrySeoSchema.catch({}).parse(entry.seo);
@@ -268,6 +340,7 @@ function toSummary(row: EntryRow, domain: string | null, fields: FieldMap): Deli
     publishedAt: entry.publishedAt?.toISOString() ?? null,
     updatedAt: entry.updatedAt.toISOString(),
     fields: fields.get(entry.id) ?? {},
+    taxonomies: taxonomyTerms.get(entry.id) ?? {},
   };
 }
 
@@ -287,7 +360,11 @@ async function defaultOgImage(db: DbOrTx, site: DeliverySite) {
 }
 
 async function toEntry(db: DbOrTx, row: EntryRow, site: DeliverySite): Promise<DeliveryEntry> {
-  const summary = toSummary(row, site.domain, await resolveFields(db, site.id, [row]));
+  const [fields, taxonomyTerms] = await Promise.all([
+    resolveFields(db, site.id, [row]),
+    resolveTerms(db, site.id, [row]),
+  ]);
+  const summary = toSummary(row, site.domain, fields, taxonomyTerms);
   const body = await resolveMediaInDoc(db, row.entry.siteId, readBody(row.entry.data), {
     absolute: true,
   });
@@ -330,16 +407,63 @@ function selectEntries(db: DbOrTx) {
     .leftJoin(users, eq(users.id, contentEntries.authorId));
 }
 
-/** Published entries, newest first. `type` is a content model key such as "post". */
+export interface TermFilter {
+  taxonomy: string;
+  slug: string;
+}
+
+/**
+ * Turns term filters into term id sets: an entry matches a filter when it
+ * has the term or, in nested taxonomies, one of its children. Returns the
+ * filter that names an unknown taxonomy or term, if any.
+ */
+export async function resolveTermFilters(
+  db: DbOrTx,
+  siteId: string,
+  filters: TermFilter[],
+): Promise<{ ok: true; termSets: string[][] } | { ok: false; filter: TermFilter }> {
+  const termSets: string[][] = [];
+  for (const filter of filters) {
+    const [taxonomy] = await db
+      .select({ id: taxonomies.id, hierarchical: taxonomies.hierarchical })
+      .from(taxonomies)
+      .where(and(eq(taxonomies.siteId, siteId), eq(taxonomies.key, filter.taxonomy)))
+      .limit(1);
+    if (!taxonomy) return { ok: false, filter };
+    const all = await db
+      .select({ id: terms.id, slug: terms.slug, parentId: terms.parentId })
+      .from(terms)
+      .where(eq(terms.taxonomyId, taxonomy.id));
+    const term = all.find((item) => item.slug === filter.slug);
+    if (!term) return { ok: false, filter };
+    termSets.push(taxonomy.hierarchical ? [...descendantIds(all, term.id)] : [term.id]);
+  }
+  return { ok: true, termSets };
+}
+
+function hasAnyTerm(db: DbOrTx, termIds: string[]) {
+  return exists(
+    db
+      .select({ one: sql`1` })
+      .from(entryTerms)
+      .where(and(eq(entryTerms.entryId, contentEntries.id), inArray(entryTerms.termId, termIds))),
+  );
+}
+
+/**
+ * Published entries, newest first. `type` is a content model key such as
+ * "post"; each of `termSets` (from resolveTermFilters) must match.
+ */
 export async function listPublished(
   db: DbOrTx,
   site: DeliverySite,
-  options: { type?: string; page: number; limit: number },
+  options: { type?: string; termSets?: string[][]; page: number; limit: number },
 ): Promise<DeliveryList> {
   await publishDueEntries(db, site.id);
   const where = and(
     publishedIn(site.id),
     options.type ? eq(contentModels.key, options.type) : undefined,
+    ...(options.termSets ?? []).map((ids) => hasAnyTerm(db, ids)),
   );
   const [rows, [{ total }]] = await Promise.all([
     selectEntries(db)
@@ -353,9 +477,12 @@ export async function listPublished(
       .innerJoin(contentModels, eq(contentModels.id, contentEntries.modelId))
       .where(where),
   ]);
-  const fields = await resolveFields(db, site.id, rows);
+  const [fields, taxonomyTerms] = await Promise.all([
+    resolveFields(db, site.id, rows),
+    resolveTerms(db, site.id, rows),
+  ]);
   return {
-    items: rows.map((row) => toSummary(row, site.domain, fields)),
+    items: rows.map((row) => toSummary(row, site.domain, fields, taxonomyTerms)),
     page: options.page,
     limit: options.limit,
     total,
@@ -442,6 +569,29 @@ export async function resolvePath(
     if (entry) return { kind: "entry", entry };
   }
 
+  // Term archive pages: /category/news, /tag/seo, /region/europe.
+  if (segments.length === 2) {
+    const [term] = await db
+      .select({ name: terms.name, slug: terms.slug, key: taxonomies.key })
+      .from(terms)
+      .innerJoin(taxonomies, eq(taxonomies.id, terms.taxonomyId))
+      .where(
+        and(
+          eq(taxonomies.siteId, site.id),
+          eq(taxonomies.key, segments[0]),
+          eq(terms.slug, segments[1]),
+        ),
+      )
+      .limit(1);
+    if (term) {
+      return {
+        kind: "term",
+        taxonomy: term.key,
+        term: { name: term.name, slug: term.slug, path: termPath(term.key, term.slug) },
+      };
+    }
+  }
+
   const [redirect] = await db
     .select({ to: redirects.toPath, statusCode: redirects.statusCode })
     .from(redirects)
@@ -479,12 +629,118 @@ export async function listSitemap(db: DbOrTx, site: DeliverySite) {
     .orderBy(asc(contentModels.key), asc(contentEntries.slug));
 
   const base = siteUrl(site.domain);
-  return rows.flatMap((row) => {
+  const entries = rows.flatMap((row) => {
     const stored = entrySeoSchema.catch({}).parse(row.seo);
     if (!resolveSeo(stored, row.title).includeInSitemap) return [];
     const path = entryPath(row.modelKey, row.slug);
     const url = base ? `${base}${path}` : null;
     if (stored.canonicalUrl && stored.canonicalUrl !== url) return [];
-    return [{ path, url, lastModified: row.updatedAt.toISOString() }];
+    return [{ kind: "entry" as const, path, url, lastModified: row.updatedAt.toISOString() }];
   });
+  const archives = (await listTermArchives(db, site.id)).map((row) => {
+    const path = termPath(row.key, row.slug);
+    return {
+      kind: "term" as const,
+      path,
+      url: base ? `${base}${path}` : null,
+      lastModified: row.lastModified ? new Date(row.lastModified).toISOString() : null,
+    };
+  });
+  return [...entries, ...archives];
+}
+
+export interface DeliveryTermNode extends DeliveryTerm {
+  description: string | null;
+  seo: { title: string; description: string };
+  /**
+   * Published entries `?<taxonomy>=<slug>` returns: with the term or, in
+   * nested taxonomies, any term below it.
+   */
+  count: number;
+  /** Nested taxonomies only. */
+  children?: DeliveryTermNode[];
+}
+
+/** Published entry ids per term (direct assignments only). */
+async function publishedTermEntries(db: DbOrTx, siteId: string, taxonomyId?: string) {
+  const rows = await db
+    .select({ termId: entryTerms.termId, entryId: entryTerms.entryId })
+    .from(entryTerms)
+    .innerJoin(contentEntries, eq(contentEntries.id, entryTerms.entryId))
+    .innerJoin(terms, eq(terms.id, entryTerms.termId))
+    .where(and(publishedIn(siteId), taxonomyId ? eq(terms.taxonomyId, taxonomyId) : undefined));
+  const byTerm = new Map<string, Set<string>>();
+  for (const row of rows) {
+    byTerm.set(row.termId, (byTerm.get(row.termId) ?? new Set()).add(row.entryId));
+  }
+  return byTerm;
+}
+
+/** A taxonomy's terms with published-entry counts; a tree for nested taxonomies. */
+export async function listTaxonomyTerms(db: DbOrTx, site: DeliverySite, key: string) {
+  await publishDueEntries(db, site.id);
+  const [taxonomy] = await db
+    .select()
+    .from(taxonomies)
+    .where(and(eq(taxonomies.siteId, site.id), eq(taxonomies.key, key)))
+    .limit(1);
+  if (!taxonomy) return null;
+  const [all, byTerm] = await Promise.all([
+    db.select().from(terms).where(eq(terms.taxonomyId, taxonomy.id)).orderBy(asc(terms.name)),
+    publishedTermEntries(db, site.id, taxonomy.id),
+  ]);
+  const ids = new Set(all.map((term) => term.id));
+
+  const build = (term: (typeof all)[number], seen: Set<string>): DeliveryTermNode => {
+    const entries = new Set(byTerm.get(term.id));
+    const node: DeliveryTermNode = {
+      name: term.name,
+      slug: term.slug,
+      path: termPath(taxonomy.key, term.slug),
+      description: term.description,
+      seo: { title: term.seoTitle || term.name, description: term.seoDescription || "" },
+      count: 0,
+    };
+    if (taxonomy.hierarchical) {
+      node.children = all
+        .filter((child) => child.parentId === term.id && !seen.has(child.id))
+        .map((child) => {
+          const sub = build(child, new Set(seen).add(child.id));
+          for (const id of descendantIds(all, child.id)) {
+            for (const entryId of byTerm.get(id) ?? []) entries.add(entryId);
+          }
+          return sub;
+        });
+    }
+    node.count = entries.size;
+    return node;
+  };
+  const roots = taxonomy.hierarchical
+    ? all.filter((term) => !term.parentId || !ids.has(term.parentId))
+    : all;
+  return {
+    taxonomy: { key: taxonomy.key, name: taxonomy.name, hierarchical: taxonomy.hierarchical },
+    terms: roots.map((term) => build(term, new Set([term.id]))),
+  };
+}
+
+/**
+ * Term archive pages (/category/news, /tag/seo, …) for the sitemap: only
+ * terms with at least one published entry, last modified when the newest of
+ * those entries was.
+ */
+async function listTermArchives(db: DbOrTx, siteId: string) {
+  return db
+    .select({
+      key: taxonomies.key,
+      slug: terms.slug,
+      lastModified: max(contentEntries.updatedAt),
+    })
+    .from(entryTerms)
+    .innerJoin(contentEntries, eq(contentEntries.id, entryTerms.entryId))
+    .innerJoin(terms, eq(terms.id, entryTerms.termId))
+    .innerJoin(taxonomies, eq(taxonomies.id, terms.taxonomyId))
+    .where(publishedIn(siteId))
+    .groupBy(taxonomies.key, terms.slug)
+    .orderBy(asc(taxonomies.key), asc(terms.slug));
 }

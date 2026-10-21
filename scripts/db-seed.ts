@@ -6,7 +6,7 @@
  * first when using local PGlite (single-process).
  */
 import { createHash, randomBytes } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { createAuth } from "@/server/auth";
 import { getDb } from "@/server/db";
 import {
@@ -18,6 +18,7 @@ import {
 } from "@/server/db/schema";
 import { slugify, type ContentStatus } from "@/lib/content";
 import { createSite } from "@/server/sites";
+import { createTerm, setEntryTerms } from "@/server/taxonomy";
 
 const DEMO_PASSWORD = "klipt-demo-1234";
 
@@ -28,6 +29,51 @@ const DEMO_USERS = [
 ];
 
 const DAY = 24 * 60 * 60 * 1000;
+
+type SeedDb = Awaited<ReturnType<typeof getDb>>;
+
+/** Demo categories (nested) and tags, assigned to a few Northwind posts. */
+async function seedTaxonomy(db: SeedDb, siteId: string, ownerId: string) {
+  const add = async (taxonomy: string, name: string, parentId = "") =>
+    (
+      await createTerm(db, ownerId, siteId, taxonomy, {
+        name,
+        slug: slugify(name),
+        parentId,
+        description: "",
+        seoTitle: "",
+        seoDescription: "",
+      })
+    ).id;
+  const outdoors = await add("category", "Outdoors");
+  const walks = await add("category", "Coastal walks", outdoors);
+  const wildlife = await add("category", "Wildlife", outdoors);
+  const food = await add("category", "Food");
+  await add("category", "Local history");
+  const tags = {
+    photography: await add("tag", "Photography"),
+    recipes: await add("tag", "Recipes"),
+    weekend: await add("tag", "Weekend ideas"),
+  };
+
+  const assign: [string, string[], string[]][] = [
+    ["ten-coastal-walks-worth-the-drive", [walks], [tags.weekend]],
+    ["why-the-harbour-seals-came-back", [wildlife], [tags.photography]],
+    ["birdwatching-from-the-sea-wall", [wildlife], [tags.photography, tags.weekend]],
+    ["five-recipes-for-fresh-mackerel", [food], [tags.recipes]],
+    ["the-best-bakeries-along-the-ferry-route", [food], [tags.weekend]],
+  ];
+  for (const [slug, categories, tagIds] of assign) {
+    const [entry] = await db
+      .select({ id: contentEntries.id })
+      .from(contentEntries)
+      .where(and(eq(contentEntries.siteId, siteId), eq(contentEntries.slug, slug)))
+      .limit(1);
+    if (!entry) continue;
+    await setEntryTerms(db, ownerId, siteId, entry.id, "category", categories);
+    await setEntryTerms(db, ownerId, siteId, entry.id, "tag", tagIds);
+  }
+}
 
 /** Placeholder body so the editor has something to show. Clearly sample text. */
 function sampleBody(title: string) {
@@ -192,6 +238,7 @@ async function main() {
     ["post", "Trail running shoes compared", "in_review", samId],
     ["page", "Store locations", "archived", morganId],
   ]);
+  await seedTaxonomy(db, northwind.id, samId);
   await seedEntries(db, harbor.id, [
     ["page", "Home", "published", samId],
     ["page", "Our work", "draft", samId],

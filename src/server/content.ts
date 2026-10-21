@@ -1,7 +1,28 @@
-import { and, asc, count, desc, eq, ilike, inArray, ne, or, sql, type SQL } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  exists,
+  ilike,
+  inArray,
+  ne,
+  or,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 import type { DbOrTx } from "@/server/db";
 import { isUniqueViolation } from "@/server/db/errors";
-import { auditEvents, contentEntries, contentModels, users } from "@/server/db/schema";
+import {
+  auditEvents,
+  contentEntries,
+  contentModels,
+  entryTerms,
+  taxonomies,
+  terms,
+  users,
+} from "@/server/db/schema";
 import { publishDueEntries } from "@/server/editor";
 import { NotAllowedError } from "@/server/errors";
 import { getSiteRole } from "@/server/sites";
@@ -65,6 +86,26 @@ function toSummary(row: EntryRow): EntrySummary {
   };
 }
 
+/** Entries that have the term "taxonomyKey:slug" (assigned directly). */
+function hasTerm(db: DbOrTx, siteId: string, term: string) {
+  const [key, slug] = term.split(":");
+  return exists(
+    db
+      .select({ one: sql`1` })
+      .from(entryTerms)
+      .innerJoin(terms, eq(terms.id, entryTerms.termId))
+      .innerJoin(taxonomies, eq(taxonomies.id, terms.taxonomyId))
+      .where(
+        and(
+          eq(entryTerms.entryId, contentEntries.id),
+          eq(taxonomies.siteId, siteId),
+          eq(taxonomies.key, key),
+          eq(terms.slug, slug),
+        ),
+      ),
+  );
+}
+
 function typeCondition(type: ContentType): SQL | undefined {
   switch (type) {
     case "page":
@@ -104,6 +145,7 @@ export async function listEntries(
     needle
       ? or(ilike(contentEntries.title, needle), ilike(contentEntries.slug, needle))
       : undefined,
+    params.term ? hasTerm(db, siteId, params.term) : undefined,
   );
 
   const countRows = await db
