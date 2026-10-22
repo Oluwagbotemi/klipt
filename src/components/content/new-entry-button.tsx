@@ -27,16 +27,20 @@ export function useCreateEntry(siteId: string) {
 
 /**
  * "New page", "New post", or a menu: "choose" offers pages, posts and custom
- * content types; "collection" offers the custom types only.
+ * content types; "collection" offers the custom types only. With `defaultKey`,
+ * "choose" becomes a split button that creates that type in one click (the
+ * default from Settings › Publishing) and keeps the others in its menu.
  */
 export function NewEntryButton({
   siteId,
   type,
   collections = [],
+  defaultKey,
 }: {
   siteId: string;
   type: "page" | "post" | "choose" | "collection";
   collections?: CollectionType[];
+  defaultKey?: string;
 }) {
   const { create, pending } = useCreateEntry(siteId);
   const icon = pending ? <Loader2 className="animate-spin" aria-hidden /> : <Plus aria-hidden />;
@@ -53,15 +57,46 @@ export function NewEntryButton({
   }
   if (type === "collection" && collections.length === 0) return null;
 
+  const defaultName =
+    defaultKey === "page"
+      ? "page"
+      : defaultKey === "post"
+        ? "post"
+        : collections.find((collection) => collection.key === defaultKey)?.name;
+  const split = type === "choose" && defaultKey && defaultName;
+
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button disabled={pending}>
-          {icon}
-          {pending ? "Creating…" : "New"}
-          <ChevronDown aria-hidden />
-        </Button>
-      </DropdownMenuTrigger>
+      {split ? (
+        <div className="flex min-w-0">
+          <Button
+            onClick={() => create(defaultKey)}
+            disabled={pending}
+            className="min-w-0 rounded-r-none"
+          >
+            {icon}
+            <span className="truncate">{pending ? "Creating…" : `New ${defaultName}`}</span>
+          </Button>
+          <DropdownMenuTrigger asChild>
+            <Button
+              size="icon"
+              className="rounded-l-none border-l border-l-black/10"
+              aria-label="Choose another content type"
+              disabled={pending}
+            >
+              <ChevronDown aria-hidden />
+            </Button>
+          </DropdownMenuTrigger>
+        </div>
+      ) : (
+        <DropdownMenuTrigger asChild>
+          <Button disabled={pending}>
+            {icon}
+            {pending ? "Creating…" : "New"}
+            <ChevronDown aria-hidden />
+          </Button>
+        </DropdownMenuTrigger>
+      )}
       <DropdownMenuContent align="end" className="w-52">
         {type === "choose" && (
           <>

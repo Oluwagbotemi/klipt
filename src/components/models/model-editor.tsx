@@ -58,7 +58,6 @@ import {
   type ModelSummary,
 } from "@/lib/models";
 import { siteHref } from "@/lib/navigation";
-import { entryPath } from "@/lib/seo";
 
 export const FIELD_ICONS: Record<FieldType, LucideIcon> = {
   text: Type,
@@ -153,7 +152,7 @@ export function ModelEditor({
           <code className="bg-muted rounded-md px-2 py-0.5 font-mono text-xs">{model.key}</code>
         </div>
         <p className="text-muted-foreground text-sm">
-          URLs like <code className="font-mono">{entryPath(model.key, "example")}</code> ·{" "}
+          URLs like <code className="font-mono">{model.urlPattern}</code> ·{" "}
           <Link
             href={entriesHref}
             className="text-foreground underline underline-offset-2 hover:no-underline"

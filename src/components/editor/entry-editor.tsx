@@ -21,14 +21,21 @@ import { WorkflowControls } from "@/components/editor/workflow-controls";
 import { Breadcrumbs } from "@/components/shell/breadcrumbs";
 import { Button } from "@/components/ui/button";
 import type { Assignee, AssignmentState } from "@/lib/assignments";
-import { canEditEntry, readOnlyReason, workflowActions, type WorkflowAction } from "@/lib/content";
+import {
+  canEditEntry,
+  readOnlyReason,
+  reviewRequired,
+  workflowActions,
+  type WorkflowAction,
+} from "@/lib/content";
 import { imageAltSummary, wordCount, type RichTextDoc } from "@/lib/editor/rich-text";
 import type { EntryDocument, EntryState } from "@/lib/editor/types";
 import type { FieldRefs, FieldValue } from "@/lib/models";
 import { can } from "@/lib/permissions";
 import { formatDate } from "@/lib/format";
 import { siteHref } from "@/lib/navigation";
-import { entryPath, type EntrySeoInput } from "@/lib/seo";
+import type { EntrySeoInput } from "@/lib/seo";
+import { entryDate, entryPath } from "@/lib/url-patterns";
 import type { EntryTaxonomy } from "@/lib/taxonomy";
 import type { SiteRole } from "@/lib/types";
 
@@ -95,6 +102,7 @@ export function EntryEditor({
     publishedAt: entry.publishedAt,
     scheduledAt: entry.scheduledAt,
     slug: entry.slug,
+    reviewRequestedById: doc.reviewRequestedById,
   });
   const [title, setTitle] = useState(entry.title);
   const [body, setBody] = useState<RichTextDoc>(doc.body);
@@ -125,6 +133,7 @@ export function EntryEditor({
         publishedAt: entry.publishedAt,
         scheduledAt: entry.scheduledAt,
         slug: entry.slug,
+        reviewRequestedById: doc.reviewRequestedById,
       });
     }
   }
@@ -142,9 +151,15 @@ export function EntryEditor({
   };
   const editable = canEditEntry(role, userId, policyEntry) && saveStatus !== "conflict";
   const lockedReason = readOnlyReason(role, userId, policyEntry);
-  const allowed = workflowActions(role, userId, policyEntry);
+  const allowed = workflowActions(
+    role,
+    userId,
+    { ...policyEntry, reviewRequestedById: state.reviewRequestedById },
+    doc.workflowRules,
+  );
   const words = useMemo(() => wordCount(body), [body]);
-  const path = entryPath(entry.modelKey, state.slug);
+  const pathOf = (slug: string) => entryPath(doc.pathRules, entry.modelKey, slug, entryDate(state));
+  const path = pathOf(state.slug);
 
   // Refs give the save loop the latest values without re-subscribing.
   const latest = useRef({ snapshot });
@@ -281,7 +296,7 @@ export function EntryEditor({
 
   async function applySlug(slug: string, createRedirect: boolean) {
     if (!(await save())) return "Save your latest changes first.";
-    const oldPath = entryPath(entry.modelKey, state.slug);
+    const oldPath = pathOf(state.slug);
     const result = await changeSlugAction(siteId, entry.id, {
       slug,
       createRedirect,
@@ -295,7 +310,7 @@ export function EntryEditor({
     setState(result.state);
     toast.success(
       result.redirectCreated
-        ? `URL changed. ${oldPath} now redirects to ${entryPath(entry.modelKey, result.state.slug)}.`
+        ? `URL changed. ${oldPath} now redirects to ${pathOf(result.state.slug)}.`
         : "URL changed.",
     );
     return null;
@@ -370,6 +385,7 @@ export function EntryEditor({
             pending={workflowPending}
             suggestions={suggestions}
             emailEnabled={emailEnabled}
+            reviewRequired={reviewRequired(role, doc.workflowRules) && can(role, "content.publish")}
             onAction={runWorkflow}
           />
           <EntryActionsMenu
@@ -502,7 +518,7 @@ export function EntryEditor({
             onChange={setAssignment}
           />
           <UrlPanel
-            modelKey={entry.modelKey}
+            pathOf={pathOf}
             slug={state.slug}
             title={title}
             domain={domain}

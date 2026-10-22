@@ -15,6 +15,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import type { ReviewFeedback } from "@/lib/editor/types";
+import type { UrlPatterns } from "@/lib/url-patterns";
 
 /*
  * Database schema. Every site-scoped table carries `site_id`, and every query
@@ -129,6 +130,12 @@ export const sites = pgTable(
     previewUrl: text("preview_url"),
     /** Public key the customer's website sends Core Web Vitals with (src/server/performance.ts). */
     vitalsKey: text("vitals_key"),
+    /** Path pattern per content type key (see src/lib/url-patterns.ts); missing keys use defaults. */
+    urlPatterns: jsonb("url_patterns").$type<UrlPatterns>().notNull().default({}),
+    /** Settings › Publishing: entries must go through review before they're published. */
+    requireReview: boolean("require_review").notNull().default(false),
+    /** Content type key the "New" buttons offer first; null means posts. */
+    defaultModelKey: text("default_model_key"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
@@ -300,6 +307,10 @@ export const contentEntries = pgTable(
     dueOn: date("due_on", { mode: "string" }),
     /** A reviewer's response; cleared when it's sent for review again or published. */
     reviewFeedback: jsonb("review_feedback").$type<ReviewFeedback>(),
+    /** Who last sent it for review; with sites.require_review, they can't approve it themselves. */
+    reviewRequestedById: text("review_requested_by_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
     scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
     publishedAt: timestamp("published_at", { withTimezone: true }),
     createdAt: createdAt(),

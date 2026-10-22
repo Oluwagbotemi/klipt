@@ -3,6 +3,7 @@ import { parseContentListParams, type ContentType } from "@/lib/content";
 import { getAssignees } from "@/lib/data/assignments";
 import { getEntries } from "@/lib/data/content";
 import { getCollectionTypes } from "@/lib/data/models";
+import { getDefaultModelKey, getPathRules } from "@/lib/data/publishing";
 import { requireUser } from "@/lib/data/session";
 import { getSite } from "@/lib/data/sites";
 
@@ -18,12 +19,14 @@ export async function ContentListPage({
 }) {
   const [{ siteId }, query] = await Promise.all([params, searchParams]);
   const listParams = parseContentListParams(query);
-  const [user, site, list, collections, { today }] = await Promise.all([
+  const [user, site, list, collections, { today }, defaultModelKey, pathRules] = await Promise.all([
     requireUser(),
     getSite(siteId),
     getEntries(siteId, type, listParams),
     getCollectionTypes(siteId),
     getAssignees(siteId),
+    type === "all" ? getDefaultModelKey(siteId) : null,
+    getPathRules(siteId),
   ]);
 
   return (
@@ -35,6 +38,8 @@ export async function ContentListPage({
       list={list}
       params={listParams}
       collections={collections}
+      defaultModelKey={defaultModelKey}
+      pathRules={pathRules}
       today={today}
     />
   );

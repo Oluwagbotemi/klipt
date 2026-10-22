@@ -1,7 +1,8 @@
-import type { ContentStatus, EntrySummary } from "@/lib/content";
+import type { ContentStatus, EntrySummary, WorkflowRules } from "@/lib/content";
 import type { RichTextDoc } from "@/lib/editor/rich-text";
 import type { ContentFieldDefinition, FieldRefs, FieldValue } from "@/lib/models";
 import type { EntrySeoInput } from "@/lib/seo";
+import type { PathRules } from "@/lib/url-patterns";
 
 /** Everything the editor needs for one entry. */
 export interface EntryDocument {
@@ -11,6 +12,12 @@ export interface EntryDocument {
   /** schema.org type from the content model, e.g. "Article". */
   schemaType: string | null;
   path: string;
+  /** The site's URL patterns, so the editor can show the address as the slug changes. */
+  pathRules: PathRules;
+  /** Site-wide workflow rules (Settings › Publishing). */
+  workflowRules: WorkflowRules;
+  /** Who sent it for review, if anyone. */
+  reviewRequestedById: string | null;
   /** The content type's own fields, their values and display data for linked records. */
   fields: ContentFieldDefinition[];
   values: Record<string, FieldValue>;
@@ -35,4 +42,6 @@ export interface EntryState {
   publishedAt: string | null;
   scheduledAt: string | null;
   slug: string;
+  /** Who sent it for review (with "Require review", they can't approve it themselves). */
+  reviewRequestedById: string | null;
 }

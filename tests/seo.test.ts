@@ -82,9 +82,9 @@ describe("audit helpers", () => {
     const base = { slug: "a", modelKey: "page", body: { type: "doc" }, updatedAt: "" };
     const audit = auditSite(
       [
-        { ...base, id: "1", title: "Same", slug: "one", seo: {} },
-        { ...base, id: "2", title: "Same", slug: "two", seo: {} },
-        { ...base, id: "3", title: "Same", slug: "three", seo: { index: false } },
+        { ...base, id: "1", title: "Same", slug: "one", path: "/one", seo: {} },
+        { ...base, id: "2", title: "Same", slug: "two", path: "/two", seo: {} },
+        { ...base, id: "3", title: "Same", slug: "three", path: "/three", seo: { index: false } },
       ],
       { domain: null, allowIndexing: true, altByMediaId: new Map(), redirectFrom: new Set() },
     );

@@ -25,7 +25,7 @@ export const KIND_PREFIXES: Record<ActivityKind, string[]> = {
   media: ["media"],
   structure: ["model", "taxonomy", "term", "menu"],
   team: ["member", "ownership"],
-  settings: ["site", "seo", "redirect", "previews"],
+  settings: ["site", "seo", "redirect", "previews", "publishing"],
   integrations: ["api_key", "webhook", "performance"],
 };
 
@@ -287,6 +287,24 @@ export function describeActivity(
       );
     case "redirect.deleted":
       return say("deleted the redirect from", str(meta.from));
+    case "publishing.url_patterns_changed": {
+      const changes = Array.isArray(meta.changes)
+        ? (meta.changes as { name?: unknown; to?: unknown }[])
+        : [];
+      const first = changes[0];
+      if (changes.length !== 1) return say("changed the URL patterns of several content types");
+      return say(
+        "changed the URL pattern of",
+        str(first?.name),
+        str(first?.to) ? `to ${first.to}` : null,
+      );
+    }
+    case "publishing.review_required":
+      return say("required a review before publishing");
+    case "publishing.review_optional":
+      return say("stopped requiring a review before publishing");
+    case "publishing.default_type_changed":
+      return say("made", name ?? str(meta.key), "the default for new entries");
     case "previews.url_changed":
       return say(meta.previewUrl ? "set the preview address" : "removed the preview address");
     case "api_key.created":

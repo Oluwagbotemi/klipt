@@ -5,7 +5,7 @@ import { Loader2, TriangleAlert, Wand2 } from "lucide-react";
 import { SettingsSection } from "@/components/editor/settings-section";
 import { Button } from "@/components/ui/button";
 import { slugify } from "@/lib/content";
-import { SLUG_PATTERN, entryPath } from "@/lib/seo";
+import { SLUG_PATTERN } from "@/lib/seo";
 
 /**
  * URL slug. Unpublished entries change URL directly. For content that has
@@ -13,7 +13,7 @@ import { SLUG_PATTERN, entryPath } from "@/lib/seo";
  * from the old URL is offered (on by default).
  */
 export function UrlPanel({
-  modelKey,
+  pathOf,
   slug,
   title,
   domain,
@@ -21,7 +21,8 @@ export function UrlPanel({
   readOnly,
   onApply,
 }: {
-  modelKey: string;
+  /** The entry's public path for a slug, under the site's URL pattern. */
+  pathOf: (slug: string) => string;
   slug: string;
   title: string;
   domain: string | null;
@@ -42,9 +43,10 @@ export function UrlPanel({
   const next = value.trim().toLowerCase();
   const changed = next !== slug;
   const valid = SLUG_PATTERN.test(next) && next.length <= 80;
-  const prefix = entryPath(modelKey, "");
-  const oldPath = entryPath(modelKey, slug);
-  const newPath = entryPath(modelKey, next || "…");
+  // The slug is always the last part of the pattern.
+  const prefix = pathOf("");
+  const oldPath = pathOf(slug);
+  const newPath = pathOf(next || "…");
 
   function apply() {
     if (!valid) {

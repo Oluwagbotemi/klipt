@@ -4,6 +4,7 @@ import type { DbOrTx } from "@/server/db";
 import { auditEvents, contentEntries, contentModels, menuItems, menus } from "@/server/db/schema";
 import { publishDueEntries } from "@/server/editor";
 import { NotAllowedError } from "@/server/errors";
+import { loadPathRules } from "@/server/path-rules";
 import { getSiteRole } from "@/server/sites";
 import { enqueueSiteEvent } from "@/server/webhooks";
 import type { LinkTarget } from "@/lib/models";
@@ -19,7 +20,7 @@ import {
   type MenuSummary,
 } from "@/lib/menus";
 import { can } from "@/lib/permissions";
-import { entryPath } from "@/lib/seo";
+import { entryDate, entryPath, type PathRules } from "@/lib/url-patterns";
 
 /*
  * Navigation menus. Header and footer exist for every site (created lazily
@@ -136,7 +137,7 @@ export async function listMenus(
     .sort((a, b) => systemOrder(a.key) - systemOrder(b.key));
 }
 
-async function loadItems(db: DbOrTx, menuId: string): Promise<MenuItemView[]> {
+async function loadItems(db: DbOrTx, menuId: string, rules: PathRules): Promise<MenuItemView[]> {
   const rows = await db
     .select({
       item: menuItems,
@@ -145,6 +146,8 @@ async function loadItems(db: DbOrTx, menuId: string): Promise<MenuItemView[]> {
       status: contentEntries.status,
       modelKey: contentModels.key,
       modelName: contentModels.name,
+      publishedAt: contentEntries.publishedAt,
+      scheduledAt: contentEntries.scheduledAt,
     })
     .from(menuItems)
     .leftJoin(contentEntries, eq(contentEntries.id, menuItems.entryId))
@@ -152,7 +155,7 @@ async function loadItems(db: DbOrTx, menuId: string): Promise<MenuItemView[]> {
     .where(eq(menuItems.menuId, menuId))
     .orderBy(asc(menuItems.position));
   const depthOf = new Map<string, number>();
-  return rows.map(({ item, title, slug, status, modelKey, modelName }) => {
+  return rows.map(({ item, title, slug, status, modelKey, modelName, ...dates }) => {
     const depth = item.parentId ? (depthOf.get(item.parentId) ?? 0) + 1 : 0;
     depthOf.set(item.id, depth);
     const target =
@@ -161,7 +164,7 @@ async function loadItems(db: DbOrTx, menuId: string): Promise<MenuItemView[]> {
             title,
             status: status ?? "draft",
             modelName: modelName ?? "",
-            path: entryPath(modelKey, slug),
+            path: entryPath(rules, modelKey, slug, entryDate(dates)),
           }
         : null;
     return {
@@ -205,7 +208,7 @@ export async function getMenu(
     name: menu.name,
     isSystem: isSystemMenu(menu.key),
     updatedAt: menu.updatedAt.toISOString(),
-    items: await loadItems(db, menu.id),
+    items: await loadItems(db, menu.id, await loadPathRules(db, siteId)),
   };
 }
 
@@ -358,6 +361,8 @@ export async function searchMenuTargets(
       status: contentEntries.status,
       modelKey: contentModels.key,
       modelName: contentModels.name,
+      publishedAt: contentEntries.publishedAt,
+      scheduledAt: contentEntries.scheduledAt,
     })
     .from(contentEntries)
     .innerJoin(contentModels, eq(contentModels.id, contentEntries.modelId))
@@ -375,7 +380,11 @@ export async function searchMenuTargets(
     )
     .orderBy(desc(contentEntries.updatedAt))
     .limit(20);
-  return rows.map(({ slug, modelKey, ...row }) => ({ ...row, path: entryPath(modelKey, slug) }));
+  const rules = await loadPathRules(db, siteId);
+  return rows.map(({ slug, modelKey, publishedAt, scheduledAt, ...row }) => ({
+    ...row,
+    path: entryPath(rules, modelKey, slug, entryDate({ publishedAt, scheduledAt })),
+  }));
 }
 
 // ---------------------------------------------------------------------------
@@ -407,6 +416,7 @@ export async function getDeliveryMenu(db: DbOrTx, siteId: string, key: string) {
       slug: contentEntries.slug,
       status: contentEntries.status,
       modelKey: contentModels.key,
+      publishedAt: contentEntries.publishedAt,
     })
     .from(menuItems)
     .leftJoin(contentEntries, eq(contentEntries.id, menuItems.entryId))
@@ -416,11 +426,12 @@ export async function getDeliveryMenu(db: DbOrTx, siteId: string, key: string) {
 
   const items: DeliveryMenuItem[] = [];
   const nodes = new Map<string, DeliveryMenuItem>();
-  for (const { item, slug, status, modelKey } of rows) {
+  const rules = await loadPathRules(db, siteId);
+  for (const { item, slug, status, modelKey, publishedAt } of rows) {
     let url: string | null = null;
     if (item.kind === "url") url = item.url;
     else if (status === "published" && slug !== null && modelKey !== null) {
-      url = entryPath(modelKey, slug);
+      url = entryPath(rules, modelKey, slug, publishedAt);
     }
     if (!url) continue;
     const node: DeliveryMenuItem = {

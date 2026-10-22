@@ -11,11 +11,13 @@ import {
 } from "@/server/db/schema";
 import { publishDueEntries } from "@/server/editor";
 import { NotAllowedError } from "@/server/errors";
+import { loadPathRules } from "@/server/path-rules";
 import { getSiteRole } from "@/server/sites";
 import { EMPTY_DOC, sanitizeDoc, type RichTextNode } from "@/lib/editor/rich-text";
 import { can } from "@/lib/permissions";
 import { auditSite, type SiteAudit } from "@/lib/seo-audit";
-import { entryPath, entrySeoSchema, redirectInputSchema, type RedirectRow } from "@/lib/seo";
+import { entrySeoSchema, redirectInputSchema, type RedirectRow } from "@/lib/seo";
+import { entryDate, entryPath } from "@/lib/url-patterns";
 
 export type { RedirectRow };
 
@@ -64,7 +66,7 @@ export async function loadSiteAudit(
     truncated: boolean;
   }
 > {
-  const [[site], rows, redirectRows] = await Promise.all([
+  const [[site], rows, redirectRows, rules] = await Promise.all([
     db
       .select({ domain: sites.domain, allowIndexing: sites.allowIndexing })
       .from(sites)
@@ -77,6 +79,7 @@ export async function loadSiteAudit(
         seo: contentEntries.seo,
         data: contentEntries.data,
         updatedAt: contentEntries.updatedAt,
+        publishedAt: contentEntries.publishedAt,
         modelKey: contentModels.key,
       })
       .from(contentEntries)
@@ -85,6 +88,7 @@ export async function loadSiteAudit(
       .orderBy(sql`${contentEntries.publishedAt} desc nulls last`)
       .limit(AUDIT_LIMIT + 1),
     db.select({ from: redirects.fromPath }).from(redirects).where(eq(redirects.siteId, siteId)),
+    loadPathRules(db, siteId),
   ]);
 
   const inputs = rows.slice(0, AUDIT_LIMIT).map((row) => {
@@ -99,6 +103,7 @@ export async function loadSiteAudit(
       title: row.title,
       slug: row.slug,
       modelKey: row.modelKey,
+      path: entryPath(rules, row.modelKey, row.slug, row.publishedAt),
       seo: entrySeoSchema.catch({}).parse(row.seo),
       body,
       updatedAt: row.updatedAt.toISOString(),
@@ -205,11 +210,16 @@ export async function listSiteRedirects(
 /** Paths of live entries, to stop redirects from hiding them. */
 async function livePathSet(tx: DbOrTx, siteId: string) {
   const rows = await tx
-    .select({ slug: contentEntries.slug, modelKey: contentModels.key })
+    .select({
+      slug: contentEntries.slug,
+      modelKey: contentModels.key,
+      publishedAt: contentEntries.publishedAt,
+    })
     .from(contentEntries)
     .innerJoin(contentModels, eq(contentModels.id, contentEntries.modelId))
     .where(and(eq(contentEntries.siteId, siteId), eq(contentEntries.status, "published")));
-  return new Set(rows.map((row) => entryPath(row.modelKey, row.slug)));
+  const rules = await loadPathRules(tx, siteId);
+  return new Set(rows.map((row) => entryPath(rules, row.modelKey, row.slug, entryDate(row))));
 }
 
 /**

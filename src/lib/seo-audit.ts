@@ -1,5 +1,5 @@
 import { docToText, type RichTextNode } from "@/lib/editor/rich-text";
-import { entryPath, normalizePath, resolveSeo, SEO_GUIDANCE, type EntrySeoInput } from "@/lib/seo";
+import { normalizePath, resolveSeo, SEO_GUIDANCE, type EntrySeoInput } from "@/lib/seo";
 
 /*
  * SEO checks for live (published) pages. Pure functions shared by the
@@ -53,6 +53,8 @@ export interface AuditInput {
   title: string;
   slug: string;
   modelKey: string;
+  /** Public path under the site's URL patterns. */
+  path: string;
   seo: EntrySeoInput;
   body: RichTextNode;
   updatedAt: string;
@@ -130,10 +132,10 @@ export function auditSite(
   },
 ): SiteAudit {
   const base = context.domain ? `https://${context.domain}` : null;
-  const livePaths = new Set(inputs.map((page) => entryPath(page.modelKey, page.slug)));
+  const livePaths = new Set(inputs.map((page) => page.path));
 
   const pages: PageAudit[] = inputs.map((page) => {
-    const path = entryPath(page.modelKey, page.slug);
+    const path = page.path;
     const seo = resolveSeo(page.seo, page.title || "Untitled");
     let images = 0;
     let imagesMissingAlt = 0;

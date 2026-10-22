@@ -23,7 +23,7 @@ import {
 } from "@/server/db/schema";
 import { slugify, type ContentStatus } from "@/lib/content";
 import { bucketIndex, type Device, type Metric } from "@/lib/performance";
-import { entryPath } from "@/lib/seo";
+import { DEFAULT_PATH_RULES, entryPath } from "@/lib/url-patterns";
 import { getPerformanceSetup } from "@/server/performance";
 import { createSite } from "@/server/sites";
 import { createTerm, setEntryTerms } from "@/server/taxonomy";
@@ -148,7 +148,7 @@ async function seedVitals(db: SeedDb, siteId: string, ownerId: string) {
     .where(and(eq(contentEntries.siteId, siteId), eq(contentEntries.status, "published")));
   const pathOf = (title: string) => {
     const entry = published.find((e) => e.title === title);
-    return entry ? entryPath(entry.key, entry.slug) : null;
+    return entry ? entryPath(DEFAULT_PATH_RULES, entry.key, entry.slug, null) : null;
   };
 
   let state = 42;

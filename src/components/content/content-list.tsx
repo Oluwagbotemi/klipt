@@ -53,6 +53,7 @@ import type { CollectionType } from "@/lib/models";
 import { siteHref } from "@/lib/navigation";
 import { can } from "@/lib/permissions";
 import type { SiteRole } from "@/lib/types";
+import { entryDate, entryPath, type PathRules } from "@/lib/url-patterns";
 import { cn } from "@/lib/utils";
 
 const TYPE_NOUN: Record<ContentType, { one: string; many: string }> = {
@@ -88,6 +89,8 @@ export function ContentList({
   list,
   params,
   collections,
+  defaultModelKey,
+  pathRules,
   today,
 }: {
   siteId: string;
@@ -100,6 +103,10 @@ export function ContentList({
   today: string;
   /** Custom content types, for the New button. */
   collections: CollectionType[];
+  /** All content: the type the New button creates (Settings › Publishing). */
+  defaultModelKey?: string | null;
+  /** The site's URL patterns, to show each entry's public path. */
+  pathRules: PathRules;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -107,6 +114,8 @@ export function ContentList({
   const [query, setQuery] = useState(params.q);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const noun = TYPE_NOUN[type];
+  const pathOf = (entry: EntrySummary) =>
+    entryPath(pathRules, entry.modelKey, entry.slug, entryDate(entry));
   const canCreate =
     can(role, "content.create") && (type !== "collection" || collections.length > 0);
   const newButton = (
@@ -114,6 +123,7 @@ export function ContentList({
       siteId={siteId}
       type={type === "all" ? "choose" : type}
       collections={collections}
+      defaultKey={defaultModelKey ?? undefined}
     />
   );
 
@@ -348,6 +358,7 @@ export function ContentList({
               entries={list.items}
               showType={type === "all" || type === "collection"}
               today={today}
+              pathOf={pathOf}
               selected={selected}
               allSelected={allSelected}
               onToggle={toggle}
@@ -366,6 +377,7 @@ export function ContentList({
               entries={list.items}
               showType={type === "all" || type === "collection"}
               today={today}
+              pathOf={pathOf}
               selected={selected}
               onToggle={toggle}
               rowActions={(entry) => (
@@ -642,6 +654,7 @@ function EntryTable({
   entries,
   showType,
   today,
+  pathOf,
   selected,
   allSelected,
   onToggle,
@@ -652,6 +665,7 @@ function EntryTable({
   entries: EntrySummary[];
   showType: boolean;
   today: string;
+  pathOf: (entry: EntrySummary) => string;
   selected: Set<string>;
   allSelected: boolean;
   onToggle: (id: string) => void;
@@ -725,7 +739,7 @@ function EntryTable({
                 >
                   {entry.title}
                 </Link>
-                <p className="text-muted-foreground truncate font-mono text-xs">/{entry.slug}</p>
+                <p className="text-muted-foreground truncate font-mono text-xs">{pathOf(entry)}</p>
               </td>
               {showType && (
                 <td className="text-muted-foreground px-3 py-3 align-top whitespace-nowrap">
@@ -755,6 +769,7 @@ function EntryCards({
   entries,
   showType,
   today,
+  pathOf,
   selected,
   onToggle,
   rowActions,
@@ -763,6 +778,7 @@ function EntryCards({
   entries: EntrySummary[];
   showType: boolean;
   today: string;
+  pathOf: (entry: EntrySummary) => string;
   selected: Set<string>;
   onToggle: (id: string) => void;
   rowActions: (entry: EntrySummary) => React.ReactNode;
@@ -788,7 +804,7 @@ function EntryCards({
             >
               {entry.title}
             </Link>
-            <p className="text-muted-foreground truncate font-mono text-xs">/{entry.slug}</p>
+            <p className="text-muted-foreground truncate font-mono text-xs">{pathOf(entry)}</p>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <StatusCell entry={entry} today={today} />
               <span className="text-muted-foreground text-xs">

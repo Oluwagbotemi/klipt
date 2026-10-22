@@ -3,10 +3,11 @@ import { and, eq } from "drizzle-orm";
 import type { DbOrTx } from "@/server/db";
 import { auditEvents, contentEntries, contentModels, sites } from "@/server/db/schema";
 import { NotAllowedError } from "@/server/errors";
+import { loadPathRules } from "@/server/path-rules";
 import { getSiteRole } from "@/server/sites";
 import { can } from "@/lib/permissions";
 import { buildPreviewLink, PREVIEW_TTL_SECONDS, previewUrlSchema } from "@/lib/previews";
-import { entryPath } from "@/lib/seo";
+import { entryDate, entryPath } from "@/lib/url-patterns";
 
 /*
  * Draft previews. A preview token is a signed, short-lived statement "show
@@ -123,6 +124,8 @@ export async function createPreviewLink(
       status: contentEntries.status,
       modelKey: contentModels.key,
       previewUrl: sites.previewUrl,
+      publishedAt: contentEntries.publishedAt,
+      scheduledAt: contentEntries.scheduledAt,
     })
     .from(contentEntries)
     .innerJoin(contentModels, eq(contentModels.id, contentEntries.modelId))
@@ -137,7 +140,7 @@ export async function createPreviewLink(
       token,
       type: row.modelKey,
       slug: row.slug,
-      path: entryPath(row.modelKey, row.slug),
+      path: entryPath(await loadPathRules(db, siteId), row.modelKey, row.slug, entryDate(row)),
     }),
     expiresAt: expiresAt.toISOString(),
   };

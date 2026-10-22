@@ -24,7 +24,8 @@ import {
   type RichTextDoc,
 } from "@/lib/editor/rich-text";
 import { readFieldValues } from "@/lib/models";
-import { entryPath, entrySeoSchema, normalizePath, resolveSeo } from "@/lib/seo";
+import { entrySeoSchema, normalizePath, resolveSeo } from "@/lib/seo";
+import { entryDate, entryPath, matchPath, type PathRules } from "@/lib/url-patterns";
 import { applyTitleTemplate } from "@/lib/site-settings";
 import { appliesTo, descendantIds, termPath } from "@/lib/taxonomy";
 
@@ -50,6 +51,8 @@ export interface DeliverySite {
   titleTemplate: string | null;
   /** Internal: default social image (media id). */
   defaultOgImageId: string | null;
+  /** Internal: URL patterns (Settings › Publishing) every path is built from. */
+  pathRules: PathRules;
 }
 
 export interface DeliveryEntrySummary {
@@ -137,14 +140,16 @@ export async function getDeliverySite(db: DbOrTx, siteId: string): Promise<Deliv
       language: sites.language,
       timezone: sites.timezone,
       seoDefaults: sites.seoDefaults,
+      urlPatterns: sites.urlPatterns,
     })
     .from(sites)
     .where(eq(sites.id, siteId))
     .limit(1);
   if (!site) return null;
-  const { seoDefaults, ...rest } = site;
+  const { seoDefaults, urlPatterns, ...rest } = site;
   return {
     ...rest,
+    pathRules: { patterns: urlPatterns ?? {}, timeZone: site.timezone },
     url: siteUrl(site.domain),
     titleTemplate: seoDefaults.titleTemplate ?? null,
     defaultOgImageId: seoDefaults.ogImageId ?? null,
@@ -227,7 +232,8 @@ async function resolveTerms(db: DbOrTx, siteId: string, rows: EntryRow[]): Promi
  * and links resolved to the linked entry. Links to anything that isn't
  * published (or images that were deleted) come back as null.
  */
-async function resolveFields(db: DbOrTx, siteId: string, rows: EntryRow[]): Promise<FieldMap> {
+async function resolveFields(db: DbOrTx, site: DeliverySite, rows: EntryRow[]): Promise<FieldMap> {
+  const siteId = site.id;
   const stored = rows.map((row) => ({
     row,
     values: readFieldValues(row.modelFields, row.entry.data),
@@ -257,6 +263,7 @@ async function resolveFields(db: DbOrTx, siteId: string, rows: EntryRow[]): Prom
             title: contentEntries.title,
             slug: contentEntries.slug,
             modelKey: contentModels.key,
+            publishedAt: contentEntries.publishedAt,
           })
           .from(contentEntries)
           .innerJoin(contentModels, eq(contentModels.id, contentEntries.modelId))
@@ -291,7 +298,7 @@ async function resolveFields(db: DbOrTx, siteId: string, rows: EntryRow[]): Prom
               type: target.modelKey,
               title: target.title,
               slug: target.slug,
-              path: entryPath(target.modelKey, target.slug),
+              path: entryPath(site.pathRules, target.modelKey, target.slug, target.publishedAt),
             }
           : null;
       } else {
@@ -321,12 +328,13 @@ function excerptOf(description: string, body: RichTextDoc, max = 200): string {
 
 function toSummary(
   row: EntryRow,
-  domain: string | null,
+  site: DeliverySite,
   fields: FieldMap,
   taxonomyTerms: TermMap,
 ): DeliveryEntrySummary {
   const { entry } = row;
-  const path = entryPath(row.modelKey, entry.slug);
+  const domain = site.domain;
+  const path = entryPath(site.pathRules, row.modelKey, entry.slug, entryDate(entry));
   const seo = entrySeoSchema.catch({}).parse(entry.seo);
   return {
     id: entry.id,
@@ -361,10 +369,10 @@ async function defaultOgImage(db: DbOrTx, site: DeliverySite) {
 
 async function toEntry(db: DbOrTx, row: EntryRow, site: DeliverySite): Promise<DeliveryEntry> {
   const [fields, taxonomyTerms] = await Promise.all([
-    resolveFields(db, site.id, [row]),
+    resolveFields(db, site, [row]),
     resolveTerms(db, site.id, [row]),
   ]);
-  const summary = toSummary(row, site.domain, fields, taxonomyTerms);
+  const summary = toSummary(row, site, fields, taxonomyTerms);
   const body = await resolveMediaInDoc(db, row.entry.siteId, readBody(row.entry.data), {
     absolute: true,
   });
@@ -478,11 +486,11 @@ export async function listPublished(
       .where(where),
   ]);
   const [fields, taxonomyTerms] = await Promise.all([
-    resolveFields(db, site.id, rows),
+    resolveFields(db, site, rows),
     resolveTerms(db, site.id, rows),
   ]);
   return {
-    items: rows.map((row) => toSummary(row, site.domain, fields, taxonomyTerms)),
+    items: rows.map((row) => toSummary(row, site, fields, taxonomyTerms)),
     page: options.page,
     limit: options.limit,
     total,
@@ -556,17 +564,21 @@ export async function resolvePath(
   const path = normalizePath(rawPath);
   if (!path) return null;
 
-  // Candidates from the default URL patterns (see entryPath).
+  // Content types whose URL pattern fits the path (see src/lib/url-patterns.ts).
   const segments = path.split("/").filter(Boolean);
-  const candidates: { type: string; slug: string }[] = [];
-  if (segments.length === 1) candidates.push({ type: "page", slug: segments[0] });
-  if (segments.length === 2) {
-    candidates.push({ type: segments[0] === "posts" ? "post" : segments[0], slug: segments[1] });
-  }
-  for (const { type, slug } of candidates) {
-    if (entryPath(type, slug) !== path) continue;
-    const entry = await getPublishedEntry(db, site, type, slug);
-    if (entry) return { kind: "entry", entry };
+  const models = await db
+    .select({ key: contentModels.key })
+    .from(contentModels)
+    .where(eq(contentModels.siteId, site.id));
+  const candidates = matchPath(
+    site.pathRules,
+    models.map((model) => model.key),
+    path,
+  );
+  for (const { modelKey, slug } of candidates) {
+    const entry = await getPublishedEntry(db, site, modelKey, slug);
+    // Date parts ({yyyy}/{mm}) must match the entry's own date too.
+    if (entry && entry.path === path) return { kind: "entry", entry };
   }
 
   // Term archive pages: /category/news, /tag/seo, /region/europe.
@@ -621,6 +633,7 @@ export async function listSitemap(db: DbOrTx, site: DeliverySite) {
       seo: contentEntries.seo,
       title: contentEntries.title,
       updatedAt: contentEntries.updatedAt,
+      publishedAt: contentEntries.publishedAt,
       modelKey: contentModels.key,
     })
     .from(contentEntries)
@@ -632,7 +645,7 @@ export async function listSitemap(db: DbOrTx, site: DeliverySite) {
   const entries = rows.flatMap((row) => {
     const stored = entrySeoSchema.catch({}).parse(row.seo);
     if (!resolveSeo(stored, row.title).includeInSitemap) return [];
-    const path = entryPath(row.modelKey, row.slug);
+    const path = entryPath(site.pathRules, row.modelKey, row.slug, row.publishedAt);
     const url = base ? `${base}${path}` : null;
     if (stored.canonicalUrl && stored.canonicalUrl !== url) return [];
     return [{ kind: "entry" as const, path, url, lastModified: row.updatedAt.toISOString() }];

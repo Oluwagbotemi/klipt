@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import Link from "next/link";
 import { ApiKeysPanel } from "@/components/settings/api-keys-panel";
 import { ConnectWebsite } from "@/components/settings/connect-website";
-import { PreviewSettings } from "@/components/settings/preview-settings";
 import { WebhooksPanel } from "@/components/settings/webhooks-panel";
 import { PermissionDenied } from "@/components/permission-denied";
 import { getApiKeys } from "@/lib/data/api-keys";
-import { getSitePreviewUrl } from "@/lib/data/previews";
 import { getWebhooks, scheduleWebhookDelivery } from "@/lib/data/webhooks";
 import { getSite } from "@/lib/data/sites";
 import { siteHref } from "@/lib/navigation";
@@ -37,11 +36,10 @@ export default async function IntegrationsPage({
       />
     );
   }
-  const [keys, hooks, origin, previewUrl] = await Promise.all([
+  const [keys, hooks, origin] = await Promise.all([
     getApiKeys(site.id),
     getWebhooks(site.id),
     requestOrigin(),
-    getSitePreviewUrl(site.id),
   ]);
   scheduleWebhookDelivery(site.id);
 
@@ -50,7 +48,16 @@ export default async function IntegrationsPage({
       <ConnectWebsite apiBase={`${origin}/api/v1`} hasKeys={keys.length > 0} />
       <ApiKeysPanel siteId={site.id} keys={keys} />
       <WebhooksPanel siteId={site.id} webhooks={hooks} />
-      <PreviewSettings siteId={site.id} previewUrl={previewUrl} />
+      <p className="text-muted-foreground text-sm">
+        Draft previews on your website and URL patterns are under{" "}
+        <Link
+          href={siteHref(site.id, "settings", "publishing")}
+          className="text-primary underline-offset-4 hover:underline"
+        >
+          Settings › Publishing
+        </Link>
+        .
+      </p>
     </div>
   );
 }

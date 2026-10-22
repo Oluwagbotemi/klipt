@@ -84,6 +84,8 @@ Settings: general (name, language, time zone), your website's domain, SEO defaul
 
 Content models: custom content types (e.g. Product) and extra fields on any type (text, long text, number, date, yes/no, dropdown, image, link to content), with required fields checked on publish. Entries of custom types live under Content › Collections, and the content API returns every entry's `fields` with images and published links resolved.
 
+Publishing settings: URL patterns per content type (e.g. posts at `/blog/{slug}` or `/blog/{yyyy}/{mm}/{slug}`) with a preview of which live addresses move and automatic one-hop 301 redirects, an optional "require review before publishing" rule (owners and admins exempt), the default type for the New button, and the live website and draft preview addresses in one place.
+
 Taxonomy: nested categories (up to three levels), tags and custom taxonomies (e.g. Region, for the content types you choose), with entry counts, search, and a "Categories & tags" panel in the editor that saves on its own. Authors can assign terms to their own drafts and create new tags; editors and above manage all terms. The content API returns each entry's terms, filters by `category`, `tag` or `term`, lists terms with counts (`/taxonomies/{key}`), resolves archive paths like `/category/news`, and adds archive pages with published entries to the sitemap.
 
 Account: profile (name, email, appearance), security (change password with an option to sign out other devices, signed-in devices you can sign out one by one or all at once), and account deletion (password and email confirmation; blocked while you own a site, so sites are transferred or deleted first).

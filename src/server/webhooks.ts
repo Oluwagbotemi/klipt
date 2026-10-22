@@ -4,10 +4,11 @@ import type { DbOrTx } from "@/server/db";
 import { auditEvents, sites, webhookDeliveries, webhooks } from "@/server/db/schema";
 import { NotAllowedError } from "@/server/errors";
 import { decryptSecret, encryptSecret } from "@/server/secrets";
+import { loadPathRules } from "@/server/path-rules";
 import { getSiteRole } from "@/server/sites";
 import { assertPublicHost, checkWebhookUrl, WebhookUrlError } from "@/server/webhook-url";
 import { can } from "@/lib/permissions";
-import { entryPath } from "@/lib/seo";
+import { entryDate, entryPath } from "@/lib/url-patterns";
 import {
   MAX_ATTEMPTS,
   MAX_WEBHOOKS,
@@ -362,6 +363,9 @@ export interface EntryEventSubject {
   modelKey: string;
   slug: string;
   title: string;
+  /** For URL patterns with {yyyy}/{mm}. */
+  publishedAt?: Date | null;
+  scheduledAt?: Date | null;
 }
 
 /**
@@ -393,7 +397,8 @@ export async function enqueueEntryEvent(
     .from(sites)
     .where(eq(sites.id, siteId))
     .limit(1);
-  const path = entryPath(entry.modelKey, entry.slug);
+  const rules = await loadPathRules(tx, siteId);
+  const path = entryPath(rules, entry.modelKey, entry.slug, entryDate(entry));
   const payload = {
     site: { id: siteId, name: site?.name ?? "" },
     data: {

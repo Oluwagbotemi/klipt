@@ -303,6 +303,8 @@ export interface ModelSummary {
   entryCount: number;
   /** Version for optimistic locking when saving. */
   updatedAt: string;
+  /** Its URL pattern (Settings › Publishing), e.g. "/posts/{slug}". */
+  urlPattern: string;
 }
 
 /** A custom content type, as offered in "New" menus. */

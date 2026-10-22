@@ -12,10 +12,11 @@ import {
 import { recordActivity } from "@/server/activity";
 import { NotAllowedError } from "@/server/errors";
 import { usageOf } from "@/server/media";
+import { loadPathRules } from "@/server/path-rules";
 import { getSiteRole } from "@/server/sites";
 import { isImageType } from "@/lib/media";
 import { can } from "@/lib/permissions";
-import { entryPath } from "@/lib/seo";
+import { entryDate, entryPath } from "@/lib/url-patterns";
 import {
   allowedOrigins,
   bucketIndex,
@@ -348,15 +349,17 @@ async function entriesByPath(db: DbOrTx, siteId: string) {
       title: contentEntries.title,
       slug: contentEntries.slug,
       modelKey: contentModels.key,
+      publishedAt: contentEntries.publishedAt,
     })
     .from(contentEntries)
     .innerJoin(contentModels, eq(contentModels.id, contentEntries.modelId))
     .where(and(eq(contentEntries.siteId, siteId), eq(contentEntries.status, "published")))
     .orderBy(desc(contentEntries.updatedAt))
     .limit(5000);
+  const rules = await loadPathRules(db, siteId);
   const map = new Map<string, { id: string; title: string }>();
   for (const row of rows) {
-    const path = entryPath(row.modelKey, row.slug);
+    const path = entryPath(rules, row.modelKey, row.slug, entryDate(row));
     if (!map.has(path)) map.set(path, { id: row.id, title: row.title });
   }
   return map;
