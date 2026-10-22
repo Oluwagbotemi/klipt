@@ -3,38 +3,62 @@
 import * as React from "react";
 import { AlertDialog as AlertDialogPrimitive } from "radix-ui";
 import { buttonVariants } from "@/components/ui/button";
+import {
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
+  modalContentClass,
+  modalOverlayClass,
+  modalPanelClass,
+  SheetHandle,
+  type ModalSize,
+} from "@/components/ui/modal-layout";
 import { cn } from "@/lib/utils";
 
 function AlertDialog(props: React.ComponentProps<typeof AlertDialogPrimitive.Root>) {
   return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />;
 }
 
+/** Confirmation modal: same frame as Dialog, 400px by default, no close button. */
 function AlertDialogContent({
   className,
+  children,
+  size = "sm",
   ...props
-}: React.ComponentProps<typeof AlertDialogPrimitive.Content>) {
+}: React.ComponentProps<typeof AlertDialogPrimitive.Content> & { size?: ModalSize }) {
   return (
     <AlertDialogPrimitive.Portal>
-      <AlertDialogPrimitive.Overlay className="data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 fixed inset-0 z-50 bg-black/50" />
+      <AlertDialogPrimitive.Overlay className={modalOverlayClass} />
       <AlertDialogPrimitive.Content
         data-slot="alert-dialog-content"
-        className={cn(
-          "bg-popover text-popover-foreground fixed top-1/2 left-1/2 z-50 grid w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 gap-4 rounded-2xl border p-6 shadow-xl",
-          "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
-          className,
-        )}
+        className={cn(modalContentClass(size), className)}
         {...props}
-      />
+      >
+        <div className={modalPanelClass}>
+          <SheetHandle />
+          {children}
+        </div>
+      </AlertDialogPrimitive.Content>
     </AlertDialogPrimitive.Portal>
   );
 }
+
+function AlertDialogHeader({ className, ...props }: React.ComponentProps<typeof ModalHeader>) {
+  return <ModalHeader className={cn("pr-5", className)} {...props} />;
+}
+
+const AlertDialogBody = ModalBody;
+const AlertDialogFooter = ModalFooter;
 
 function AlertDialogTitle({
   className,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Title>) {
   return (
-    <AlertDialogPrimitive.Title className={cn("text-lg font-semibold", className)} {...props} />
+    <AlertDialogPrimitive.Title
+      className={cn("text-lg leading-snug font-semibold tracking-tight break-words", className)}
+      {...props}
+    />
   );
 }
 
@@ -45,15 +69,6 @@ function AlertDialogDescription({
   return (
     <AlertDialogPrimitive.Description
       className={cn("text-muted-foreground text-sm", className)}
-      {...props}
-    />
-  );
-}
-
-function AlertDialogFooter({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      className={cn("flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end", className)}
       {...props}
     />
   );
@@ -89,6 +104,8 @@ function AlertDialogAction({
 export {
   AlertDialog,
   AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogBody,
   AlertDialogTitle,
   AlertDialogDescription,
   AlertDialogFooter,

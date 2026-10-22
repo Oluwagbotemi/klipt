@@ -14,10 +14,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogForm,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -161,57 +163,62 @@ function NewModelDialog({ siteId }: { siteId: string }) {
   const shownKey = keyEdited ? key : keyFromLabel(name, "-");
 
   return (
-    <DialogContent>
-      <form action={formAction} className="grid gap-4">
-        <DialogHeader>
+    <DialogContent size="md">
+      <DialogForm action={formAction}>
+        <DialogHeader icon={Boxes}>
           <DialogTitle>New content type</DialogTitle>
           <DialogDescription>
             Name it, then add fields on the next screen. You can change everything except the key
             later.
           </DialogDescription>
         </DialogHeader>
-        {state.errors?.form && <InlineAlert>{state.errors.form}</InlineAlert>}
-        <input type="hidden" name="siteId" value={siteId} />
-        <FormField
-          id="model-name"
-          name="name"
-          label="Name"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          error={state.errors?.name}
-          hint="Singular, e.g. Product or Event."
-          maxLength={60}
-          required
-          autoFocus
-        />
-        <FormField
-          id="model-key"
-          name="key"
-          label="Key"
-          value={shownKey}
-          onChange={(event) => {
-            setKeyEdited(true);
-            setKey(event.target.value.toLowerCase());
-          }}
-          error={state.errors?.key}
-          hint={
-            <>
-              Used in the API (<code className="font-mono">?type={shownKey || "product"}</code>) and
-              URLs (<code className="font-mono">/{shownKey || "product"}/…</code>). It can&apos;t
-              change after you create the type.
-            </>
-          }
-          className="[&_input]:font-mono"
-          maxLength={40}
-          autoComplete="off"
-          spellCheck={false}
-          required
-        />
-        <DescriptionField
-          defaultValue={state.values.description}
-          error={state.errors?.description}
-        />
-        <SchemaTypeSelect defaultValue={state.values.schemaType} error={state.errors?.schemaType} />
+        <DialogBody>
+          {state.errors?.form && <InlineAlert>{state.errors.form}</InlineAlert>}
+          <input type="hidden" name="siteId" value={siteId} />
+          <FormField
+            id="model-name"
+            name="name"
+            label="Name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            error={state.errors?.name}
+            hint="Singular, e.g. Product or Event."
+            maxLength={60}
+            required
+            autoFocus
+          />
+          <FormField
+            id="model-key"
+            name="key"
+            label="Key"
+            value={shownKey}
+            onChange={(event) => {
+              setKeyEdited(true);
+              setKey(event.target.value.toLowerCase());
+            }}
+            error={state.errors?.key}
+            hint={
+              <>
+                Used in the API (<code className="font-mono">?type={shownKey || "product"}</code>)
+                and URLs (<code className="font-mono">/{shownKey || "product"}/…</code>). It
+                can&apos;t change after you create the type.
+              </>
+            }
+            className="[&_input]:font-mono"
+            maxLength={40}
+            autoComplete="off"
+            spellCheck={false}
+            required
+          />
+          <DescriptionField
+            defaultValue={state.values.description}
+            error={state.errors?.description}
+          />
+          <SchemaTypeSelect
+            defaultValue={state.values.schemaType}
+            error={state.errors?.schemaType}
+          />
+        </DialogBody>
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline">
@@ -223,7 +230,7 @@ function NewModelDialog({ siteId }: { siteId: string }) {
             {pending ? "Creating…" : "Create content type"}
           </Button>
         </DialogFooter>
-      </form>
+      </DialogForm>
     </DialogContent>
   );
 }

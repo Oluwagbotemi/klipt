@@ -1,16 +1,18 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { FileText, Globe, Loader2, Search } from "lucide-react";
+import { FileText, Globe, Link2, Loader2, Search } from "lucide-react";
 import { searchMenuTargetsAction } from "@/app/(site)/sites/[siteId]/navigation/actions";
 import { ContentStatusBadge } from "@/components/content/status-badge";
 import { FormField } from "@/components/form-field";
 import { Button } from "@/components/ui/button";
 import {
+  DialogBody,
   DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogForm,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -96,87 +98,91 @@ export function MenuItemDialog({
   }
 
   return (
-    <DialogContent className="sm:max-w-lg">
-      <form onSubmit={submit} className="grid min-w-0 gap-4 [&>*]:min-w-0" noValidate>
-        <DialogHeader>
+    <DialogContent size="lg">
+      <DialogForm onSubmit={submit} className="grid min-w-0 gap-4 [&>*]:min-w-0" noValidate>
+        <DialogHeader icon={Link2}>
           <DialogTitle>{item ? "Edit link" : "Add link"}</DialogTitle>
           <DialogDescription>
             Link to an entry to follow it when its URL changes, or to any web address.
           </DialogDescription>
         </DialogHeader>
+        <DialogBody className="*:min-w-0">
+          <fieldset className="grid gap-2">
+            <legend className="mb-1 text-sm font-medium">Links to</legend>
+            <div className="grid grid-cols-2 gap-2 [&>*]:min-w-0">
+              {(
+                [
+                  { value: "entry", label: "An entry", icon: FileText },
+                  { value: "url", label: "A URL", icon: Globe },
+                ] as const
+              ).map((option) => (
+                <label
+                  key={option.value}
+                  className="hover:bg-accent/50 has-focus-visible:ring-ring/50 has-checked:border-primary has-checked:bg-primary/5 flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium has-focus-visible:ring-[3px]"
+                >
+                  <input
+                    type="radio"
+                    name="kind"
+                    value={option.value}
+                    checked={kind === option.value}
+                    onChange={() => setKind(option.value)}
+                    className="accent-primary size-4 shrink-0 outline-none"
+                  />
+                  <option.icon className="text-muted-foreground size-4" aria-hidden />
+                  {option.label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
 
-        <fieldset className="grid gap-2">
-          <legend className="mb-1 text-sm font-medium">Links to</legend>
-          <div className="grid grid-cols-2 gap-2 [&>*]:min-w-0">
-            {(
-              [
-                { value: "entry", label: "An entry", icon: FileText },
-                { value: "url", label: "A URL", icon: Globe },
-              ] as const
-            ).map((option) => (
-              <label
-                key={option.value}
-                className="hover:bg-accent/50 has-focus-visible:ring-ring/50 has-checked:border-primary has-checked:bg-primary/5 flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium has-focus-visible:ring-[3px]"
-              >
-                <input
-                  type="radio"
-                  name="kind"
-                  value={option.value}
-                  checked={kind === option.value}
-                  onChange={() => setKind(option.value)}
-                  className="accent-primary size-4 shrink-0 outline-none"
-                />
-                <option.icon className="text-muted-foreground size-4" aria-hidden />
-                {option.label}
-              </label>
-            ))}
-          </div>
-        </fieldset>
+          {kind === "entry" ? (
+            <EntryChooser
+              siteId={siteId}
+              selected={entry}
+              error={errors.entry}
+              onPick={pick}
+              onClear={() => setEntry(null)}
+            />
+          ) : (
+            <FormField
+              id="menu-item-url"
+              label="URL"
+              value={url}
+              onChange={(event) => setUrl(event.target.value)}
+              error={errors.url}
+              hint="https://…, a path on your site like /pricing, mailto: or tel:."
+              inputMode="url"
+              autoComplete="off"
+              spellCheck={false}
+              required
+            />
+          )}
 
-        {kind === "entry" ? (
-          <EntryChooser
-            siteId={siteId}
-            selected={entry}
-            error={errors.entry}
-            onPick={pick}
-            onClear={() => setEntry(null)}
-          />
-        ) : (
           <FormField
-            id="menu-item-url"
-            label="URL"
-            value={url}
-            onChange={(event) => setUrl(event.target.value)}
-            error={errors.url}
-            hint="https://…, a path on your site like /pricing, mailto: or tel:."
-            inputMode="url"
-            autoComplete="off"
-            spellCheck={false}
+            id="menu-item-label"
+            label="Label"
+            value={label}
+            onChange={(event) => setLabel(event.target.value)}
+            error={errors.label}
+            hint="The text visitors see in the menu."
+            maxLength={MAX_LABEL_LENGTH}
             required
           />
-        )}
 
-        <FormField
-          id="menu-item-label"
-          label="Label"
-          value={label}
-          onChange={(event) => setLabel(event.target.value)}
-          error={errors.label}
-          hint="The text visitors see in the menu."
-          maxLength={MAX_LABEL_LENGTH}
-          required
-        />
-
-        <div className="flex items-center justify-between gap-4">
-          <label htmlFor="menu-item-new-tab" className="text-sm">
-            <span className="block font-medium">Open in a new tab</span>
-            <span className="text-muted-foreground block text-xs">
-              Usually only for links to other websites.
-            </span>
-          </label>
-          <Switch id="menu-item-new-tab" checked={openInNewTab} onCheckedChange={setOpenInNewTab} />
-        </div>
-
+          <div className="flex items-center justify-between gap-4">
+            <label htmlFor="menu-item-new-tab" className="text-sm">
+              <span className="block font-medium">Open in a new tab</span>
+              <span className="text-muted-foreground block text-xs">
+                Usually only for links to other websites.
+              </span>
+            </label>
+            <Switch
+              id="menu-item-new-tab"
+              checked={openInNewTab}
+              onCheckedChange={setOpenInNewTab}
+            />
+          </div>
+        </DialogBody>
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline">
@@ -185,7 +191,7 @@ export function MenuItemDialog({
           </DialogClose>
           <Button type="submit">{item ? "Update link" : "Add link"}</Button>
         </DialogFooter>
-      </form>
+      </DialogForm>
     </DialogContent>
   );
 }

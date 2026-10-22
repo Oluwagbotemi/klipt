@@ -1,15 +1,18 @@
 "use client";
 
+import { Archive, Trash2 } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { bulkContentAction } from "@/app/(site)/sites/[siteId]/content/actions";
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogBody,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
+  AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { entryActions, type BulkAction, type EntrySummary } from "@/lib/content";
@@ -92,25 +95,31 @@ export function useEntryActions({
   const dialog = (
     <AlertDialog open={confirm !== null} onOpenChange={(open) => !open && setConfirm(null)}>
       <AlertDialogContent>
-        {confirm?.action === "delete" ? (
-          <>
-            <AlertDialogTitle>
-              Delete {one ? `“${one.title}”` : items(n)} permanently?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              This removes {one ? "it" : "them"} and {one ? "its" : "their"} revision history. It
-              can&apos;t be undone.
-            </AlertDialogDescription>
-          </>
-        ) : (
-          <>
-            <AlertDialogTitle>Archive {one ? `“${one.title}”` : items(n)}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Published or scheduled content will no longer be published. You can restore it later
-              as a draft.
-            </AlertDialogDescription>
-          </>
-        )}
+        <AlertDialogHeader
+          icon={confirm?.action === "delete" ? Trash2 : Archive}
+          tone={confirm?.action === "delete" ? "destructive" : "warning"}
+        >
+          <AlertDialogTitle>
+            {confirm?.action === "delete"
+              ? `Delete ${one ? `“${one.title}”` : items(n)} permanently?`
+              : `Archive ${one ? `“${one.title}”` : items(n)}?`}
+          </AlertDialogTitle>
+        </AlertDialogHeader>
+        <AlertDialogBody>
+          <AlertDialogDescription>
+            {confirm?.action === "delete" ? (
+              <>
+                This removes {one ? "it" : "them"} and {one ? "its" : "their"} revision history. It
+                can&apos;t be undone.
+              </>
+            ) : (
+              <>
+                Published or scheduled content will no longer be published. You can restore it later
+                as a draft.
+              </>
+            )}
+          </AlertDialogDescription>
+        </AlertDialogBody>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction

@@ -14,20 +14,24 @@ import { ReadOnlyNote } from "@/components/models/model-form-parts";
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogBody,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
+  AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogForm,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -125,12 +129,16 @@ export function MenuList({
 
       <AlertDialog open={deleting !== null} onOpenChange={(open) => !open && setDeleting(null)}>
         <AlertDialogContent>
-          <AlertDialogTitle>Delete the “{deleting?.name}” menu?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This can&apos;t be undone. Its {count(deleting?.itemCount ?? 0, "link", "links")} are
-            removed, and websites asking the content API for{" "}
-            <code className="font-mono">{deleting?.key}</code> get a not-found error.
-          </AlertDialogDescription>
+          <AlertDialogHeader icon={Trash2} tone="destructive">
+            <AlertDialogTitle>Delete the “{deleting?.name}” menu?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogBody>
+            <AlertDialogDescription>
+              This can&apos;t be undone. Its {count(deleting?.itemCount ?? 0, "link", "links")} are
+              removed, and websites asking the content API for{" "}
+              <code className="font-mono">{deleting?.key}</code> get a not-found error.
+            </AlertDialogDescription>
+          </AlertDialogBody>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
@@ -232,50 +240,52 @@ function NewMenuDialog({ siteId }: { siteId: string }) {
   const shownKey = keyEdited ? key : keyFromLabel(name, "-");
 
   return (
-    <DialogContent>
-      <form action={formAction} className="grid gap-4">
-        <DialogHeader>
+    <DialogContent size="md">
+      <DialogForm action={formAction}>
+        <DialogHeader icon={ListTree}>
           <DialogTitle>New menu</DialogTitle>
           <DialogDescription>
             Name it, then add links on the next screen. The key can&apos;t change later.
           </DialogDescription>
         </DialogHeader>
-        {state.errors?.form && <InlineAlert>{state.errors.form}</InlineAlert>}
-        <input type="hidden" name="siteId" value={siteId} />
-        <FormField
-          id="menu-name"
-          name="name"
-          label="Name"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          error={state.errors?.name}
-          hint="For people in Klipt, e.g. Legal links."
-          maxLength={60}
-          required
-          autoFocus
-        />
-        <FormField
-          id="menu-key"
-          name="key"
-          label="Key"
-          value={shownKey}
-          onChange={(event) => {
-            setKeyEdited(true);
-            setKey(event.target.value.toLowerCase());
-          }}
-          error={state.errors?.key}
-          hint={
-            <>
-              Your website asks for it by this key:{" "}
-              <code className="font-mono break-all">/api/v1/menus/{shownKey || "legal"}</code>
-            </>
-          }
-          className="[&_input]:font-mono"
-          maxLength={40}
-          autoComplete="off"
-          spellCheck={false}
-          required
-        />
+        <DialogBody>
+          {state.errors?.form && <InlineAlert>{state.errors.form}</InlineAlert>}
+          <input type="hidden" name="siteId" value={siteId} />
+          <FormField
+            id="menu-name"
+            name="name"
+            label="Name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            error={state.errors?.name}
+            hint="For people in Klipt, e.g. Legal links."
+            maxLength={60}
+            required
+            autoFocus
+          />
+          <FormField
+            id="menu-key"
+            name="key"
+            label="Key"
+            value={shownKey}
+            onChange={(event) => {
+              setKeyEdited(true);
+              setKey(event.target.value.toLowerCase());
+            }}
+            error={state.errors?.key}
+            hint={
+              <>
+                Your website asks for it by this key:{" "}
+                <code className="font-mono break-all">/api/v1/menus/{shownKey || "legal"}</code>
+              </>
+            }
+            className="[&_input]:font-mono"
+            maxLength={40}
+            autoComplete="off"
+            spellCheck={false}
+            required
+          />
+        </DialogBody>
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline">
@@ -287,7 +297,7 @@ function NewMenuDialog({ siteId }: { siteId: string }) {
             {pending ? "Creating…" : "Create menu"}
           </Button>
         </DialogFooter>
-      </form>
+      </DialogForm>
     </DialogContent>
   );
 }

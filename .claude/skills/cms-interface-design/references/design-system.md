@@ -8,6 +8,7 @@ Use shadcn/ui where appropriate: Button, Input, Textarea, Select, Checkbox, Swit
 - DataTable with sorting, filtering, pagination, row actions, selection, empty/loading/error states.
 - ContentStatusBadge (Draft, In Review, Scheduled, Published, Archived).
 - ContentCard, ContentListRow, EmptyState, ConfirmationDialog, InlineAlert.
+- Modals: glass frame (4px, white 10%, blur) around a soft panel; header with an icon tile, title and description; a white body card; equal-width footer buttons (cancel left, primary right). Sizes sm 400 / md 560 / lg 720px; confirmations and success states are small, forms are 720px.
 - FormField with label, help text, required indicator, validation, and accessible error.
 - SEOFieldGroup, SearchResultPreview, SocialPreview, SEOChecklist.
 - MediaPicker, MediaDetails, AltTextField, UploadDropzone.

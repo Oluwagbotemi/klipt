@@ -8,6 +8,7 @@ import { MediaPicker } from "@/components/media/media-picker";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -484,63 +485,65 @@ function EntryPickerDialog({
   }, [query]);
 
   return (
-    <DialogContent className="sm:max-w-lg">
-      <DialogHeader>
+    <DialogContent size="md">
+      <DialogHeader icon={Link2}>
         <DialogTitle>Choose {field.label.toLowerCase()}</DialogTitle>
         <DialogDescription>
           Pick the entry to link to. Your website only receives it once it&apos;s published.
         </DialogDescription>
       </DialogHeader>
-      <div className="relative">
-        <Search
-          className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
-          aria-hidden
-        />
-        <Input
-          type="search"
-          aria-label="Search entries"
-          placeholder="Search by title or slug"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          className="pl-9"
-          autoFocus
-        />
-      </div>
-      <div className="max-h-80 min-h-32 overflow-y-auto" aria-busy={loading}>
-        {results === null ? (
-          <p className="text-muted-foreground flex items-center gap-2 py-6 text-sm">
-            <Loader2 className="size-4 animate-spin" aria-hidden /> Loading entries…
-          </p>
-        ) : results.length === 0 ? (
-          <p className="text-muted-foreground py-6 text-center text-sm">
-            {query.trim()
-              ? `Nothing matches “${query.trim()}”.`
-              : "No entries to link to yet. Create one in Content first."}
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-1" aria-label="Entries">
-            {results.map((result) => (
-              <li key={result.id}>
-                <button
-                  type="button"
-                  onClick={() => onPick(result)}
-                  className="hover:bg-accent focus-visible:ring-ring/50 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left outline-none focus-visible:ring-[3px]"
-                >
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium">
-                      {result.title || "Untitled"}
+      <DialogBody className="mb-2 gap-3">
+        <div className="relative">
+          <Search
+            className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
+            aria-hidden
+          />
+          <Input
+            type="search"
+            aria-label="Search entries"
+            placeholder="Search by title or slug"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            className="pl-9"
+            autoFocus
+          />
+        </div>
+        <div className="max-h-80 min-h-32 overflow-y-auto" aria-busy={loading}>
+          {results === null ? (
+            <p className="text-muted-foreground flex items-center gap-2 py-6 text-sm">
+              <Loader2 className="size-4 animate-spin" aria-hidden /> Loading entries…
+            </p>
+          ) : results.length === 0 ? (
+            <p className="text-muted-foreground py-6 text-center text-sm">
+              {query.trim()
+                ? `Nothing matches “${query.trim()}”.`
+                : "No entries to link to yet. Create one in Content first."}
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-1" aria-label="Entries">
+              {results.map((result) => (
+                <li key={result.id}>
+                  <button
+                    type="button"
+                    onClick={() => onPick(result)}
+                    className="hover:bg-accent focus-visible:ring-ring/50 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left outline-none focus-visible:ring-[3px]"
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium">
+                        {result.title || "Untitled"}
+                      </span>
+                      <span className="text-muted-foreground block truncate text-xs">
+                        {result.modelName} · {result.path}
+                      </span>
                     </span>
-                    <span className="text-muted-foreground block truncate text-xs">
-                      {result.modelName} · {result.path}
-                    </span>
-                  </span>
-                  <ContentStatusBadge status={result.status as ContentStatus} />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+                    <ContentStatusBadge status={result.status as ContentStatus} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </DialogBody>
     </DialogContent>
   );
 }

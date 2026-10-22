@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronRight, Globe, LayoutGrid, List, Plus, Search, SearchX } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { SiteAvatar } from "@/components/shell/site-avatar";
+import { CreateSiteButton } from "@/components/sites/create-site-dialog";
 import { SiteBadges } from "@/components/sites/site-badges";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,12 +40,10 @@ export function SitesBrowser({ sites }: { sites: SiteSummary[] }) {
         title="No sites yet"
         description="Create your first site to start adding content. Sites you're invited to will also appear here."
         action={
-          <Button asChild>
-            <Link href="/sites/new">
-              <Plus aria-hidden />
-              Create site
-            </Link>
-          </Button>
+          <CreateSiteButton>
+            <Plus aria-hidden />
+            Create site
+          </CreateSiteButton>
         }
       />
     );

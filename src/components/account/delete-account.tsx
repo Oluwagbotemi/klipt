@@ -2,17 +2,19 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Archive, Loader2, Trash2 } from "lucide-react";
+import { Archive, Loader2, Trash2, UserX } from "lucide-react";
 import { deleteAccountAction } from "@/app/(account)/account/actions";
 import { InlineAlert } from "@/components/inline-alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogForm,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -113,41 +115,43 @@ export function DeleteAccount({ email, ownedSites }: { email: string; ownedSites
       </div>
 
       <Dialog open={open} onOpenChange={(next) => !pending && setOpen(next)}>
-        <DialogContent>
-          <form onSubmit={submit} className="grid gap-4">
-            <DialogHeader>
+        <DialogContent size="md">
+          <DialogForm onSubmit={submit}>
+            <DialogHeader icon={UserX} tone="destructive">
               <DialogTitle>Delete your account permanently?</DialogTitle>
               <DialogDescription>
                 You&apos;ll be signed out everywhere and removed from all sites. To come back,
                 you&apos;d create a new account and be invited again.
               </DialogDescription>
             </DialogHeader>
-            {error && <InlineAlert>{error}</InlineAlert>}
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="confirm-email" className="text-sm font-medium">
-                Type <span className="font-mono break-all">{email}</span> to confirm
-              </label>
-              <Input
-                id="confirm-email"
-                value={confirmEmail}
-                onChange={(e) => setConfirmEmail(e.target.value)}
-                autoComplete="off"
-                spellCheck={false}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="delete-password" className="text-sm font-medium">
-                Your password
-              </label>
-              <Input
-                id="delete-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                required
-              />
-            </div>
+            <DialogBody>
+              {error && <InlineAlert>{error}</InlineAlert>}
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="confirm-email" className="text-sm font-medium">
+                  Type <span className="font-mono break-all">{email}</span> to confirm
+                </label>
+                <Input
+                  id="confirm-email"
+                  value={confirmEmail}
+                  onChange={(e) => setConfirmEmail(e.target.value)}
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="delete-password" className="text-sm font-medium">
+                  Your password
+                </label>
+                <Input
+                  id="delete-password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  required
+                />
+              </div>
+            </DialogBody>
             <DialogFooter>
               <DialogClose asChild>
                 <Button type="button" variant="outline" disabled={pending}>
@@ -159,7 +163,7 @@ export function DeleteAccount({ email, ownedSites }: { email: string; ownedSites
                 Delete account
               </Button>
             </DialogFooter>
-          </form>
+          </DialogForm>
         </DialogContent>
       </Dialog>
     </>

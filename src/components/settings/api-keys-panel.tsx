@@ -14,19 +14,23 @@ import { InlineAlert } from "@/components/inline-alert";
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogBody,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
+  AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogForm,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -132,37 +136,40 @@ function CreateKeyDialog({ siteId }: { siteId: string }) {
 
   return (
     <DialogContent
+      size="md"
       // Once the key is showing, only "Done" or Escape closes it, so it isn't lost by a stray click.
       onInteractOutside={(event) => created && event.preventDefault()}
     >
       {created ? (
         <>
-          <DialogHeader>
+          <DialogHeader icon={KeyRound} tone="success" centered>
             <DialogTitle>Copy your new API key</DialogTitle>
             <DialogDescription>
               {created.name}. Save it somewhere safe, such as your website&apos;s environment
               variables.
             </DialogDescription>
           </DialogHeader>
-          <div
-            role="note"
-            className="bg-warning-soft text-warning flex gap-2 rounded-lg px-3 py-2.5 text-sm"
-          >
-            <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
-            <p>For your security, Klipt won&apos;t show this key again.</p>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="new-api-key" className="text-sm font-medium">
-              API key
-            </label>
-            <input
-              id="new-api-key"
-              readOnly
-              value={created.token}
-              onFocus={(event) => event.currentTarget.select()}
-              className="border-input bg-muted focus-visible:border-ring focus-visible:ring-ring/50 h-10 w-full rounded-lg border px-3 font-mono text-sm outline-none focus-visible:ring-[3px]"
-            />
-          </div>
+          <DialogBody>
+            <div
+              role="note"
+              className="bg-warning-soft text-warning flex gap-2 rounded-lg px-3 py-2.5 text-sm"
+            >
+              <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+              <p>For your security, Klipt won&apos;t show this key again.</p>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="new-api-key" className="text-sm font-medium">
+                API key
+              </label>
+              <input
+                id="new-api-key"
+                readOnly
+                value={created.token}
+                onFocus={(event) => event.currentTarget.select()}
+                className="border-input bg-muted focus-visible:border-ring focus-visible:ring-ring/50 h-10 w-full rounded-lg border px-3 font-mono text-sm outline-none focus-visible:ring-[3px]"
+              />
+            </div>
+          </DialogBody>
           <DialogFooter>
             <CopyButton value={created.token} label="Copy key" variant="outline" />
             <DialogClose asChild>
@@ -171,28 +178,30 @@ function CreateKeyDialog({ siteId }: { siteId: string }) {
           </DialogFooter>
         </>
       ) : (
-        <form action={formAction} className="grid gap-4">
-          <DialogHeader>
+        <DialogForm action={formAction}>
+          <DialogHeader icon={KeyRound}>
             <DialogTitle>Create API key</DialogTitle>
             <DialogDescription>
               The key can read this site&apos;s published content. You&apos;ll see it once, right
               after you create it.
             </DialogDescription>
           </DialogHeader>
-          {state.errors?.form && <InlineAlert>{state.errors.form}</InlineAlert>}
-          <input type="hidden" name="siteId" value={siteId} />
-          <FormField
-            id="api-key-name"
-            name="name"
-            label="Name"
-            defaultValue={state.values.name}
-            error={state.errors?.name}
-            hint="Which website or app will use it, e.g. Blog website."
-            maxLength={60}
-            autoComplete="off"
-            required
-            autoFocus
-          />
+          <DialogBody>
+            {state.errors?.form && <InlineAlert>{state.errors.form}</InlineAlert>}
+            <input type="hidden" name="siteId" value={siteId} />
+            <FormField
+              id="api-key-name"
+              name="name"
+              label="Name"
+              defaultValue={state.values.name}
+              error={state.errors?.name}
+              hint="Which website or app will use it, e.g. Blog website."
+              maxLength={60}
+              autoComplete="off"
+              required
+              autoFocus
+            />
+          </DialogBody>
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline">
@@ -204,7 +213,7 @@ function CreateKeyDialog({ siteId }: { siteId: string }) {
               {pending ? "Creating…" : "Create key"}
             </Button>
           </DialogFooter>
-        </form>
+        </DialogForm>
       )}
     </DialogContent>
   );
@@ -238,11 +247,15 @@ function RevokeKeyDialog({
   return (
     <AlertDialog open={apiKey !== null} onOpenChange={(open) => !open && !pending && onClose()}>
       <AlertDialogContent>
-        <AlertDialogTitle>Revoke {apiKey?.name}?</AlertDialogTitle>
-        <AlertDialogDescription>
-          Websites using this key stop receiving content right away. This can&apos;t be undone, but
-          you can create a new key at any time.
-        </AlertDialogDescription>
+        <AlertDialogHeader icon={KeyRound} tone="destructive">
+          <AlertDialogTitle>Revoke {apiKey?.name}?</AlertDialogTitle>
+        </AlertDialogHeader>
+        <AlertDialogBody>
+          <AlertDialogDescription>
+            Websites using this key stop receiving content right away. This can&apos;t be undone,
+            but you can create a new key at any time.
+          </AlertDialogDescription>
+        </AlertDialogBody>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
           <AlertDialogAction variant="destructive" onClick={revoke} disabled={pending}>

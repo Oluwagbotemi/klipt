@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { CornerDownRight, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { CornerDownRight, Loader2, Pencil, Plus, Tag, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   deleteTermAction,
@@ -15,19 +15,23 @@ import { selectClass } from "@/components/models/model-form-parts";
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogBody,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
+  AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogForm,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -235,17 +239,21 @@ export function TermsManager({
         onOpenChange={(next) => !next && !pending && setRemoving(null)}
       >
         <AlertDialogContent>
-          <AlertDialogTitle>Delete “{removing?.name}”?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Entries are kept.{" "}
-            {removing && removing.entryCount > 0
-              ? `${entries(removing.entryCount)} will no longer have this ${noun.one}, and its archive page ${termPath(taxonomy.key, removing.slug)} disappears from the content API and sitemap.`
-              : `No entries use it.`}
-            {removingChildren > 0 &&
-              (removingChildren === 1
-                ? ` The ${noun.one} inside it moves up one level.`
-                : ` The ${removingChildren} ${noun.many} inside it move up one level.`)}
-          </AlertDialogDescription>
+          <AlertDialogHeader icon={Trash2} tone="destructive">
+            <AlertDialogTitle>Delete “{removing?.name}”?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogBody>
+            <AlertDialogDescription>
+              Entries are kept.{" "}
+              {removing && removing.entryCount > 0
+                ? `${entries(removing.entryCount)} will no longer have this ${noun.one}, and its archive page ${termPath(taxonomy.key, removing.slug)} disappears from the content API and sitemap.`
+                : `No entries use it.`}
+              {removingChildren > 0 &&
+                (removingChildren === 1
+                  ? ` The ${noun.one} inside it moves up one level.`
+                  : ` The ${removingChildren} ${noun.many} inside it move up one level.`)}
+            </AlertDialogDescription>
+          </AlertDialogBody>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={pending}>Keep</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={remove} disabled={pending}>
@@ -313,9 +321,9 @@ function TermForm({
   }, [taxonomy.hierarchical, tree, term]);
 
   return (
-    <DialogContent className="max-h-[90dvh] overflow-y-auto">
-      <form action={formAction} className="grid gap-4">
-        <DialogHeader>
+    <DialogContent size="md">
+      <DialogForm action={formAction}>
+        <DialogHeader icon={Tag}>
           <DialogTitle>{term ? `Edit ${noun.one}` : `Add ${noun.one}`}</DialogTitle>
           <DialogDescription>
             {taxonomy.hierarchical
@@ -323,121 +331,124 @@ function TermForm({
               : `Give it a short, clear name.`}
           </DialogDescription>
         </DialogHeader>
-        {state.errors?.form && <InlineAlert>{state.errors.form}</InlineAlert>}
-        <input type="hidden" name="siteId" value={siteId} />
-        <input type="hidden" name="taxonomyKey" value={taxonomy.key} />
-        {term && <input type="hidden" name="termId" value={term.id} />}
-        <FormField
-          id="term-name"
-          name="name"
-          label="Name"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          error={state.errors?.name}
-          maxLength={80}
-          required
-          autoFocus
-        />
-        <FormField
-          id="term-slug"
-          name="slug"
-          label="URL slug"
-          value={shownSlug}
-          onChange={(event) => {
-            setSlugEdited(true);
-            setSlug(event.target.value.toLowerCase());
-          }}
-          error={state.errors?.slug}
-          hint={
-            <>
-              Archive page:{" "}
-              <code className="font-mono break-all">
-                {termPath(taxonomy.key, shownSlug || "example")}
-              </code>
-              {term && " Changing it changes that address."}
-            </>
-          }
-          maxLength={80}
-          autoComplete="off"
-          spellCheck={false}
-          required
-        />
-        {taxonomy.hierarchical && (
+        <DialogBody>
+          {state.errors?.form && <InlineAlert>{state.errors.form}</InlineAlert>}
+          <input type="hidden" name="siteId" value={siteId} />
+          <input type="hidden" name="taxonomyKey" value={taxonomy.key} />
+          {term && <input type="hidden" name="termId" value={term.id} />}
+          <FormField
+            id="term-name"
+            name="name"
+            label="Name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            error={state.errors?.name}
+            maxLength={80}
+            required
+            autoFocus
+          />
+          <FormField
+            id="term-slug"
+            name="slug"
+            label="URL slug"
+            value={shownSlug}
+            onChange={(event) => {
+              setSlugEdited(true);
+              setSlug(event.target.value.toLowerCase());
+            }}
+            error={state.errors?.slug}
+            hint={
+              <>
+                Archive page:{" "}
+                <code className="font-mono break-all">
+                  {termPath(taxonomy.key, shownSlug || "example")}
+                </code>
+                {term && " Changing it changes that address."}
+              </>
+            }
+            maxLength={80}
+            autoComplete="off"
+            spellCheck={false}
+            required
+          />
+          {taxonomy.hierarchical && (
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="term-parent" className="text-sm font-medium">
+                Parent <span className="text-muted-foreground font-normal">(optional)</span>
+              </label>
+              <select
+                id="term-parent"
+                name="parentId"
+                defaultValue={state.values.parentId}
+                className={selectClass}
+                aria-invalid={state.errors?.parentId ? true : undefined}
+                aria-describedby={state.errors?.parentId ? "term-parent-error" : undefined}
+              >
+                <option value="">None (top level)</option>
+                {parents.map((row) => (
+                  <option key={row.id} value={row.id}>
+                    {`${"— ".repeat(row.depth)}${row.name}`}
+                  </option>
+                ))}
+              </select>
+              {state.errors?.parentId && (
+                <p id="term-parent-error" className="text-destructive text-sm">
+                  {state.errors.parentId}
+                </p>
+              )}
+            </div>
+          )}
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="term-parent" className="text-sm font-medium">
-              Parent <span className="text-muted-foreground font-normal">(optional)</span>
+            <label htmlFor="term-description" className="text-sm font-medium">
+              Description <span className="text-muted-foreground font-normal">(optional)</span>
             </label>
-            <select
-              id="term-parent"
-              name="parentId"
-              defaultValue={state.values.parentId}
-              className={selectClass}
-              aria-invalid={state.errors?.parentId ? true : undefined}
-              aria-describedby={state.errors?.parentId ? "term-parent-error" : undefined}
-            >
-              <option value="">None (top level)</option>
-              {parents.map((row) => (
-                <option key={row.id} value={row.id}>
-                  {`${"— ".repeat(row.depth)}${row.name}`}
-                </option>
-              ))}
-            </select>
-            {state.errors?.parentId && (
-              <p id="term-parent-error" className="text-destructive text-sm">
-                {state.errors.parentId}
+            <Textarea
+              id="term-description"
+              name="description"
+              defaultValue={state.values.description}
+              maxLength={500}
+              rows={2}
+              aria-describedby="term-description-hint"
+            />
+            {state.errors?.description ? (
+              <p className="text-destructive text-sm">{state.errors.description}</p>
+            ) : (
+              <p id="term-description-hint" className="text-muted-foreground text-xs">
+                Your website can show it at the top of the archive page.
               </p>
             )}
           </div>
-        )}
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="term-description" className="text-sm font-medium">
-            Description <span className="text-muted-foreground font-normal">(optional)</span>
-          </label>
-          <Textarea
-            id="term-description"
-            name="description"
-            defaultValue={state.values.description}
-            maxLength={500}
-            rows={2}
-            aria-describedby="term-description-hint"
-          />
-          {state.errors?.description ? (
-            <p className="text-destructive text-sm">{state.errors.description}</p>
-          ) : (
-            <p id="term-description-hint" className="text-muted-foreground text-xs">
-              Your website can show it at the top of the archive page.
-            </p>
-          )}
-        </div>
-        <fieldset className={cn("grid gap-3 rounded-xl border p-3")}>
-          <legend className="px-1 text-sm font-medium">
-            Search appearance of the archive page
-          </legend>
-          <FormField
-            id="term-seo-title"
-            name="seoTitle"
-            label="SEO title"
-            defaultValue={state.values.seoTitle}
-            error={state.errors?.seoTitle}
-            hint="Leave empty to use the name."
-            maxLength={70}
-          />
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="term-seo-description" className="text-sm font-medium">
-              Meta description <span className="text-muted-foreground font-normal">(optional)</span>
-            </label>
-            <Textarea
-              id="term-seo-description"
-              name="seoDescription"
-              defaultValue={state.values.seoDescription}
-              maxLength={160}
-              rows={2}
+          <fieldset className={cn("grid gap-3 rounded-xl border p-3")}>
+            <legend className="px-1 text-sm font-medium">
+              Search appearance of the archive page
+            </legend>
+            <FormField
+              id="term-seo-title"
+              name="seoTitle"
+              label="SEO title"
+              defaultValue={state.values.seoTitle}
+              error={state.errors?.seoTitle}
+              hint="Leave empty to use the name."
+              maxLength={70}
             />
-            {state.errors?.seoDescription && (
-              <p className="text-destructive text-sm">{state.errors.seoDescription}</p>
-            )}
-          </div>
-        </fieldset>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="term-seo-description" className="text-sm font-medium">
+                Meta description{" "}
+                <span className="text-muted-foreground font-normal">(optional)</span>
+              </label>
+              <Textarea
+                id="term-seo-description"
+                name="seoDescription"
+                defaultValue={state.values.seoDescription}
+                maxLength={160}
+                rows={2}
+              />
+              {state.errors?.seoDescription && (
+                <p className="text-destructive text-sm">{state.errors.seoDescription}</p>
+              )}
+            </div>
+          </fieldset>
+        </DialogBody>
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline">
@@ -449,7 +460,7 @@ function TermForm({
             {pending ? "Saving…" : term ? "Save changes" : `Add ${noun.one}`}
           </Button>
         </DialogFooter>
-      </form>
+      </DialogForm>
     </DialogContent>
   );
 }

@@ -38,6 +38,14 @@ before creating or changing any screen.
 - Theme: `.dark` class on `<html>`, set before paint by `src/lib/theme.ts`; light is default.
 - UI primitives in `src/components/ui/` follow shadcn/ui (Radix via `radix-ui`). The shadcn
   registry may be blocked in cloud sessions; write components by hand if so.
+- Modals: only `Dialog`/`AlertDialog` from `src/components/ui/` (layout in `ui/modal-layout.tsx`). Every
+  modal is a 4px glass frame (`.modal-glass`: `--glass-fill`, `--glass-highlight`, `--glass-edge`) over a
+  blurred scrim (`.modal-overlay`, `--overlay`), around a `--modal-panel` panel with
+  `DialogHeader icon={…}` (title + description; `centered` for success), `DialogBody` (the `--modal-body`
+  card, which scrolls) and `DialogFooter` (equal-width buttons, cancel left). Forms wrap all three in
+  `DialogForm`. Sizes: `sm` 400px (confirmations; AlertDialog default), `md` 560px, `lg` 720px (forms;
+  Dialog default). Below `sm` every modal is a bottom sheet (CSS only). Create site is a modal from
+  `CreateSiteProvider` in both shells (`useCreateSite()`); `/sites/new` shows the list with it open.
 - Forms: `FormField` for labelled inputs, `InlineAlert` for form-level errors, Server Actions
   with `useActionState` that return field errors and preserve submitted values.
 - Navigation (decided; overrides "persistent sidebar" wording elsewhere): top bar of open-site

@@ -9,10 +9,12 @@ import { CopyButton } from "@/components/copy-button";
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogBody,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
+  AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -197,11 +199,15 @@ export function SetupPanel({
 
       <AlertDialog open={confirming} onOpenChange={(open) => !pending && setConfirming(open)}>
         <AlertDialogContent>
-          <AlertDialogTitle>Replace the reporting key?</AlertDialogTitle>
-          <AlertDialogDescription>
-            The current key stops working straight away. Measurements from your website stop
-            arriving until you update the code with the new key. Data already collected stays.
-          </AlertDialogDescription>
+          <AlertDialogHeader icon={RefreshCw} tone="warning">
+            <AlertDialogTitle>Replace the reporting key?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogBody>
+            <AlertDialogDescription>
+              The current key stops working straight away. Measurements from your website stop
+              arriving until you update the code with the new key. Data already collected stays.
+            </AlertDialogDescription>
+          </AlertDialogBody>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={pending}>Keep current key</AlertDialogCancel>
             <AlertDialogAction onClick={rotate} disabled={pending}>

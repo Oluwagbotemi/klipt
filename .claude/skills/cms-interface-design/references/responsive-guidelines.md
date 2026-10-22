@@ -12,7 +12,7 @@ Desktop (lg+): persistent, collapsible section sidebar under the open-site tab b
 - Editor: single-column main editing canvas; settings in tabs or sheets, not cramped right rail.
 - Charts: resize responsively; do not rely on hover-only details.
 - Forms: stack columns and maintain labels/errors; buttons should be easy to tap.
-- Dialogs: use mobile-friendly sheets/full-screen flows for long forms.
+- Dialogs: every modal becomes a bottom sheet below 640px (full width, rounded top, body scrolls, stacked full-width buttons, safe-area padding). Use the shared Dialog/AlertDialog primitives; don't build custom overlays.
 - Media: responsive grid; avoid tiny thumbnails and inaccessible controls.
 
 ## Quality gates

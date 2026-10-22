@@ -3,6 +3,7 @@
 import { useActionState, useState, useTransition } from "react";
 import Link from "next/link";
 import {
+  AlignLeft,
   ArrowDown,
   ArrowLeft,
   ArrowUp,
@@ -13,13 +14,12 @@ import {
   Link2,
   ListChecks,
   Loader2,
+  type LucideIcon,
   Pencil,
   Plus,
   ToggleLeft,
   Trash2,
   Type,
-  AlignLeft,
-  type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -41,10 +41,12 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogBody,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
+  AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -323,11 +325,16 @@ export function ModelEditor({
 
       <AlertDialog open={removing !== null} onOpenChange={(open) => !open && setRemoving(null)}>
         <AlertDialogContent>
-          <AlertDialogTitle>Remove “{removing?.label}”?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Editors won&apos;t see it any more and the content API stops returning it. Values
-            already saved in entries are kept, so adding a field with the same key brings them back.
-          </AlertDialogDescription>
+          <AlertDialogHeader icon={Trash2} tone="destructive">
+            <AlertDialogTitle>Remove “{removing?.label}”?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogBody>
+            <AlertDialogDescription>
+              Editors won&apos;t see it any more and the content API stops returning it. Values
+              already saved in entries are kept, so adding a field with the same key brings them
+              back.
+            </AlertDialogDescription>
+          </AlertDialogBody>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
@@ -463,11 +470,15 @@ function DeleteModel({
       </Button>
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>
-          <AlertDialogTitle>Delete “{model.name}”?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This can&apos;t be undone. Websites asking the content API for{" "}
-            <code className="font-mono">type={model.key}</code> will get nothing back.
-          </AlertDialogDescription>
+          <AlertDialogHeader icon={Trash2} tone="destructive">
+            <AlertDialogTitle>Delete “{model.name}”?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogBody>
+            <AlertDialogDescription>
+              This can&apos;t be undone. Websites asking the content API for{" "}
+              <code className="font-mono">type={model.key}</code> will get nothing back.
+            </AlertDialogDescription>
+          </AlertDialogBody>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction

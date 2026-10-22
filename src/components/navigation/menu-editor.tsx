@@ -13,12 +13,13 @@ import {
   ExternalLink,
   FileText,
   Globe,
-  IndentIncrease,
   IndentDecrease,
+  IndentIncrease,
   Loader2,
   Pencil,
   Plus,
   Trash2,
+  TriangleAlert,
 } from "lucide-react";
 import { toast } from "sonner";
 import { saveMenuAction } from "@/app/(site)/sites/[siteId]/navigation/actions";
@@ -29,10 +30,12 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogBody,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
+  AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -388,13 +391,17 @@ export function MenuEditor({
 
       <AlertDialog open={removing !== null} onOpenChange={(open) => !open && setRemoving(null)}>
         <AlertDialogContent>
-          <AlertDialogTitle>
-            Remove “{removing !== null ? items[removing]?.label : ""}”?
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            The {removingChildren === 1 ? "link" : `${removingChildren} links`} under it will be
-            removed too. Nothing changes on your site until you save the menu.
-          </AlertDialogDescription>
+          <AlertDialogHeader icon={Trash2} tone="destructive">
+            <AlertDialogTitle>
+              Remove “{removing !== null ? items[removing]?.label : ""}”?
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogBody>
+            <AlertDialogDescription>
+              The {removingChildren === 1 ? "link" : `${removingChildren} links`} under it will be
+              removed too. Nothing changes on your site until you save the menu.
+            </AlertDialogDescription>
+          </AlertDialogBody>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
@@ -412,10 +419,14 @@ export function MenuEditor({
 
       <AlertDialog open={leaving !== null} onOpenChange={(open) => !open && setLeaving(null)}>
         <AlertDialogContent>
-          <AlertDialogTitle>Leave without saving?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Your changes to the {menu.name} menu haven&apos;t been saved and will be lost.
-          </AlertDialogDescription>
+          <AlertDialogHeader icon={TriangleAlert} tone="warning">
+            <AlertDialogTitle>Leave without saving?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogBody>
+            <AlertDialogDescription>
+              Your changes to the {menu.name} menu haven&apos;t been saved and will be lost.
+            </AlertDialogDescription>
+          </AlertDialogBody>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep editing</AlertDialogCancel>
             <AlertDialogAction
