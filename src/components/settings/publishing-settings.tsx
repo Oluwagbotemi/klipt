@@ -2,7 +2,7 @@
 
 import { useActionState, useState, useTransition } from "react";
 import Link from "next/link";
-import { ArrowRight, Loader2, RotateCcw } from "lucide-react";
+import { ArrowRight, Loader2, RotateCcw, Route } from "lucide-react";
 import { toast } from "sonner";
 import {
   previewUrlPatternsAction,
@@ -14,10 +14,12 @@ import { InlineAlert } from "@/components/inline-alert";
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogBody,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
+  AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -284,31 +286,35 @@ export function UrlPatternsForm({
         onOpenChange={(open) => !open && !pending && setConfirm(null)}
       >
         <AlertDialogContent>
-          <AlertDialogTitle>
-            Move {moving} published {moving === 1 ? "address" : "addresses"}?
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            Klipt adds a permanent (301) redirect from each old address, so links and search results
-            keep working. Your website should follow redirects from the content API.
-          </AlertDialogDescription>
-          <ul className="flex flex-col gap-3 text-sm">
-            {confirm
-              ?.filter((change) => change.moving > 0)
-              .map((change) => (
-                <li key={change.key} className="bg-muted/50 rounded-lg p-3">
-                  <p className="font-medium">
-                    {change.name}: {change.moving} {change.moving === 1 ? "entry" : "entries"}
-                  </p>
-                  {change.example && (
-                    <p className="text-muted-foreground mt-1 flex flex-wrap items-center gap-1 font-mono text-xs break-all">
-                      {change.example.from}
-                      <ArrowRight className="size-3 shrink-0" aria-label="moves to" />
-                      {change.example.to}
+          <AlertDialogHeader icon={Route}>
+            <AlertDialogTitle>
+              Move {moving} published {moving === 1 ? "address" : "addresses"}?
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogBody>
+            <AlertDialogDescription>
+              Klipt adds a permanent (301) redirect from each old address, so links and search
+              results keep working. Your website should follow redirects from the content API.
+            </AlertDialogDescription>
+            <ul className="flex flex-col gap-3 text-sm">
+              {confirm
+                ?.filter((change) => change.moving > 0)
+                .map((change) => (
+                  <li key={change.key} className="bg-muted/50 rounded-lg p-3">
+                    <p className="font-medium">
+                      {change.name}: {change.moving} {change.moving === 1 ? "entry" : "entries"}
                     </p>
-                  )}
-                </li>
-              ))}
-          </ul>
+                    {change.example && (
+                      <p className="text-muted-foreground mt-1 flex flex-wrap items-center gap-1 font-mono text-xs break-all">
+                        {change.example.from}
+                        <ArrowRight className="size-3 shrink-0" aria-label="moves to" />
+                        {change.example.to}
+                      </p>
+                    )}
+                  </li>
+                ))}
+            </ul>
+          </AlertDialogBody>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
             <AlertDialogAction

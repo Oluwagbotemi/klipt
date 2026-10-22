@@ -3,6 +3,17 @@
 import * as React from "react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import { X } from "lucide-react";
+import {
+  ModalBody,
+  ModalFooter,
+  ModalForm,
+  ModalHeader,
+  modalContentClass,
+  modalOverlayClass,
+  modalPanelClass,
+  SheetHandle,
+  type ModalSize,
+} from "@/components/ui/modal-layout";
 import { cn } from "@/lib/utils";
 
 function Dialog(props: React.ComponentProps<typeof DialogPrimitive.Root>) {
@@ -13,42 +24,56 @@ function DialogTrigger(props: React.ComponentProps<typeof DialogPrimitive.Trigge
   return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />;
 }
 
+/**
+ * Glass-framed modal (bottom sheet on phones). Compose with DialogHeader,
+ * DialogBody and DialogFooter; wrap them in DialogForm for forms.
+ * Sizes: sm 400px (confirmations, success), md 560px, lg 720px (forms, default).
+ */
 function DialogContent({
   className,
   children,
   showClose = true,
+  size = "lg",
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Content> & { showClose?: boolean }) {
+}: React.ComponentProps<typeof DialogPrimitive.Content> & {
+  showClose?: boolean;
+  size?: ModalSize;
+}) {
   return (
     <DialogPrimitive.Portal>
-      <DialogPrimitive.Overlay className="data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 fixed inset-0 z-50 bg-black/50" />
+      <DialogPrimitive.Overlay className={modalOverlayClass} />
       <DialogPrimitive.Content
         data-slot="dialog-content"
-        className={cn(
-          "bg-popover text-popover-foreground fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-2xl border p-6 shadow-xl",
-          "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
-          className,
-        )}
+        className={cn(modalContentClass(size), className)}
         {...props}
       >
-        {children}
-        {showClose && (
-          <DialogPrimitive.Close className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 absolute top-4 right-4 grid size-8 place-items-center rounded-lg outline-none focus-visible:ring-[3px]">
-            <X className="size-4" aria-hidden />
-            <span className="sr-only">Close</span>
-          </DialogPrimitive.Close>
-        )}
+        <div className={modalPanelClass}>
+          <SheetHandle />
+          {children}
+          {showClose && (
+            <DialogPrimitive.Close className="text-muted-foreground hover:text-foreground hover:bg-accent focus-visible:ring-ring/50 absolute top-3 right-3 grid size-9 place-items-center rounded-lg outline-none focus-visible:ring-[3px] sm:top-4 sm:right-4">
+              <X className="size-4" aria-hidden />
+              <span className="sr-only">Close</span>
+            </DialogPrimitive.Close>
+          )}
+        </div>
       </DialogPrimitive.Content>
     </DialogPrimitive.Portal>
   );
 }
 
-function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
-  return <div className={cn("flex flex-col gap-1.5 pr-8", className)} {...props} />;
-}
+const DialogHeader = ModalHeader;
+const DialogBody = ModalBody;
+const DialogFooter = ModalFooter;
+const DialogForm = ModalForm;
 
 function DialogTitle({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Title>) {
-  return <DialogPrimitive.Title className={cn("text-lg font-semibold", className)} {...props} />;
+  return (
+    <DialogPrimitive.Title
+      className={cn("text-lg leading-snug font-semibold tracking-tight", className)}
+      {...props}
+    />
+  );
 }
 
 function DialogDescription({
@@ -63,15 +88,6 @@ function DialogDescription({
   );
 }
 
-function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      className={cn("flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end", className)}
-      {...props}
-    />
-  );
-}
-
 const DialogClose = DialogPrimitive.Close;
 
 export {
@@ -79,6 +95,8 @@ export {
   DialogTrigger,
   DialogContent,
   DialogHeader,
+  DialogBody,
+  DialogForm,
   DialogTitle,
   DialogDescription,
   DialogFooter,

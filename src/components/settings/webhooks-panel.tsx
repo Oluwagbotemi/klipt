@@ -128,14 +128,19 @@ export function WebhooksPanel({
       )}
 
       <Dialog open={adding} onOpenChange={setAdding}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add webhook</DialogTitle>
-            <DialogDescription>
-              Klipt will send a signed POST request to this address for each event you choose.
-            </DialogDescription>
-          </DialogHeader>
-          <WebhookForm key={formKey} siteId={siteId} />
+        <DialogContent size="lg">
+          <WebhookForm
+            key={formKey}
+            siteId={siteId}
+            header={
+              <DialogHeader icon={Webhook}>
+                <DialogTitle>Add webhook</DialogTitle>
+                <DialogDescription>
+                  Klipt will send a signed POST request to this address for each event you choose.
+                </DialogDescription>
+              </DialogHeader>
+            }
+          />
         </DialogContent>
       </Dialog>
     </section>

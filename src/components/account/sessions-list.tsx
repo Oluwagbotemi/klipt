@@ -7,10 +7,12 @@ import { revokeOtherSessionsAction, revokeSessionAction } from "@/app/(account)/
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogBody,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
+  AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -106,11 +108,15 @@ export function SessionsList({ sessions }: { sessions: AccountSession[] }) {
 
       <AlertDialog open={confirmAll} onOpenChange={(open) => !pending && setConfirmAll(open)}>
         <AlertDialogContent>
-          <AlertDialogTitle>Sign out all other devices?</AlertDialogTitle>
-          <AlertDialogDescription>
-            {others.length === 1 ? "1 other device" : `${others.length} other devices`} will need to
-            sign in again. You stay signed in here.
-          </AlertDialogDescription>
+          <AlertDialogHeader icon={LogOut} tone="warning">
+            <AlertDialogTitle>Sign out all other devices?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogBody>
+            <AlertDialogDescription>
+              {others.length === 1 ? "1 other device" : `${others.length} other devices`} will need
+              to sign in again. You stay signed in here.
+            </AlertDialogDescription>
+          </AlertDialogBody>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={revokeAll} disabled={pending}>

@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { Boxes, FileText, Globe, Loader2, Newspaper, Plus } from "lucide-react";
 import { useCreateEntry } from "@/components/content/new-entry-button";
+import { useCreateSite } from "@/components/sites/create-site-dialog";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -37,6 +37,7 @@ export function NewMenu({
 }) {
   const canCreateContent = can(role, "content.create");
   const { create, pending } = useCreateEntry(siteId);
+  const { openCreateSite } = useCreateSite();
 
   return (
     <DropdownMenu>
@@ -72,11 +73,9 @@ export function NewMenu({
             <DropdownMenuSeparator />
           </>
         )}
-        <DropdownMenuItem asChild>
-          <Link href="/sites/new">
-            <Globe aria-hidden />
-            Site
-          </Link>
+        <DropdownMenuItem onSelect={() => openCreateSite()}>
+          <Globe aria-hidden />
+          Site
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -2,7 +2,7 @@
 
 import { useActionState, useState, useTransition } from "react";
 import Link from "next/link";
-import { ExternalLink, Loader2, TriangleAlert } from "lucide-react";
+import { ExternalLink, Loader2, Trash2, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import {
   deleteMediaAction,
@@ -15,10 +15,12 @@ import { MediaThumb } from "@/components/media/media-thumb";
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogBody,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
+  AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -268,13 +270,17 @@ function Details({
         onOpenChange={(open) => !deleting && setConfirmDelete(open)}
       >
         <AlertDialogContent>
-          <AlertDialogTitle>Delete {asset.filename}?</AlertDialogTitle>
-          <AlertDialogDescription>
-            {asset.usage.length > 0
-              ? `It's used in ${asset.usage.length} ${asset.usage.length === 1 ? "entry" : "entries"}. The image will disappear from ${asset.usage.length === 1 ? "it" : "them"}, including any that are live. `
-              : ""}
-            The file is removed permanently and its URL stops working. This can&apos;t be undone.
-          </AlertDialogDescription>
+          <AlertDialogHeader icon={Trash2} tone="destructive">
+            <AlertDialogTitle>Delete {asset.filename}?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogBody>
+            <AlertDialogDescription>
+              {asset.usage.length > 0
+                ? `It's used in ${asset.usage.length} ${asset.usage.length === 1 ? "entry" : "entries"}. The image will disappear from ${asset.usage.length === 1 ? "it" : "them"}, including any that are live. `
+                : ""}
+              The file is removed permanently and its URL stops working. This can&apos;t be undone.
+            </AlertDialogDescription>
+          </AlertDialogBody>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={remove} disabled={deleting}>

@@ -15,20 +15,24 @@ import { ReadOnlyNote } from "@/components/models/model-form-parts";
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogBody,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
+  AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogForm,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -185,12 +189,16 @@ export function TaxonomyList({
         onOpenChange={(next) => !next && !pending && setRemoving(null)}
       >
         <AlertDialogContent>
-          <AlertDialogTitle>Delete {removing?.name}?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Entries are kept. Its {count(removing?.termCount ?? 0, "term", "terms")} and their
-            archive pages are removed, and entries no longer show them in the editor or the content
-            API. This can&apos;t be undone.
-          </AlertDialogDescription>
+          <AlertDialogHeader icon={Trash2} tone="destructive">
+            <AlertDialogTitle>Delete {removing?.name}?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogBody>
+            <AlertDialogDescription>
+              Entries are kept. Its {count(removing?.termCount ?? 0, "term", "terms")} and their
+              archive pages are removed, and entries no longer show them in the editor or the
+              content API. This can&apos;t be undone.
+            </AlertDialogDescription>
+          </AlertDialogBody>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={pending}>Keep</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={remove} disabled={pending}>
@@ -238,9 +246,9 @@ function TaxonomyForm({
   }, [state, onSaved]);
 
   return (
-    <DialogContent className="max-h-[90dvh] overflow-y-auto">
-      <form action={formAction} className="grid gap-4">
-        <DialogHeader>
+    <DialogContent size="lg">
+      <DialogForm action={formAction}>
+        <DialogHeader icon={Layers}>
           <DialogTitle>{taxonomy ? `Edit ${taxonomy.name}` : "New taxonomy"}</DialogTitle>
           <DialogDescription>
             {taxonomy
@@ -248,117 +256,119 @@ function TaxonomyForm({
               : "You can change everything except the key and nesting later."}
           </DialogDescription>
         </DialogHeader>
-        {state.errors?.form && <InlineAlert>{state.errors.form}</InlineAlert>}
-        <input type="hidden" name="siteId" value={siteId} />
-        {taxonomy && <input type="hidden" name="taxonomyId" value={taxonomy.id} />}
-        <FormField
-          id="taxonomy-name"
-          name="name"
-          label="Name"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          error={state.errors?.name}
-          hint="Plural, e.g. Regions."
-          maxLength={60}
-          required
-          autoFocus
-        />
-        <FormField
-          id="taxonomy-key"
-          name="key"
-          label="Key"
-          value={shownKey}
-          readOnly={Boolean(taxonomy)}
-          onChange={(event) => {
-            setKeyEdited(true);
-            setKey(event.target.value.toLowerCase());
-          }}
-          error={state.errors?.key}
-          hint={
-            <>
-              Used in the API (<code className="font-mono">?term={shownKey || "region"}:…</code>)
-              and archive URLs like{" "}
-              <code className="font-mono break-all">
-                {termPath(shownKey || "region", "example")}
-              </code>
-              .
-            </>
-          }
-          maxLength={40}
-          autoComplete="off"
-          spellCheck={false}
-          required
-        />
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="taxonomy-description" className="text-sm font-medium">
-            Description <span className="text-muted-foreground font-normal">(optional)</span>
-          </label>
-          <Textarea
-            id="taxonomy-description"
-            name="description"
-            defaultValue={state.values.description}
-            maxLength={200}
-            rows={2}
+        <DialogBody>
+          {state.errors?.form && <InlineAlert>{state.errors.form}</InlineAlert>}
+          <input type="hidden" name="siteId" value={siteId} />
+          {taxonomy && <input type="hidden" name="taxonomyId" value={taxonomy.id} />}
+          <FormField
+            id="taxonomy-name"
+            name="name"
+            label="Name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            error={state.errors?.name}
+            hint="Plural, e.g. Regions."
+            maxLength={60}
+            required
+            autoFocus
           />
-          {state.errors?.description && (
-            <p className="text-destructive text-sm">{state.errors.description}</p>
-          )}
-        </div>
-        <fieldset className="grid gap-2" disabled={Boolean(taxonomy)}>
-          <legend className="mb-1 text-sm font-medium">Nesting</legend>
-          {[
-            { value: "no", label: "Flat, like tags", hint: "Each term stands on its own." },
-            {
-              value: "yes",
-              label: "Nested, like categories",
-              hint: "Terms can sit inside others, up to three levels.",
-            },
-          ].map((option) => (
-            <label
-              key={option.value}
-              className="hover:bg-accent/50 has-checked:border-primary has-checked:bg-primary/5 has-focus-visible:ring-ring/50 flex cursor-pointer gap-3 rounded-lg border px-3 py-2.5 has-focus-visible:ring-[3px] has-disabled:cursor-default has-disabled:opacity-70"
-            >
-              <input
-                type="radio"
-                name="hierarchical"
-                value={option.value}
-                defaultChecked={(state.values.hierarchical ? "yes" : "no") === option.value}
-                className="accent-primary mt-1 size-4 shrink-0 outline-none"
-              />
-              <span>
-                <span className="block text-sm font-medium">{option.label}</span>
-                <span className="text-muted-foreground block text-xs">{option.hint}</span>
-              </span>
+          <FormField
+            id="taxonomy-key"
+            name="key"
+            label="Key"
+            value={shownKey}
+            readOnly={Boolean(taxonomy)}
+            onChange={(event) => {
+              setKeyEdited(true);
+              setKey(event.target.value.toLowerCase());
+            }}
+            error={state.errors?.key}
+            hint={
+              <>
+                Used in the API (<code className="font-mono">?term={shownKey || "region"}:…</code>)
+                and archive URLs like{" "}
+                <code className="font-mono break-all">
+                  {termPath(shownKey || "region", "example")}
+                </code>
+                .
+              </>
+            }
+            maxLength={40}
+            autoComplete="off"
+            spellCheck={false}
+            required
+          />
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="taxonomy-description" className="text-sm font-medium">
+              Description <span className="text-muted-foreground font-normal">(optional)</span>
             </label>
-          ))}
-        </fieldset>
-        <fieldset className="grid gap-2">
-          <legend className="mb-1 text-sm font-medium">Used by</legend>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {models.map((model) => (
+            <Textarea
+              id="taxonomy-description"
+              name="description"
+              defaultValue={state.values.description}
+              maxLength={200}
+              rows={2}
+            />
+            {state.errors?.description && (
+              <p className="text-destructive text-sm">{state.errors.description}</p>
+            )}
+          </div>
+          <fieldset className="grid gap-2" disabled={Boolean(taxonomy)}>
+            <legend className="mb-1 text-sm font-medium">Nesting</legend>
+            {[
+              { value: "no", label: "Flat, like tags", hint: "Each term stands on its own." },
+              {
+                value: "yes",
+                label: "Nested, like categories",
+                hint: "Terms can sit inside others, up to three levels.",
+              },
+            ].map((option) => (
               <label
-                key={model.key}
-                className="hover:bg-accent/50 has-checked:border-primary has-checked:bg-primary/5 has-focus-visible:ring-ring/50 flex min-w-0 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 has-focus-visible:ring-[3px]"
+                key={option.value}
+                className="hover:bg-accent/50 has-checked:border-primary has-checked:bg-primary/5 has-focus-visible:ring-ring/50 flex cursor-pointer gap-3 rounded-lg border px-3 py-2.5 has-focus-visible:ring-[3px] has-disabled:cursor-default has-disabled:opacity-70"
               >
                 <input
-                  type="checkbox"
-                  name="modelKeys"
-                  value={model.key}
-                  defaultChecked={state.values.modelKeys.includes(model.key)}
-                  className="accent-primary size-4 shrink-0 outline-none"
+                  type="radio"
+                  name="hierarchical"
+                  value={option.value}
+                  defaultChecked={(state.values.hierarchical ? "yes" : "no") === option.value}
+                  className="accent-primary mt-1 size-4 shrink-0 outline-none"
                 />
-                <span className="min-w-0 truncate text-sm">{model.name}</span>
+                <span>
+                  <span className="block text-sm font-medium">{option.label}</span>
+                  <span className="text-muted-foreground block text-xs">{option.hint}</span>
+                </span>
               </label>
             ))}
-          </div>
-          {state.errors?.modelKeys ? (
-            <p className="text-destructive text-sm">{state.errors.modelKeys}</p>
-          ) : (
-            <p className="text-muted-foreground text-xs">
-              Entries of these types show it in the editor&apos;s “Categories &amp; tags” panel.
-            </p>
-          )}
-        </fieldset>
+          </fieldset>
+          <fieldset className="grid gap-2">
+            <legend className="mb-1 text-sm font-medium">Used by</legend>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {models.map((model) => (
+                <label
+                  key={model.key}
+                  className="hover:bg-accent/50 has-checked:border-primary has-checked:bg-primary/5 has-focus-visible:ring-ring/50 flex min-w-0 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 has-focus-visible:ring-[3px]"
+                >
+                  <input
+                    type="checkbox"
+                    name="modelKeys"
+                    value={model.key}
+                    defaultChecked={state.values.modelKeys.includes(model.key)}
+                    className="accent-primary size-4 shrink-0 outline-none"
+                  />
+                  <span className="min-w-0 truncate text-sm">{model.name}</span>
+                </label>
+              ))}
+            </div>
+            {state.errors?.modelKeys ? (
+              <p className="text-destructive text-sm">{state.errors.modelKeys}</p>
+            ) : (
+              <p className="text-muted-foreground text-xs">
+                Entries of these types show it in the editor&apos;s “Categories &amp; tags” panel.
+              </p>
+            )}
+          </fieldset>
+        </DialogBody>
         <DialogFooter>
           <DialogClose asChild>
             <Button type="button" variant="outline">
@@ -370,7 +380,7 @@ function TaxonomyForm({
             {pending ? "Saving…" : taxonomy ? "Save changes" : "Create taxonomy"}
           </Button>
         </DialogFooter>
-      </form>
+      </DialogForm>
     </DialogContent>
   );
 }

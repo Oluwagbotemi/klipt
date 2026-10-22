@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { House, LayoutGrid, Plus, X } from "lucide-react";
 import { SiteAvatar } from "@/components/shell/site-avatar";
+import { useCreateSite } from "@/components/sites/create-site-dialog";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -47,6 +48,7 @@ export function OpenSitesBar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { openCreateSite } = useCreateSite();
   const stored = useOpenSites(userId);
   const listRef = useRef<HTMLUListElement>(null);
   const fade = useOverflowFade(listRef);
@@ -195,10 +197,8 @@ export function OpenSitesBar({
               <LayoutGrid aria-hidden /> All sites
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/sites/new">
-              <Plus aria-hidden /> Create site
-            </Link>
+          <DropdownMenuItem onSelect={() => openCreateSite()}>
+            <Plus aria-hidden /> Create site
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

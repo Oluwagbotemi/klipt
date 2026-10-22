@@ -17,10 +17,12 @@ import { DeliveryStatusBadge } from "@/components/settings/webhook-status";
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogBody,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
+  AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -108,22 +110,33 @@ export function WebhookControls({ siteId, webhook }: { siteId: string; webhook: 
       </div>
 
       <Dialog open={editing} onOpenChange={setEditing}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit webhook</DialogTitle>
-            <DialogDescription>Changes apply to the next event Klipt sends.</DialogDescription>
-          </DialogHeader>
-          <WebhookForm key={formKey} siteId={siteId} webhook={webhook} onSaved={closeEdit} />
+        <DialogContent size="lg">
+          <WebhookForm
+            key={formKey}
+            siteId={siteId}
+            webhook={webhook}
+            onSaved={closeEdit}
+            header={
+              <DialogHeader icon={Pencil}>
+                <DialogTitle>Edit webhook</DialogTitle>
+                <DialogDescription>Changes apply to the next event Klipt sends.</DialogDescription>
+              </DialogHeader>
+            }
+          />
         </DialogContent>
       </Dialog>
 
       <AlertDialog open={confirmDelete} onOpenChange={(open) => !pending && setConfirmDelete(open)}>
         <AlertDialogContent>
-          <AlertDialogTitle>Delete this webhook?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Klipt stops sending events to {webhook.url} and its delivery history is removed. This
-            can&apos;t be undone.
-          </AlertDialogDescription>
+          <AlertDialogHeader icon={Trash2} tone="destructive">
+            <AlertDialogTitle>Delete this webhook?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogBody>
+            <AlertDialogDescription>
+              Klipt stops sending events to {webhook.url} and its delivery history is removed. This
+              can&apos;t be undone.
+            </AlertDialogDescription>
+          </AlertDialogBody>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={remove} disabled={pending}>
@@ -207,11 +220,15 @@ export function SigningSecret({ siteId, webhookId }: { siteId: string; webhookId
 
       <AlertDialog open={confirmRotate} onOpenChange={(open) => !pending && setConfirmRotate(open)}>
         <AlertDialogContent>
-          <AlertDialogTitle>Replace the signing secret?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Events are signed with the new secret straight away. Until you update it on your
-            website, your website will reject them as unverified.
-          </AlertDialogDescription>
+          <AlertDialogHeader icon={RefreshCw} tone="warning">
+            <AlertDialogTitle>Replace the signing secret?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogBody>
+            <AlertDialogDescription>
+              Events are signed with the new secret straight away. Until you update it on your
+              website, your website will reject them as unverified.
+            </AlertDialogDescription>
+          </AlertDialogBody>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={rotate} disabled={pending}>

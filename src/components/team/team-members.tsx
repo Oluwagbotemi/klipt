@@ -1,7 +1,19 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Clock, Link2, Loader2, Mail, MoreHorizontal, RefreshCw, UserPlus, X } from "lucide-react";
+import {
+  Clock,
+  Link2,
+  Loader2,
+  LogOut,
+  Mail,
+  MailX,
+  MoreHorizontal,
+  RefreshCw,
+  UserMinus,
+  UserPlus,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   cancelInvitationAction,
@@ -15,10 +27,12 @@ import { InviteDialog } from "@/components/team/invite-dialog";
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogBody,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
+  AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -346,33 +360,42 @@ export function TeamMembers({
         onOpenChange={(open) => !open && !pending && setConfirm(null)}
       >
         <AlertDialogContent>
-          {confirm?.kind === "cancel" && (
-            <>
-              <AlertDialogTitle>Cancel this invitation?</AlertDialogTitle>
-              <AlertDialogDescription>
-                The link for {confirm.invitation.email} stops working. You can invite them again
-                later.
-              </AlertDialogDescription>
-            </>
-          )}
-          {confirm?.kind === "remove" && (
-            <>
-              <AlertDialogTitle>Remove {confirm.member.name}?</AlertDialogTitle>
-              <AlertDialogDescription>
-                They lose access to {siteName} right away. Their content stays. You can invite them
-                again later.
-              </AlertDialogDescription>
-            </>
-          )}
-          {confirm?.kind === "leave" && (
-            <>
-              <AlertDialogTitle>Leave {siteName}?</AlertDialogTitle>
-              <AlertDialogDescription>
-                You&apos;ll lose access right away. To come back, someone will need to invite you
-                again.
-              </AlertDialogDescription>
-            </>
-          )}
+          <AlertDialogHeader
+            icon={
+              confirm?.kind === "cancel" ? MailX : confirm?.kind === "leave" ? LogOut : UserMinus
+            }
+            tone="destructive"
+          >
+            <AlertDialogTitle>
+              {confirm?.kind === "cancel"
+                ? "Cancel this invitation?"
+                : confirm?.kind === "remove"
+                  ? `Remove ${confirm.member.name}?`
+                  : `Leave ${siteName}?`}
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogBody>
+            <AlertDialogDescription>
+              {confirm?.kind === "cancel" && (
+                <>
+                  The link for {confirm.invitation.email} stops working. You can invite them again
+                  later.
+                </>
+              )}
+              {confirm?.kind === "remove" && (
+                <>
+                  They lose access to {siteName} right away. Their content stays. You can invite
+                  them again later.
+                </>
+              )}
+              {confirm?.kind === "leave" && (
+                <>
+                  You&apos;ll lose access right away. To come back, someone will need to invite you
+                  again.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogBody>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={pending}>Keep</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={confirmAction} disabled={pending}>

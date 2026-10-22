@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { AppTopBar, AppTopBarSkeleton } from "@/components/shell/app-top-bar";
 import { SiteSidebar, SiteSidebarPlaceholder } from "@/components/shell/site-sidebar";
 import { SkipLink } from "@/components/shell/skip-link";
+import { CreateSiteProvider } from "@/components/sites/create-site-dialog";
 import { getCollectionTypes } from "@/lib/data/models";
 import { getSite } from "@/lib/data/sites";
 
@@ -14,24 +15,26 @@ export default function SiteLayout({ children, params }: LayoutProps<"/sites/[si
   const siteId = params.then((p) => p.siteId);
 
   return (
-    <div className="flex min-h-dvh flex-col">
-      <SkipLink />
-      <header className="bg-shell/90 supports-[backdrop-filter]:bg-shell/75 sticky top-0 z-40 border-b backdrop-blur md:border-b-0">
-        <Suspense fallback={<AppTopBarSkeleton />}>
-          <AppTopBar siteId={siteId} />
-        </Suspense>
-      </header>
-      <div className="flex min-w-0 flex-1">
-        <Suspense fallback={<SiteSidebarPlaceholder />}>
-          <SidebarLoader siteId={siteId} />
-        </Suspense>
-        <main id="main" className="flex min-w-0 flex-1 flex-col md:px-3 md:pb-3 lg:pl-0">
-          <div className="bg-background flex flex-1 flex-col md:rounded-3xl md:border">
-            {children}
-          </div>
-        </main>
+    <CreateSiteProvider>
+      <div className="flex min-h-dvh flex-col">
+        <SkipLink />
+        <header className="bg-shell/90 supports-[backdrop-filter]:bg-shell/75 sticky top-0 z-40 border-b backdrop-blur md:border-b-0">
+          <Suspense fallback={<AppTopBarSkeleton />}>
+            <AppTopBar siteId={siteId} />
+          </Suspense>
+        </header>
+        <div className="flex min-w-0 flex-1">
+          <Suspense fallback={<SiteSidebarPlaceholder />}>
+            <SidebarLoader siteId={siteId} />
+          </Suspense>
+          <main id="main" className="flex min-w-0 flex-1 flex-col md:px-3 md:pb-3 lg:pl-0">
+            <div className="bg-background flex flex-1 flex-col md:rounded-3xl md:border">
+              {children}
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </CreateSiteProvider>
   );
 }
 

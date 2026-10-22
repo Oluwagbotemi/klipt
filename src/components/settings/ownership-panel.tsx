@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { Link2, Loader2, RefreshCw } from "lucide-react";
+import { Link2, Loader2, RefreshCw, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   cancelTransferAction,
@@ -17,10 +17,12 @@ import { InlineAlert } from "@/components/inline-alert";
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogBody,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
+  AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -139,10 +141,14 @@ export function OwnershipPanel({
         </div>
         <AlertDialog open={confirmCancel} onOpenChange={(open) => !busy && setConfirmCancel(open)}>
           <AlertDialogContent>
-            <AlertDialogTitle>Cancel the transfer?</AlertDialogTitle>
-            <AlertDialogDescription>
-              The link stops working and you stay the owner of {siteName}.
-            </AlertDialogDescription>
+            <AlertDialogHeader icon={Undo2} tone="warning">
+              <AlertDialogTitle>Cancel the transfer?</AlertDialogTitle>
+            </AlertDialogHeader>
+            <AlertDialogBody>
+              <AlertDialogDescription>
+                The link stops working and you stay the owner of {siteName}.
+              </AlertDialogDescription>
+            </AlertDialogBody>
             <AlertDialogFooter>
               <AlertDialogCancel disabled={busy}>Keep it</AlertDialogCancel>
               <AlertDialogAction

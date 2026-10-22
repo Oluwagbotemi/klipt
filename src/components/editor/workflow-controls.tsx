@@ -5,6 +5,7 @@ import {
   CalendarClock,
   ChevronDown,
   Loader2,
+  MessageSquareText,
   MessageSquareWarning,
   Send,
   Undo2,
@@ -13,10 +14,12 @@ import {
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogBody,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
+  AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -173,26 +176,30 @@ export function WorkflowControls({
 
       <AlertDialog open={dialog === "publish"} onOpenChange={(open) => !open && setDialog(null)}>
         <AlertDialogContent>
-          <AlertDialogTitle>Publish now?</AlertDialogTitle>
-          <AlertDialogDescription>
-            It will be marked as published. Delivering pages to your live website is a separate step
-            that isn&apos;t set up yet.
-          </AlertDialogDescription>
-          {suggestions.length > 0 && (
-            <div className="bg-muted rounded-lg p-3 text-sm">
-              <p className="font-medium">Optional suggestions</p>
-              <ul className="text-muted-foreground mt-1 list-disc pl-5">
-                {suggestions.map((s) => (
-                  <li key={s}>{s}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {error && (
-            <p className="text-destructive text-sm" role="alert">
-              {error}
-            </p>
-          )}
+          <AlertDialogHeader icon={Send}>
+            <AlertDialogTitle>Publish now?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogBody>
+            <AlertDialogDescription>
+              It will be marked as published. Delivering pages to your live website is a separate
+              step that isn&apos;t set up yet.
+            </AlertDialogDescription>
+            {suggestions.length > 0 && (
+              <div className="bg-muted rounded-lg p-3 text-sm">
+                <p className="font-medium">Optional suggestions</p>
+                <ul className="text-muted-foreground mt-1 list-disc pl-5">
+                  {suggestions.map((s) => (
+                    <li key={s}>{s}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {error && (
+              <p className="text-destructive text-sm" role="alert">
+                {error}
+              </p>
+            )}
+          </AlertDialogBody>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
@@ -211,30 +218,34 @@ export function WorkflowControls({
 
       <AlertDialog open={dialog === "schedule"} onOpenChange={(open) => !open && setDialog(null)}>
         <AlertDialogContent>
-          <AlertDialogTitle>Schedule publishing</AlertDialogTitle>
-          <AlertDialogDescription>
-            Pick when this should be published. Times are in your local time zone.
-          </AlertDialogDescription>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="schedule-at" className="text-sm font-medium">
-              Publish on
-            </label>
-            <input
-              id="schedule-at"
-              type="datetime-local"
-              value={when}
-              min={localInputValue(2)}
-              onChange={(e) => setWhen(e.target.value)}
-              className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-10 rounded-lg border px-3 text-sm outline-none focus-visible:ring-[3px]"
-              aria-invalid={error ? true : undefined}
-              aria-describedby={error ? "schedule-error" : undefined}
-            />
-            {error && (
-              <p id="schedule-error" className="text-destructive text-sm" role="alert">
-                {error}
-              </p>
-            )}
-          </div>
+          <AlertDialogHeader icon={CalendarClock}>
+            <AlertDialogTitle>Schedule publishing</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogBody>
+            <AlertDialogDescription>
+              Pick when this should be published. Times are in your local time zone.
+            </AlertDialogDescription>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="schedule-at" className="text-sm font-medium">
+                Publish on
+              </label>
+              <input
+                id="schedule-at"
+                type="datetime-local"
+                value={when}
+                min={localInputValue(2)}
+                onChange={(e) => setWhen(e.target.value)}
+                className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-10 rounded-lg border px-3 text-sm outline-none focus-visible:ring-[3px]"
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? "schedule-error" : undefined}
+              />
+              {error && (
+                <p id="schedule-error" className="text-destructive text-sm" role="alert">
+                  {error}
+                </p>
+              )}
+            </div>
+          </AlertDialogBody>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
@@ -258,35 +269,39 @@ export function WorkflowControls({
 
       <AlertDialog open={dialog === "changes"} onOpenChange={(open) => !open && setDialog(null)}>
         <AlertDialogContent>
-          <AlertDialogTitle>Request changes</AlertDialogTitle>
-          <AlertDialogDescription>
-            It goes back to draft so the writer can edit it again. They&apos;ll see your note at the
-            top of the entry
-            {emailEnabled
-              ? ", and get an email with it (unless they've turned those off)."
-              : ". Klipt can't send email yet, so let them know if it's urgent."}
-          </AlertDialogDescription>
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="review-note" className="text-sm font-medium">
-              What should change?{" "}
-              <span className="text-muted-foreground font-normal">(optional)</span>
-            </label>
-            <textarea
-              id="review-note"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              maxLength={1000}
-              rows={4}
-              className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 rounded-lg border px-3 py-2 text-sm outline-none focus-visible:ring-[3px]"
-              aria-invalid={error ? true : undefined}
-              aria-describedby={error ? "review-note-error" : undefined}
-            />
-            {error && (
-              <p id="review-note-error" className="text-destructive text-sm" role="alert">
-                {error}
-              </p>
-            )}
-          </div>
+          <AlertDialogHeader icon={MessageSquareText} tone="warning">
+            <AlertDialogTitle>Request changes</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogBody>
+            <AlertDialogDescription>
+              It goes back to draft so the writer can edit it again. They&apos;ll see your note at
+              the top of the entry
+              {emailEnabled
+                ? ", and get an email with it (unless they've turned those off)."
+                : ". Klipt can't send email yet, so let them know if it's urgent."}
+            </AlertDialogDescription>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="review-note" className="text-sm font-medium">
+                What should change?{" "}
+                <span className="text-muted-foreground font-normal">(optional)</span>
+              </label>
+              <textarea
+                id="review-note"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                maxLength={1000}
+                rows={4}
+                className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 rounded-lg border px-3 py-2 text-sm outline-none focus-visible:ring-[3px]"
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? "review-note-error" : undefined}
+              />
+              {error && (
+                <p id="review-note-error" className="text-destructive text-sm" role="alert">
+                  {error}
+                </p>
+              )}
+            </div>
+          </AlertDialogBody>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction

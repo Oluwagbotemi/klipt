@@ -7,10 +7,12 @@ import { InlineAlert } from "@/components/inline-alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
+  DialogForm,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -77,9 +79,9 @@ export function DangerZone({ siteId, siteName }: { siteId: string; siteName: str
       </ul>
 
       <Dialog open={open !== null} onOpenChange={(next) => !pending && !next && setOpen(null)}>
-        <DialogContent>
-          <form onSubmit={submit} className="grid gap-4">
-            <DialogHeader>
+        <DialogContent size="md">
+          <DialogForm onSubmit={submit}>
+            <DialogHeader icon={open === "archive" ? Archive : Trash2} tone="destructive">
               <DialogTitle>
                 {open === "archive" ? `Archive ${siteName}?` : `Delete ${siteName} permanently?`}
               </DialogTitle>
@@ -89,34 +91,36 @@ export function DangerZone({ siteId, siteName }: { siteId: string; siteName: str
                   : "Everything in this site is deleted for good, including published content your website shows. Consider archiving instead."}
               </DialogDescription>
             </DialogHeader>
-            {error && <InlineAlert>{error}</InlineAlert>}
-            {open === "delete" && (
+            <DialogBody>
+              {error && <InlineAlert>{error}</InlineAlert>}
+              {open === "delete" && (
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="confirm-name" className="text-sm font-medium">
+                    Type <span className="font-mono">{siteName}</span> to confirm
+                  </label>
+                  <Input
+                    id="confirm-name"
+                    value={confirmName}
+                    onChange={(e) => setConfirmName(e.target.value)}
+                    autoComplete="off"
+                    spellCheck={false}
+                  />
+                </div>
+              )}
               <div className="flex flex-col gap-1.5">
-                <label htmlFor="confirm-name" className="text-sm font-medium">
-                  Type <span className="font-mono">{siteName}</span> to confirm
+                <label htmlFor="danger-password" className="text-sm font-medium">
+                  Your password
                 </label>
                 <Input
-                  id="confirm-name"
-                  value={confirmName}
-                  onChange={(e) => setConfirmName(e.target.value)}
-                  autoComplete="off"
-                  spellCheck={false}
+                  id="danger-password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  required
                 />
               </div>
-            )}
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="danger-password" className="text-sm font-medium">
-                Your password
-              </label>
-              <Input
-                id="danger-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                required
-              />
-            </div>
+            </DialogBody>
             <DialogFooter>
               <DialogClose asChild>
                 <Button type="button" variant="outline" disabled={pending}>
@@ -132,7 +136,7 @@ export function DangerZone({ siteId, siteName }: { siteId: string; siteName: str
                 {open === "archive" ? "Archive site" : "Delete permanently"}
               </Button>
             </DialogFooter>
-          </form>
+          </DialogForm>
         </DialogContent>
       </Dialog>
     </>

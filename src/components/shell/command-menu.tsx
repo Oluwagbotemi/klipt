@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Command } from "cmdk";
 import { CornerDownLeft, FileText, Globe, LayoutGrid, Newspaper, Plus, Search } from "lucide-react";
 import { useCreateEntry } from "@/components/content/new-entry-button";
+import { useCreateSite } from "@/components/sites/create-site-dialog";
 import { Button } from "@/components/ui/button";
 import { canSeeTab, siteHref, visibleSiteNav } from "@/lib/navigation";
 import { can } from "@/lib/permissions";
@@ -33,6 +34,7 @@ export function CommandMenu({
   current?: { siteId: string; siteName: string; role: SiteRole };
 }) {
   const router = useRouter();
+  const { openCreateSite } = useCreateSite();
   const [open, setOpen] = useState(false);
   const shortcut = useSyncExternalStore(noopSubscribe, getShortcutLabel, () => "Ctrl K");
 
@@ -96,7 +98,7 @@ export function CommandMenu({
         open={open}
         onOpenChange={setOpen}
         label="Search and jump to"
-        overlayClassName="fixed inset-0 z-50 bg-black/40 data-[state=open]:animate-in data-[state=open]:fade-in-0"
+        overlayClassName="modal-overlay fixed inset-0 z-50 data-[state=open]:animate-in data-[state=open]:fade-in-0"
         contentClassName={cn(
           "bg-popover text-popover-foreground fixed top-[12vh] left-1/2 z-50 w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 overflow-hidden rounded-2xl border shadow-2xl",
           "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
@@ -185,7 +187,10 @@ export function CommandMenu({
             )}
             <Command.Item
               value="Create site new"
-              onSelect={() => go("/sites/new")}
+              onSelect={() => {
+                setOpen(false);
+                openCreateSite();
+              }}
               className={itemClass}
             >
               <Plus aria-hidden />
