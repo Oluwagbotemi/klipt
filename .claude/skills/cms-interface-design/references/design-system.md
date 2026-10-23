@@ -18,10 +18,12 @@ Use shadcn/ui where appropriate: Button, Input, Textarea, Select, Checkbox, Swit
 
 ## Visual components (in-page content, 2026 direction)
 `src/components/visual/` — use these on data screens instead of one-off markup:
-- `VisualCard`, `VisualNested`, `CardHeader` (title, description, `IconTile`, round `ArrowButton`),
-  `IconTile`.
-- `StatCard` (label, `CountUp` value, optional `DeltaBadge` + caption, optional mini chart, whole card
-  is a link that lifts), `CountUp` / `ValueText` (muted decimals and units).
+- `VisualCard` (bordered, no shadow, `h-full` flex column), `CardHeader` (title, description,
+  `IconTile`, round `ArrowButton`) at the top, `CardContent` (grows; `center` for empty states),
+  `CardFooter` (pinned to the bottom) with `FooterLink`, `VisualNested`, `IconTile`.
+- `StatCard` (fixed rhythm: label row, `CountUp` value, caption line with an optional `DeltaBadge`,
+  chart slot; the whole card is a link whose border darkens on hover), `CountUp` / `ValueText`
+  (muted decimals and units).
 - `DeltaBadge` (↗/↘ tinted pill; `goodWhen` decides green vs red; sr-only sentence),
   `InfoChip` (icon + text pill, tones neutral/accent/success/warning/danger/info/hero),
   `KeyValueList` (receipt-style with an optional total).
@@ -46,8 +48,10 @@ can render them.
 - Search previews are approximations, not guaranteed Google snippets.
 - Badges communicate meaningful status, not decorative categories.
 - Chart color must not be the only encoding; include accessible summaries/labels.
-- Card headers put the round arrow (open the full view) top-right; don't add a second "View all"
-  link next to it.
+- A card opens its full view either with the round arrow top-right or with a `FooterLink` at the
+  bottom ("View all", "Open assignments"), not both.
+- Cards in a grid row are always the same height: header top, content `flex-1`, footer bottom
+  (see "Equal-height rows" in `visual-language.md`). Never position card parts with JS measuring.
 - Empty states on data screens: `Illustration` + one sentence + one action. Success states may add
   `Celebrate` for real milestones only.
 

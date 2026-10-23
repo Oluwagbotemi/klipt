@@ -1,6 +1,11 @@
-import Link from "next/link";
 import { CircleCheck, CircleX, Gauge, TriangleAlert } from "lucide-react";
-import { CardHeader, VisualCard } from "@/components/visual/card";
+import {
+  CardContent,
+  CardFooter,
+  CardHeader,
+  FooterLink,
+  VisualCard,
+} from "@/components/visual/card";
 import { InfoChip, type ChipTone } from "@/components/visual/info-chip";
 import { Illustration } from "@/components/visual/illustration";
 import { KeyValueList } from "@/components/visual/key-value-list";
@@ -41,48 +46,51 @@ export function PerformanceCard({
         hrefLabel={summary.connected ? "Performance details" : "Connect performance reporting"}
       />
       {!summary.connected ? (
-        <div className="flex flex-col items-center gap-3 px-5 pb-6 text-center sm:px-6">
-          <Illustration scene="connect" />
-          <p className="text-muted-foreground max-w-xs text-sm">
-            Not connected. Add Klipt&apos;s reporting code to your website to see how fast it is for
-            real visitors.
-          </p>
-          <Link
-            href={href}
-            className="text-primary text-sm font-medium underline-offset-4 hover:underline"
-          >
-            Connect
-          </Link>
-        </div>
+        <>
+          <CardContent center className="px-5 pb-6 sm:px-6">
+            <Illustration scene="connect" />
+            <p className="text-muted-foreground max-w-xs text-sm">
+              Not connected. Add Klipt&apos;s reporting code to your website to see how fast it is
+              for real visitors.
+            </p>
+          </CardContent>
+          <CardFooter>
+            <FooterLink href={href}>Connect</FooterLink>
+          </CardFooter>
+        </>
       ) : (
-        <KeyValueList
-          className="px-5 pb-5 sm:px-6 sm:pb-6"
-          items={summary.summaries.map((item) => ({
-            key: item.metric,
-            label: (
-              <>
-                <span className="text-foreground font-medium">{item.metric}</span> ·{" "}
-                {METRIC_INFO[item.metric].short}
-              </>
-            ),
-            value: item.rating ? (
-              <InfoChip
-                tone={RATING_TONE[item.rating]}
-                icon={RATING_ICON[item.rating]}
-                className="tabular-nums"
-              >
-                {formatMetric(item.metric, item.p75)}
-                <span className="sr-only"> ({RATING_LABELS[item.rating]})</span>
-              </InfoChip>
-            ) : (
-              formatMetric(item.metric, item.p75)
-            ),
-          }))}
-          total={{
-            label: "Measured visits (75th percentile)",
-            value: samples.toLocaleString("en-GB"),
-          }}
-        />
+        <>
+          <CardContent className="justify-center px-5 pb-5 sm:px-6">
+            <KeyValueList
+              className="gap-3.5"
+              items={summary.summaries.map((item) => ({
+                key: item.metric,
+                label: (
+                  <>
+                    <span className="text-foreground font-medium">{item.metric}</span> ·{" "}
+                    {METRIC_INFO[item.metric].short}
+                  </>
+                ),
+                value: item.rating ? (
+                  <InfoChip
+                    tone={RATING_TONE[item.rating]}
+                    icon={RATING_ICON[item.rating]}
+                    className="tabular-nums"
+                  >
+                    {formatMetric(item.metric, item.p75)}
+                    <span className="sr-only"> ({RATING_LABELS[item.rating]})</span>
+                  </InfoChip>
+                ) : (
+                  formatMetric(item.metric, item.p75)
+                ),
+              }))}
+            />
+          </CardContent>
+          <CardFooter>
+            <span className="text-muted-foreground">Measured visits (75th percentile)</span>
+            <span className="font-semibold tabular-nums">{samples.toLocaleString("en-GB")}</span>
+          </CardFooter>
+        </>
       )}
     </VisualCard>
   );

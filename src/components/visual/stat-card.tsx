@@ -38,7 +38,9 @@ export function StatCard({
 }) {
   const body = (
     <>
-      <div className="flex items-center gap-2">
+      {/* Fixed rhythm so tiles in a row share baselines: label row, number,
+          caption line and chart slot all have set heights. */}
+      <div className="flex h-8 items-center gap-2">
         {icon && <IconTile icon={icon} tone={iconTone} size="sm" />}
         <span className="text-muted-foreground min-w-0 flex-1 truncate text-sm font-medium">
           {label}
@@ -46,7 +48,7 @@ export function StatCard({
         {href && (
           <span
             aria-hidden
-            className="visual-arrow border-border text-foreground hidden size-8 shrink-0 place-items-center rounded-full border sm:grid"
+            className="visual-arrow border-card-border text-foreground hidden size-8 shrink-0 place-items-center rounded-full border sm:grid"
           >
             <ArrowUpRight className="size-4" />
           </span>
@@ -55,15 +57,18 @@ export function StatCard({
       <CountUp
         value={value}
         format={format}
-        className="mt-3 block text-[2rem] leading-none font-bold tracking-tight"
+        className="mt-3 block h-9 text-[2rem] leading-9 font-bold tracking-tight"
       />
-      {(delta || caption) && (
-        <div className="mt-3 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-          {delta}
-          {caption && <span className="text-muted-foreground text-xs">{caption}</span>}
-        </div>
-      )}
-      {chart && <div className="mt-auto pt-4">{chart}</div>}
+      <div className="mt-2 flex h-6 min-w-0 items-center gap-2">
+        {delta}
+        <span
+          className="text-muted-foreground min-w-0 truncate text-xs"
+          title={typeof caption === "string" ? caption : undefined}
+        >
+          {caption ?? " "}
+        </span>
+      </div>
+      <div className="mt-auto flex h-14 flex-col justify-end pt-3">{chart}</div>
     </>
   );
 

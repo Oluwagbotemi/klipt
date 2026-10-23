@@ -22,7 +22,8 @@ export function KeyValueList({
         </div>
       ))}
       {total && (
-        <div className="mt-1 flex items-center justify-between gap-4 border-t pt-3">
+        // Pinned to the bottom when the list fills a taller card.
+        <div className="border-card-border mt-auto flex items-center justify-between gap-4 border-t pt-3">
           <dt className="text-muted-foreground">{total.label}</dt>
           <dd className="font-semibold tabular-nums">{total.value}</dd>
         </div>

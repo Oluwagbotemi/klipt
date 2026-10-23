@@ -1,6 +1,6 @@
 import { CalendarRange } from "lucide-react";
 import { BarChart, type BarDatum } from "@/components/visual/bar-chart";
-import { CardHeader, VisualCard } from "@/components/visual/card";
+import { CardContent, CardHeader, VisualCard } from "@/components/visual/card";
 import { CountUp } from "@/components/visual/count-up";
 import { DeltaBadge } from "@/components/visual/delta-badge";
 import type { OverviewPeriod, PublishingActivity } from "@/lib/overview";
@@ -81,11 +81,14 @@ export function PublishingCard({
           <LegendItem swatch="visual-hatch ring-hatch ring-1 ring-inset">Scheduled</LegendItem>
         </ul>
       </div>
-      <BarChart
-        data={data}
-        title={`Publishing over the last ${period} days and scheduled ahead`}
-        className="px-3 pt-8 pb-5 sm:px-4 sm:pb-6"
-      />
+      {/* The chart sits at the bottom; any extra row height goes above it. */}
+      <CardContent className="justify-end">
+        <BarChart
+          data={data}
+          title={`Publishing over the last ${period} days and scheduled ahead`}
+          className="px-3 pt-8 pb-5 sm:px-4 sm:pb-6"
+        />
+      </CardContent>
     </VisualCard>
   );
 }

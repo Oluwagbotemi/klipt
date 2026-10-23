@@ -63,12 +63,13 @@
 
   /*
    * Visual direction (2026), in-page content only — see the skill's visual-language.md.
-   * Data pages sit on a soft grey canvas; white cards with large radii and soft shadows.
+   * Content sits on the white page; cards are white with a thin light border (no shadow).
    */
-  --canvas: #f3f3f6;
+  --surface-card: #ffffff;
+  --card-border: #e8e8ed;
+  --card-border-hover: #cfcfd8;
   --card-nested: #f6f6f8;
-  --card-shadow: 0 1px 2px rgb(17 17 24 / 0.04), 0 8px 24px -14px rgb(17 17 24 / 0.1);
-  --card-shadow-hover: 0 2px 4px rgb(17 17 24 / 0.05), 0 18px 36px -14px rgb(17 17 24 / 0.18);
+  --hero-border: #17161c;
 
   /* Semantic tints: soft background + strong text (each pair ≥ 4.5:1). */
   --success-strong: #067647;
@@ -149,10 +150,12 @@
   --modal-body: #1c1c1f;
   --modal-shadow: 0 24px 64px -16px rgb(0 0 0 / 0.7), 0 4px 12px -4px rgb(0 0 0 / 0.4);
 
-  --canvas: #0f0f11;
-  --card-nested: #222226;
-  --card-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 8px 24px -14px rgb(0 0 0 / 0.7);
-  --card-shadow-hover: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 18px 36px -14px rgb(0 0 0 / 0.85);
+  /* A hair lighter than the page, separated by a subtle light edge. */
+  --surface-card: #121214;
+  --card-border: rgb(255 255 255 / 0.09);
+  --card-border-hover: rgb(255 255 255 / 0.18);
+  --card-nested: #1c1c20;
+  --hero-border: rgb(255 255 255 / 0.12);
 
   --success-strong: #75e0a7;
   --danger-soft: #3a1210;
@@ -215,8 +218,11 @@
   --color-overlay: var(--overlay);
   --color-modal-panel: var(--modal-panel);
   --color-modal-body: var(--modal-body);
-  --color-canvas: var(--canvas);
+  --color-surface-card: var(--surface-card);
+  --color-card-border: var(--card-border);
+  --color-card-border-hover: var(--card-border-hover);
   --color-card-nested: var(--card-nested);
+  --color-hero-border: var(--hero-border);
   --color-success-strong: var(--success-strong);
   --color-danger-soft: var(--danger-soft);
   --color-danger-strong: var(--danger-strong);
@@ -238,8 +244,6 @@
   --color-chart-good: var(--chart-good);
   --color-chart-attention: var(--chart-attention);
 
-  --shadow-card: var(--card-shadow);
-  --shadow-card-hover: var(--card-shadow-hover);
   --ease-out-soft: var(--motion-ease);
 
   /* Card radii for the visual direction: cards 20px, nested cards 14px. */
@@ -309,26 +313,24 @@
  * reduced-motion rule above jumps every animation to its end state.
  */
 @layer components {
+  /* Cards sit on the white page: thin light border, no shadow. */
   .visual-card {
+    border: 1px solid var(--card-border);
     border-radius: var(--radius-card);
-    background: var(--card);
+    background: var(--surface-card);
     color: var(--card-foreground);
-    box-shadow: var(--card-shadow);
   }
   .visual-nested {
     border-radius: var(--radius-nested);
     background: var(--card-nested);
   }
-  /* Interactive cards lift slightly on hover/focus. */
+  /* Interactive cards: the border darkens on hover/focus (no lift, no shadow). */
   .visual-lift {
-    transition:
-      transform var(--duration-base) var(--motion-ease),
-      box-shadow var(--duration-base) var(--motion-ease);
+    transition: border-color var(--duration-base) var(--motion-ease);
   }
   .visual-lift:hover,
   .visual-lift:focus-visible {
-    transform: translateY(-2px);
-    box-shadow: var(--card-shadow-hover);
+    border-color: var(--card-border-hover);
   }
   /* The round "open" arrow nudges toward its destination. */
   .visual-arrow svg {

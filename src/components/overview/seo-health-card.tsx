@@ -1,5 +1,5 @@
 import { EyeOff, ShieldCheck } from "lucide-react";
-import { CardHeader, VisualCard } from "@/components/visual/card";
+import { CardContent, CardFooter, CardHeader, VisualCard } from "@/components/visual/card";
 import { Donut } from "@/components/visual/donut";
 import { InfoChip } from "@/components/visual/info-chip";
 import { Celebrate, Illustration } from "@/components/visual/illustration";
@@ -32,7 +32,7 @@ export function SeoHealthCard({
         href={href}
         hrefLabel="Open SEO"
       />
-      <div className="relative flex flex-1 flex-col gap-4 px-5 pb-5 sm:px-6 sm:pb-6">
+      <CardContent className="relative gap-4 px-5 pb-5 sm:px-6">
         {!allowIndexing && (
           <InfoChip tone="danger" icon={EyeOff} className="self-start">
             Hidden from search engines
@@ -46,7 +46,7 @@ export function SeoHealthCard({
             </p>
           </div>
         ) : (
-          <>
+          <div className="flex flex-1 flex-col justify-center">
             {allGood && <Celebrate />}
             <Donut
               title="Live pages by SEO status"
@@ -74,14 +74,16 @@ export function SeoHealthCard({
                 },
               ]}
             />
-            <p className="text-muted-foreground text-xs">
-              {allGood
-                ? "Every live page passes Klipt's checks."
-                : "Suggestions never block publishing and don't guarantee rankings."}
-            </p>
-          </>
+          </div>
         )}
-      </div>
+      </CardContent>
+      {live > 0 && (
+        <CardFooter className="text-muted-foreground text-xs">
+          {allGood
+            ? "Every live page passes Klipt's checks."
+            : "Suggestions never block publishing and don't guarantee rankings."}
+        </CardFooter>
+      )}
     </VisualCard>
   );
 }

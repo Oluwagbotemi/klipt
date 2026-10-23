@@ -198,7 +198,7 @@ function Dot({ x, y, small }: { x: number; y: number; small?: boolean }) {
     <span
       aria-hidden
       className={cn(
-        "bg-primary ring-card visual-fade absolute -translate-x-1/2 -translate-y-1/2 rounded-full ring-2",
+        "bg-primary ring-surface-card visual-fade absolute -translate-x-1/2 -translate-y-1/2 rounded-full ring-2",
         small ? "size-2" : "size-2.5",
       )}
       style={{ left: `${x}%`, top: `${(y / VIEW_H) * 100}%` }}

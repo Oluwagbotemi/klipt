@@ -16,8 +16,8 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         // Near-black pill for actions on data screens, so purple stays the data highlight.
         ink: "rounded-full bg-foreground text-background hover:bg-foreground/85",
-        // White pill on the grey canvas (secondary actions on data screens).
-        soft: "rounded-full bg-card text-foreground shadow-card hover:bg-accent",
+        // White bordered pill (secondary actions on data screens).
+        soft: "rounded-full border border-card-border bg-surface-card text-foreground hover:border-card-border-hover hover:bg-accent",
       },
       size: {
         default: "h-10 px-4",

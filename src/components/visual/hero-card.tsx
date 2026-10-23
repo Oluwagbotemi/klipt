@@ -34,7 +34,7 @@ export function HeroCard({
     <section
       aria-labelledby={id}
       className={cn(
-        "bg-hero text-hero-foreground shadow-card relative isolate flex min-w-0 flex-col gap-4 overflow-hidden rounded-(--radius-card) p-6",
+        "bg-hero text-hero-foreground border-hero-border relative isolate flex min-w-0 flex-col gap-4 overflow-hidden rounded-(--radius-card) border p-6",
         className,
       )}
     >

@@ -23,11 +23,11 @@ Do not transfer account ownership, claim domain registrar ownership changed, or 
 ## Data screens: interaction and motion
 - Every chart responds: hover, tap and focus show the same dark tooltip (value first, label second);
   the chart is one tab stop and the arrow keys move between bars/points; Escape clears. Hovered marks
-  lift (darker neutral / lighter accent). Values are also in an sr-only table and a visible headline.
+  change shade (darker neutral / lighter accent). Values are also in an sr-only table and a visible headline.
 - Filters that scope a whole screen (period: 7D / 28D / 90D) are `PillTabs` in one row above the
   content, kept in the URL, and every card below follows them.
 - Motion is feedback, not decoration: count-up on first view and on period change, bars grow,
-  lines draw, deltas rise in, cards lift, arrows nudge, the pill highlight slides. ≤ 400ms, ease-out,
+  lines draw, deltas rise in, card borders darken on hover, arrows nudge, the pill highlight slides. ≤ 400ms, ease-out,
   off under reduced motion. One milestone celebration at most, only for something real.
 - Numbers are never invented to fill a tile: no data → an illustration and the next step.
 

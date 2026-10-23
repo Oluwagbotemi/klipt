@@ -29,7 +29,7 @@ Implement a production-minded CMS UI that is visually consistent with `assets/`,
 - Light and dark are both first-class, with light as default; no hardcoded light-only text or surfaces.
 - Primary accent is purple (#635BFF light; accessible adjusted dark tokens); semantic red/amber/green indicate status, not branding.
 - Prioritize clarity and task completion over visual decoration. Keep dense tables scannable and forms legible.
-- In-page content follows the **Visual direction (2026)** in `references/visual-language.md`: grey canvas, white 20px cards in a bento grid, bold numbers, purple used sparingly, semantic tints, geometric vectors, quick motion — built from `src/components/visual/`. It does not change the sidebar or top bar.
+- In-page content follows the **Visual direction (2026)** in `references/visual-language.md`: white page, white 20px bordered cards (no shadows) in a bento grid of equal-height rows, bold numbers, purple used sparingly, semantic tints, geometric vectors, quick motion — built from `src/components/visual/`. It does not change the sidebar or top bar.
 - SEO basics in primary UI; canonical, robots, and schema in advanced settings. Do not present arbitrary character limits or SEO scores as search-engine guarantees.
 - Distinguish account, site, and workspace. Transfer **site ownership**, not account ownership. Never simulate a completed transfer without acceptance and authoritative server confirmation.
 - No unverified performance measurements. Field CWV requires real measurement sources; lab results must be labeled lab data.

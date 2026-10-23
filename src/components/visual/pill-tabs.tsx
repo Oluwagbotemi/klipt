@@ -82,7 +82,7 @@ export function PillTabs({
     >
       <span
         aria-hidden
-        className="bg-card absolute top-1 bottom-1 left-1 rounded-full shadow-sm transition-transform duration-(--duration-base) ease-(--motion-ease)"
+        className="bg-surface-card absolute top-1 bottom-1 left-1 rounded-full shadow-sm transition-transform duration-(--duration-base) ease-(--motion-ease)"
         style={{
           width: `calc((100% - 0.5rem) / ${options.length})`,
           transform: `translateX(${index * 100}%)`,

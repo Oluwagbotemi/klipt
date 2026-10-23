@@ -26,7 +26,14 @@ import { HeroCreateButton, QuickActions } from "@/components/overview/quick-acti
 import { SeoHealthCard } from "@/components/overview/seo-health-card";
 import { WorkCard } from "@/components/overview/work-card";
 import { AreaChart } from "@/components/visual/area-chart";
-import { CardHeader, IconTile, VisualCard, type IconTone } from "@/components/visual/card";
+import {
+  CardFooter,
+  CardHeader,
+  FooterLink,
+  IconTile,
+  VisualCard,
+  type IconTone,
+} from "@/components/visual/card";
 import { heroActionClass, HeroCard } from "@/components/visual/hero-card";
 import { Illustration } from "@/components/visual/illustration";
 import { InfoChip } from "@/components/visual/info-chip";
@@ -74,7 +81,7 @@ export default async function OverviewPage({
   const setupOpen = overview.setup?.some((step) => !step.done);
 
   return (
-    <div className="bg-canvas flex flex-1 flex-col md:rounded-b-3xl">
+    <div className="flex flex-1 flex-col">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-6 sm:gap-5 sm:px-8 sm:py-8">
         {/* Greeting, status and the period that scopes everything below. */}
         <section
@@ -258,7 +265,7 @@ export default async function OverviewPage({
         </div>
 
         {(setupOpen || performance || overview.myWork) && (
-          <div className="grid grid-cols-1 items-start gap-4 sm:gap-5 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 items-stretch gap-4 sm:gap-5 md:grid-cols-2 xl:grid-cols-3">
             {setupOpen && overview.setup && <SetupCard siteId={site.id} steps={overview.setup} />}
             {overview.myWork && (
               <WorkCard
@@ -502,7 +509,7 @@ function AttentionCard({
         iconTone="warning"
       />
       {empty ? (
-        <div className="flex flex-col items-center gap-3 px-5 pb-8 text-center sm:px-6">
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-5 pb-8 text-center sm:px-6">
           <Illustration scene="success" />
           <p className="flex items-center gap-2 text-sm font-medium">
             <CircleCheck className="text-success size-4" aria-hidden />
@@ -522,7 +529,7 @@ function AttentionCard({
               </div>
               <Link
                 href={item.href}
-                className="bg-card hover:bg-accent focus-visible:ring-ring/50 shadow-card shrink-0 rounded-full px-3 py-1.5 text-sm font-medium outline-none focus-visible:ring-[3px]"
+                className="border-card-border bg-surface-card hover:bg-accent focus-visible:ring-ring/50 shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium outline-none focus-visible:ring-[3px]"
               >
                 {item.action}
               </Link>
@@ -544,7 +551,7 @@ function AttentionCard({
                     <li key={example.id} className="min-w-0">
                       <Link
                         href={entryHref(example.id)}
-                        className="bg-card hover:bg-accent text-primary-strong block max-w-64 truncate rounded-full px-2.5 py-1 text-xs font-medium underline-offset-4 hover:underline"
+                        className="bg-surface-card hover:bg-accent text-primary-strong block max-w-64 truncate rounded-full px-2.5 py-1 text-xs font-medium underline-offset-4 hover:underline"
                       >
                         {example.title}
                       </Link>
@@ -585,7 +592,7 @@ function RecentCard({
         hrefLabel="All content"
       />
       {entries.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 px-5 pb-8 text-center sm:px-6">
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-5 pb-8 text-center sm:px-6">
           <Illustration scene="content" />
           <p className="text-muted-foreground text-sm">
             No content yet. Create your first post or page above.
@@ -639,24 +646,9 @@ function ActivityCard({
 }) {
   return (
     <VisualCard aria-labelledby="activity-heading" className="lg:col-span-4">
-      <CardHeader
-        id="activity-heading"
-        title="Activity"
-        icon={ActivityIcon}
-        iconTone="info"
-        action={
-          allHref ? (
-            <Link
-              href={allHref}
-              className="text-primary-strong self-center text-sm font-medium underline-offset-4 hover:underline"
-            >
-              View all
-            </Link>
-          ) : undefined
-        }
-      />
+      <CardHeader id="activity-heading" title="Activity" icon={ActivityIcon} iconTone="info" />
       {overview.activity.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 px-5 pb-8 text-center sm:px-6">
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-5 pb-8 text-center sm:px-6">
           <Illustration scene="activity" />
           <p className="text-muted-foreground text-sm">Changes your team makes will appear here.</p>
         </div>
@@ -672,7 +664,7 @@ function ActivityCard({
             <li key={item.id} className="relative flex gap-3 text-sm">
               <span
                 aria-hidden
-                className="bg-muted text-muted-foreground ring-card grid size-8 shrink-0 place-items-center rounded-full text-[11px] font-semibold ring-4"
+                className="bg-muted text-muted-foreground ring-surface-card grid size-8 shrink-0 place-items-center rounded-full text-[11px] font-semibold ring-4"
               >
                 {initials(item.actorName ?? "?") || "?"}
               </span>
@@ -699,6 +691,11 @@ function ActivityCard({
             </li>
           ))}
         </ol>
+      )}
+      {allHref && (
+        <CardFooter>
+          <FooterLink href={allHref}>View all</FooterLink>
+        </CardFooter>
       )}
     </VisualCard>
   );
@@ -727,7 +724,7 @@ function SetupCard({ siteId, steps }: { siteId: string; steps: SetupStep[] }) {
       <div className="px-5 sm:px-6">
         <ProgressBar value={done} max={steps.length} steps={steps.length} label="Setup progress" />
       </div>
-      <ul className="flex flex-col px-2 pt-3 pb-3 sm:px-3">
+      <ul className="flex flex-1 flex-col px-2 pt-3 pb-3 sm:px-3">
         {steps.map((step) => {
           const { label, section } = SETUP_TEXT[step.key];
           const href =

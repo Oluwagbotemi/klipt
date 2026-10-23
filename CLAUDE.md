@@ -102,11 +102,15 @@ before creating or changing any screen.
   ahead; days in the site's time zone) and the change badge; "Your work" is the viewer's own
   assignments (members with `content.create`).
 - Visual components (`src/components/visual/`, direction in the design skill's `visual-language.md`):
-  in-page content only — never the sidebar or top bar. Data screens sit on `bg-canvas` with
-  `VisualCard`s (20px, no border, `--card-shadow`), `StatCard`/`CountUp`, `DeltaBadge`, `InfoChip`,
-  `PillTabs` (URL), `ProgressBar`, `BarChart`/`AreaChart`/`Donut` (hand-written, tooltip + keyboard +
-  sr-only table; pass `valueText` strings, not functions), one `HeroCard` per screen, `Illustration`
-  for empty/success. Tokens (`--canvas`, tints `*-soft`/`*-strong`, `--hero`, `--chart-*`, `--hatch`,
+  in-page content only — never the sidebar or top bar. Content sits on the white page (normal dark
+  background in dark mode) in `VisualCard`s: 20px, `--surface-card`, thin `--card-border`, no shadow;
+  hover darkens the border (`.visual-lift`). Cards in a grid row are always equal height: grids stretch,
+  cards are `h-full` flex columns with `CardHeader` on top, `CardContent` (`flex-1`) and `CardFooter`
+  (`mt-auto`: actions, "View all", totals) at the bottom; `StatCard` has a fixed rhythm so numbers share
+  a baseline. Also `CountUp`, `DeltaBadge`, `InfoChip`, `PillTabs` (URL), `ProgressBar`,
+  `BarChart`/`AreaChart`/`Donut` (hand-written, tooltip + keyboard + sr-only table; pass `valueText`
+  strings, not functions), one `HeroCard` per screen, `Illustration` for empty/success. Tokens
+  (`--surface-card`, `--card-border*`, tints `*-soft`/`*-strong`, `--hero*`, `--chart-*`, `--hatch`,
   `--tooltip`, motion `--duration-*`/`--motion-ease`) live in `globals.css`; motion ≤ 400ms and off
   under reduced motion. Buttons on data screens use `variant="ink"`/`"soft"` pills; purple stays the
   data highlight. Pure helpers (number parts, axis ticks, smooth paths) are in `src/lib/visual.ts`.

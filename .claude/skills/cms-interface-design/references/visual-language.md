@@ -11,7 +11,7 @@ pointer. It came from a set of finance/analytics dashboard references the owner 
 words below; the images themselves are third-party and not kept in the repo).
 
 ### What the references have in common
-- A soft light-grey canvas with white cards in a **bento grid** of mixed sizes (a wide chart next to
+- White cards in a **bento grid** of mixed sizes (a wide chart next to
   a tall highlight card; a row of equal stat tiles; equal-height rows).
 - Big, bold numbers as the hero of a card, a small muted label above, **muted decimals/currency**,
   and a small tinted **delta pill** (↗ 12% green / ↘ 8% red) beside it.
@@ -30,20 +30,36 @@ words below; the images themselves are third-party and not kept in the repo).
 - Progress bars with a gradient fill and **tick marks** for the remaining capacity.
 - On phones: a 2-column grid of stat tiles, each with a tiny chart, then full-width cards.
 
-### Canvas and cards
-- Data screens sit on `--canvas` (`bg-canvas`), filling the area under the section header.
-- Cards: `.visual-card` / `<VisualCard>` — `--card`, radius **20px** (`rounded-(--radius-card)`),
-  **no border**, soft `--card-shadow`. Nested groups: `.visual-nested` — `--card-nested`, radius 14px.
-- Interactive cards lift on hover/focus (`.visual-lift`: −2px and `--card-shadow-hover`).
-- Bento: 12-column grid on `lg` (8 + 4, 4 × 3, 3 × 4 …), `gap-4`/`gap-5`; cards in a row share height.
-  Below `lg` cards stack full width; stat tiles stay 2-up on phones.
-- Tables and dense lists keep the existing bordered treatment until their screen is redesigned.
+### Page and cards (owner feedback, round 1)
+- In-page content sits on the **white page** (`--background`), not a grey canvas. In dark mode it is
+  the normal dark background.
+- Cards: `.visual-card` / `<VisualCard>` — `--surface-card` (white; in dark a hair lighter than the
+  page), radius **20px** (`rounded-(--radius-card)`), a **thin light border** (`--card-border`; a
+  subtle light edge in dark) and **no shadow**. Nested groups: `.visual-nested` — `--card-nested`
+  (light grey), radius 14px, no border.
+- Interactive cards don't lift: on hover/focus the **border darkens** (`.visual-lift` →
+  `--card-border-hover`). The dark hero card keeps its fill and gets `--hero-border`.
+- Bento: 12-column grid on `lg` (8 + 4, 4 × 3, 3 × 4 …), `gap-4`/`gap-5`. Below `lg` cards stack
+  full width; stat tiles stay 2-up on phones.
+
+### Equal-height rows (rule for every screen)
+- **Every card in a grid row has the same height.** Grids stretch their items (`items-stretch`, the
+  default) and every card is `h-full` and a flex column. No JS measuring.
+- Inside a card: **header at the top** (`CardHeader`: icon tile, title, optional arrow), **content
+  grows** (`CardContent`, `flex-1`; charts and lists fill it, empty states centre in it), **footer at
+  the bottom** (`CardFooter`, `mt-auto`, a light top border): actions, "View all", totals and
+  "measured over…" lines.
+- A short card is brought up to the row height by its content area and footer, never left
+  floating. Give it a footer link (`FooterLink`) when it has somewhere to go.
+- Stat tiles use a fixed rhythm so tiles in a row share baselines: label row 32px, number 36px,
+  caption line 24px (kept even when empty) and a 56px chart slot at the bottom.
+- On phones cards stack, so heights are natural, but stat tiles side by side still match.
 
 ### Colour
 - Base: black / white / greys. **Klipt purple is the accent, used sparingly**: the highlighted bar
   ("now"), the active pill, the latest-point dot, focus rings, links and the one dominant form CTA.
 - Buttons on data screens: **ink** (`variant="ink"`, near-black pill; white in dark mode) for the main
-  action and **soft** (`variant="soft"`, white pill with shadow) for the rest, so purple stays the data
+  action and **soft** (`variant="soft"`, white bordered pill) for the rest, so purple stays the data
   highlight. Forms, editors and dialogs keep the purple `default` primary button.
 - **Semantic tints** for meaning — soft background + strong text, each pair ≥ 4.5:1:
   success (`bg-success-soft text-success-strong`), danger (`bg-danger-soft text-danger-strong`),
@@ -80,7 +96,7 @@ words below; the images themselves are third-party and not kept in the repo).
   celebration (600ms, plays once).
 - Numbers count up (`<CountUp>`; the server renders the final value and screen readers get it),
   bars grow from the baseline (`.visual-grow-y`, small stagger), lines draw in (`.visual-draw`),
-  badges and labels rise in (`.visual-rise`), cards lift on hover, the arrow button nudges, the pill
+  badges and labels rise in (`.visual-rise`), card borders darken on hover, the arrow button nudges, the pill
   highlight slides.
 - Milestones (e.g. every live page passes the SEO checks) get a short geometric confetti burst
   (`<Celebrate>`).
@@ -100,7 +116,8 @@ Use semantic CSS variables consumed through Tailwind tokens, not raw color liter
 |---|---|---|
 | background (working surface) | #FFFFFF | #0D0D0D |
 | shell / muted surface | #F5F4F5 | #141414 |
-| canvas (data screens) | #F3F3F6 | #0F0F11 |
+| card surface (in-page cards) | #FFFFFF | #121214 |
+| card border | #E8E8ED | white 9% |
 | card | #FFFFFF | #1A1A1A |
 | card-nested | #F6F6F8 | #222226 |
 | border | #E7E7EA | #303036 |
@@ -109,8 +126,8 @@ Use semantic CSS variables consumed through Tailwind tokens, not raw color liter
 | primary | #635BFF | #8B83FF |
 | hero (dark card) | #17161C | #24223A |
 
-Dark mode is designed, not inverted: a near-black canvas with slightly lifted cards (inner top
-highlight instead of a heavy shadow), tints re-stepped so their text still reads, and a light tooltip.
+Dark mode is designed, not inverted: the normal dark background, cards a hair lighter with a subtle
+light edge (no shadows), tints re-stepped so their text still reads, and a light tooltip.
 
 ## Type
 Preferred: Geist Sans, fallback Inter and system sans. Base body 14–16px; secondary 12–14px; labels

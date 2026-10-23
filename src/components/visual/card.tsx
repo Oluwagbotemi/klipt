@@ -3,16 +3,65 @@ import { ArrowUpRight, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /*
- * Cards for in-page content: white, 20px radius, no border, soft shadow, sitting
- * on the grey canvas. Nested groups use VisualNested (grey, 14px) with white
- * cards inside, like the modals.
+ * Cards for in-page content: white on the white page, 20px radius, a thin light
+ * border and no shadow. Nested groups use VisualNested (grey, 14px).
+ *
+ * Every card fills its grid cell (h-full) as a flex column: CardHeader at the
+ * top, CardContent grows (flex-1), CardFooter is pinned to the bottom. Cards in
+ * one grid row are therefore always the same height.
  */
 
 export function VisualCard({ className, children, ...props }: React.ComponentProps<"section">) {
   return (
-    <section className={cn("visual-card flex min-w-0 flex-col", className)} {...props}>
+    <section className={cn("visual-card flex h-full min-w-0 flex-col", className)} {...props}>
       {children}
     </section>
+  );
+}
+
+/** The part of a card that grows to fill it. `center` centres empty states. */
+export function CardContent({
+  className,
+  center,
+  ...props
+}: React.ComponentProps<"div"> & { center?: boolean }) {
+  return (
+    <div
+      className={cn(
+        "flex min-h-0 flex-1 flex-col",
+        center && "items-center justify-center gap-3 text-center",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+/** Actions, totals or "View all", pinned to the bottom of the card. */
+export function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      className={cn(
+        "border-card-border mt-auto flex min-h-12 items-center justify-between gap-3 border-t px-5 py-3 text-sm sm:px-6",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+/** A footer link with the nudging arrow. */
+export function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="group text-primary-strong focus-visible:ring-ring/50 ml-auto inline-flex items-center gap-1 rounded-md font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-[3px]"
+    >
+      {children}
+      <span className="visual-arrow">
+        <ArrowUpRight className="size-4" aria-hidden />
+      </span>
+    </Link>
   );
 }
 
@@ -75,7 +124,7 @@ export function ArrowButton({
       aria-label={label}
       title={label}
       className={cn(
-        "visual-arrow border-border bg-card text-foreground hover:bg-accent focus-visible:ring-ring/50 grid size-9 shrink-0 place-items-center rounded-full border outline-none focus-visible:ring-[3px]",
+        "visual-arrow border-card-border bg-surface-card text-foreground hover:bg-accent focus-visible:ring-ring/50 grid size-9 shrink-0 place-items-center rounded-full border outline-none focus-visible:ring-[3px]",
         className,
       )}
     >
