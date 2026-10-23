@@ -97,7 +97,23 @@ before creating or changing any screen.
   false makes the content API send noindex everywhere and an empty sitemap.
 - Overview (`src/server/overview.ts`): one query bundle per visit, counted from real records only
   (no estimated metrics). Integration activity, setup steps and webhook failures are limited to
-  members who manage integrations.
+  members who manage integrations. `?period=7d|28d|90d` (`parseOverviewPeriod`) scopes the publishing
+  chart (`buildPublishingActivity`: first publications per day, 7-day windows for 90D, scheduled posts
+  ahead; days in the site's time zone) and the change badge; "Your work" is the viewer's own
+  assignments (members with `content.create`).
+- Visual components (`src/components/visual/`, direction in the design skill's `visual-language.md`):
+  in-page content only — never the sidebar or top bar. Content sits on the white page (normal dark
+  background in dark mode) in `VisualCard`s: 20px, `--surface-card`, thin `--card-border`, no shadow;
+  hover darkens the border (`.visual-lift`). Cards in a grid row are always equal height: grids stretch,
+  cards are `h-full` flex columns with `CardHeader` on top, `CardContent` (`flex-1`) and `CardFooter`
+  (`mt-auto`: actions, "View all", totals) at the bottom; `StatCard` has a fixed rhythm so numbers share
+  a baseline. Also `CountUp`, `DeltaBadge`, `InfoChip`, `PillTabs` (URL), `ProgressBar`,
+  `BarChart`/`AreaChart`/`Donut` (hand-written, tooltip + keyboard + sr-only table; pass `valueText`
+  strings, not functions), one `HeroCard` per screen, `Illustration` for empty/success. Tokens
+  (`--surface-card`, `--card-border*`, tints `*-soft`/`*-strong`, `--hero*`, `--chart-*`, `--hatch`,
+  `--tooltip`, motion `--duration-*`/`--motion-ease`) live in `globals.css`; motion ≤ 400ms and off
+  under reduced motion. Buttons on data screens use `variant="ink"`/`"soft"` pills; purple stays the
+  data highlight. Pure helpers (number parts, axis ticks, smooth paths) are in `src/lib/visual.ts`.
 - Team (`src/server/team.ts`): invitations are shareable links (token hashed for lookup, encrypted so
   managers can copy it again; 7 days; must be accepted by an account with the invited email). Only
   the owner grants Admin or manages admins; nobody changes the owner (that's ownership transfer).

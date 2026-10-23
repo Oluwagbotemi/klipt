@@ -1,4 +1,18 @@
-import { and, asc, count, desc, eq, gte, inArray, isNull, like, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNull,
+  like,
+  lte,
+  notInArray,
+  or,
+  sql,
+} from "drizzle-orm";
 import type { DbOrTx } from "@/server/db";
 import {
   apiKeys,
@@ -13,10 +27,14 @@ import {
 import { publishDueEntries } from "@/server/editor";
 import { NotAllowedError } from "@/server/errors";
 import { getSiteRole } from "@/server/sites";
+import { isOverdue, todayIn } from "@/lib/assignments";
 import {
   ACTIVITY_ACTIONS,
+  buildPublishingActivity,
+  DEFAULT_OVERVIEW_PERIOD,
   type ActivityItem,
   type OverviewEntry,
+  type OverviewPeriod,
   type SiteOverview,
 } from "@/lib/overview";
 import { can } from "@/lib/permissions";
@@ -67,15 +85,25 @@ const toEntry =
     scheduledAt: row.scheduledAt?.toISOString() ?? null,
   });
 
+const DAY = 86_400_000;
+/** Days of scheduled posts shown after today, per period. */
+const FUTURE_DAYS: Record<OverviewPeriod, number> = { 7: 3, 28: 7, 90: 14 };
+
 export async function getSiteOverview(
   db: DbOrTx,
   userId: string,
   siteId: string,
+  {
+    period = DEFAULT_OVERVIEW_PERIOD,
+    now = new Date(),
+  }: { period?: OverviewPeriod; now?: Date } = {},
 ): Promise<SiteOverview> {
   const role = await getSiteRole(db, userId, siteId);
   const rules = await loadPathRules(db, siteId);
   if (!role) throw new NotAllowedError("Not a member of this site.");
   await publishDueEntries(db, siteId);
+  const timezone = rules.timeZone;
+  const today = todayIn(timezone, now);
 
   const inSite = eq(contentEntries.siteId, siteId);
   const entries = () =>
@@ -158,7 +186,50 @@ export async function getSiteOverview(
     if (row.status in counts) counts[row.status as keyof typeof counts] = row.total;
   }
 
+  // First publications over two periods (for the change badge) and what's scheduled ahead.
+  // A day of slack on each side keeps the site's time zone inside the window.
+  const [publishedRows, scheduledRows, myWork] = await Promise.all([
+    db
+      .select({ at: contentEntries.publishedAt })
+      .from(contentEntries)
+      .where(
+        and(
+          inSite,
+          gte(contentEntries.publishedAt, new Date(now.getTime() - (2 * period + 1) * DAY)),
+          lte(contentEntries.publishedAt, now),
+        ),
+      ),
+    db
+      .select({ at: contentEntries.scheduledAt })
+      .from(contentEntries)
+      .where(
+        and(
+          inSite,
+          eq(contentEntries.status, "scheduled"),
+          lte(
+            contentEntries.scheduledAt,
+            new Date(now.getTime() + (FUTURE_DAYS[period] + 1) * DAY),
+          ),
+        ),
+      ),
+    can(role, "content.create") ? loadMyWork(db, userId, siteId, today) : null,
+  ]);
+  const dayOf = (at: Date | null) => (at ? [todayIn(timezone, at)] : []);
+
   return {
+    period,
+    timezone,
+    publishing: buildPublishingActivity({
+      period,
+      today,
+      publishedDays: publishedRows.flatMap((row) => dayOf(row.at)),
+      scheduledDays: scheduledRows.flatMap((row) => dayOf(row.at)),
+    }),
+    seoHealth: {
+      live: audit.pages.length,
+      healthy: audit.pages.filter((page) => page.issues.length === 0).length,
+    },
+    myWork,
     counts,
     media,
     inReview: inReview.map(toEntry(rules)),
@@ -200,6 +271,45 @@ function toActivity(row: {
       row.entryTitle ?? named("title") ?? named("filename") ?? named("name") ?? named("url"),
     entryId: row.entryId,
     createdAt: row.createdAt.toISOString(),
+  };
+}
+
+/** Unfinished entries assigned to the viewer, by due date (overdue first). */
+async function loadMyWork(db: DbOrTx, userId: string, siteId: string, today: string) {
+  const mine = and(
+    eq(contentEntries.siteId, siteId),
+    eq(contentEntries.assigneeId, userId),
+    notInArray(contentEntries.status, ["published", "archived"]),
+  );
+  const [rows, [totals]] = await Promise.all([
+    db
+      .select({
+        id: contentEntries.id,
+        title: contentEntries.title,
+        status: contentEntries.status,
+        dueOn: contentEntries.dueOn,
+      })
+      .from(contentEntries)
+      .where(mine)
+      .orderBy(sql`${contentEntries.dueOn} asc nulls last`, desc(contentEntries.updatedAt))
+      .limit(4),
+    db
+      .select({
+        total: count(),
+        overdue: sql<number>`count(*) filter (where ${contentEntries.dueOn} < ${today})`.mapWith(
+          Number,
+        ),
+      })
+      .from(contentEntries)
+      .where(mine),
+  ]);
+  return {
+    items: rows.map((row) => ({
+      ...row,
+      overdue: isOverdue(row, today),
+    })),
+    total: totals.total,
+    overdue: totals.overdue,
   };
 }
 

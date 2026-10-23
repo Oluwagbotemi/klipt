@@ -10,7 +10,10 @@ Desktop (lg+): persistent, collapsible section sidebar under the open-site tab b
 - Headers: wrap actions; preserve visible primary action, move secondary actions to overflow menu.
 - Tables: use meaningful card/stacked-row adaptations where possible; if horizontal scroll is necessary, make it discoverable and keep important identifier/action accessible.
 - Editor: single-column main editing canvas; settings in tabs or sheets, not cramped right rail.
-- Charts: resize responsively; do not rely on hover-only details.
+- Charts: resize responsively; do not rely on hover-only details (tap shows the tooltip too). Keep
+  about five x-axis labels whatever the width.
+- Data screens on phones: stat tiles 2-up with a mini chart or share bar each, then cards full width;
+  pill controls wrap onto their own row.
 - Forms: stack columns and maintain labels/errors; buttons should be easy to tap.
 - Dialogs: every modal becomes a bottom sheet below 640px (full width, rounded top, body scrolls, stacked full-width buttons, safe-area padding). Use the shared Dialog/AlertDialog primitives; don't build custom overlays.
 - Media: responsive grid; avoid tiny thumbnails and inaccessible controls.
