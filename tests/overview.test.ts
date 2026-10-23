@@ -162,6 +162,47 @@ describe("site overview", () => {
     assert.ok(!viewer.activity.some((a) => /^(api_key|webhook)\./.test(a.action)));
   });
 
+  test("publishing activity, SEO health and the viewer's own work", async () => {
+    const owner = await getSiteOverview(db, "owner", siteId, { period: 7 });
+    assert.equal(owner.period, 7);
+    assert.equal(owner.publishing.unit, "day");
+    // 7 past days (today is "current") + 3 days ahead.
+    assert.equal(owner.publishing.buckets.length, 10);
+    assert.equal(owner.publishing.buckets.filter((b) => b.kind === "current").length, 1);
+    const current = owner.publishing.buckets.find((b) => b.kind === "current")!;
+    assert.equal(current.published, 5);
+    assert.equal(owner.publishing.thisPeriod, 5);
+    assert.equal(owner.publishing.previousPeriod, 0);
+    assert.equal(owner.publishing.daily.length, 7);
+    // "Later" is scheduled an hour from now: today or tomorrow in the site's zone.
+    const ahead = owner.publishing.buckets.filter((b) => b.kind === "future");
+    assert.equal(ahead.length, 3);
+    assert.ok(current.published + ahead.reduce((n, b) => n + b.scheduled, 0) >= 5);
+
+    const weekly = await getSiteOverview(db, "owner", siteId, { period: 90 });
+    assert.equal(weekly.publishing.unit, "week");
+    assert.equal(weekly.publishing.buckets.length, 13 + 2);
+
+    // Live pages without SEO suggestions vs all live pages.
+    assert.equal(owner.seoHealth.live, owner.counts.published);
+    assert.ok(owner.seoHealth.healthy < owner.seoHealth.live);
+
+    // Work: only members who create content get it, and only their own assignments.
+    assert.equal((await getSiteOverview(db, "viewer", siteId)).myWork, null);
+    const draft = await entry("Assigned draft");
+    await db
+      .update(contentEntries)
+      .set({ assigneeId: "author", dueOn: "2000-01-01" })
+      .where(eq(contentEntries.id, draft));
+    const author = await getSiteOverview(db, "author", siteId);
+    assert.deepEqual(
+      author.myWork?.items.map((item) => [item.title, item.overdue]),
+      [["Assigned draft", true]],
+    );
+    assert.equal(author.myWork?.overdue, 1);
+    assert.equal((await getSiteOverview(db, "owner", siteId)).myWork?.total, 0);
+  });
+
   test("due scheduled entries are published before counting", async () => {
     const id = await entry("Due now", { then: "schedule" });
     await db

@@ -60,6 +60,48 @@
   --modal-panel: #f4f4f6;
   --modal-body: #ffffff;
   --modal-shadow: 0 24px 64px -16px rgb(17 17 24 / 0.35), 0 4px 12px -4px rgb(17 17 24 / 0.12);
+
+  /*
+   * Visual direction (2026), in-page content only — see the skill's visual-language.md.
+   * Data pages sit on a soft grey canvas; white cards with large radii and soft shadows.
+   */
+  --canvas: #f3f3f6;
+  --card-nested: #f6f6f8;
+  --card-shadow: 0 1px 2px rgb(17 17 24 / 0.04), 0 8px 24px -14px rgb(17 17 24 / 0.1);
+  --card-shadow-hover: 0 2px 4px rgb(17 17 24 / 0.05), 0 18px 36px -14px rgb(17 17 24 / 0.18);
+
+  /* Semantic tints: soft background + strong text (each pair ≥ 4.5:1). */
+  --success-strong: #067647;
+  --danger-soft: #fef3f2;
+  --danger-strong: #b42318;
+  --warning-strong: #93370d;
+  --info-soft: #eff8ff;
+  --info-strong: #175cd3;
+  --primary-soft: #efeeff;
+  --primary-strong: #4b42e0;
+
+  /* Dark highlight card (one per screen at most). */
+  --hero: #17161c;
+  --hero-foreground: #ffffff;
+  --hero-muted: rgb(255 255 255 / 0.68);
+  --hero-chip: rgb(255 255 255 / 0.1);
+
+  /* Charts and vectors. Neutral marks are de-emphasis; the accent marks "now". */
+  --chart-neutral: #dedee6;
+  --chart-neutral-hover: #c8c8d3;
+  --chart-grid: #ececf0;
+  --hatch: rgb(17 17 24 / 0.2);
+  --tooltip: #18181b;
+  --tooltip-foreground: #ffffff;
+  /* Status marks in charts (validated with the dataviz script; always labelled). */
+  --chart-good: #067647;
+  --chart-attention: #b54708;
+
+  /* Motion: noticeable but quick. Everything is off under prefers-reduced-motion. */
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 400ms;
 }
 
 .dark {
@@ -106,6 +148,34 @@
   --modal-panel: #141416;
   --modal-body: #1c1c1f;
   --modal-shadow: 0 24px 64px -16px rgb(0 0 0 / 0.7), 0 4px 12px -4px rgb(0 0 0 / 0.4);
+
+  --canvas: #0f0f11;
+  --card-nested: #222226;
+  --card-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 8px 24px -14px rgb(0 0 0 / 0.7);
+  --card-shadow-hover: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 18px 36px -14px rgb(0 0 0 / 0.85);
+
+  --success-strong: #75e0a7;
+  --danger-soft: #3a1210;
+  --danger-strong: #fda29b;
+  --warning-strong: #fec84b;
+  --info-soft: #0d2445;
+  --info-strong: #84caff;
+  --primary-soft: #24224a;
+  --primary-strong: #b9b4ff;
+
+  --hero: #24223a;
+  --hero-foreground: #ffffff;
+  --hero-muted: rgb(255 255 255 / 0.7);
+  --hero-chip: rgb(255 255 255 / 0.1);
+
+  --chart-neutral: #34343b;
+  --chart-neutral-hover: #4a4a53;
+  --chart-grid: #26262b;
+  --hatch: rgb(255 255 255 / 0.22);
+  --tooltip: #f5f5f7;
+  --tooltip-foreground: #111113;
+  --chart-good: #14a061;
+  --chart-attention: #e07006;
 }
 
 @theme inline {
@@ -145,6 +215,36 @@
   --color-overlay: var(--overlay);
   --color-modal-panel: var(--modal-panel);
   --color-modal-body: var(--modal-body);
+  --color-canvas: var(--canvas);
+  --color-card-nested: var(--card-nested);
+  --color-success-strong: var(--success-strong);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-strong: var(--danger-strong);
+  --color-warning-strong: var(--warning-strong);
+  --color-info-soft: var(--info-soft);
+  --color-info-strong: var(--info-strong);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-strong: var(--primary-strong);
+  --color-hero: var(--hero);
+  --color-hero-foreground: var(--hero-foreground);
+  --color-hero-muted: var(--hero-muted);
+  --color-hero-chip: var(--hero-chip);
+  --color-chart-neutral: var(--chart-neutral);
+  --color-chart-neutral-hover: var(--chart-neutral-hover);
+  --color-chart-grid: var(--chart-grid);
+  --color-hatch: var(--hatch);
+  --color-tooltip: var(--tooltip);
+  --color-tooltip-foreground: var(--tooltip-foreground);
+  --color-chart-good: var(--chart-good);
+  --color-chart-attention: var(--chart-attention);
+
+  --shadow-card: var(--card-shadow);
+  --shadow-card-hover: var(--card-shadow-hover);
+  --ease-out-soft: var(--motion-ease);
+
+  /* Card radii for the visual direction: cards 20px, nested cards 14px. */
+  --radius-card: 20px;
+  --radius-nested: 14px;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -200,6 +300,121 @@
     box-shadow:
       inset 0 0 0 1px var(--glass-edge),
       var(--modal-shadow);
+  }
+}
+
+/*
+ * Visual direction: cards, vectors and motion for in-page content
+ * (components/visual/). Motion is quick (≤ 400ms, ease-out) and the global
+ * reduced-motion rule above jumps every animation to its end state.
+ */
+@layer components {
+  .visual-card {
+    border-radius: var(--radius-card);
+    background: var(--card);
+    color: var(--card-foreground);
+    box-shadow: var(--card-shadow);
+  }
+  .visual-nested {
+    border-radius: var(--radius-nested);
+    background: var(--card-nested);
+  }
+  /* Interactive cards lift slightly on hover/focus. */
+  .visual-lift {
+    transition:
+      transform var(--duration-base) var(--motion-ease),
+      box-shadow var(--duration-base) var(--motion-ease);
+  }
+  .visual-lift:hover,
+  .visual-lift:focus-visible {
+    transform: translateY(-2px);
+    box-shadow: var(--card-shadow-hover);
+  }
+  /* The round "open" arrow nudges toward its destination. */
+  .visual-arrow svg {
+    transition: transform var(--duration-fast) var(--motion-ease);
+  }
+  .group:hover .visual-arrow svg,
+  .visual-arrow:hover svg,
+  .group:focus-visible .visual-arrow svg {
+    transform: translate(2px, -2px);
+  }
+  /* Striped hatching (45°) for empty, future or remaining capacity. */
+  .visual-hatch {
+    background-image: repeating-linear-gradient(
+      135deg,
+      var(--hatch) 0 1.5px,
+      transparent 1.5px 6px
+    );
+  }
+  /* Vertical ticks for remaining capacity (progress remainders). */
+  .visual-ticks {
+    background-image: repeating-linear-gradient(
+      90deg,
+      var(--chart-neutral) 0 2px,
+      transparent 2px 7px
+    );
+  }
+  .visual-grow-y {
+    transform-origin: bottom;
+    animation: visual-grow-y var(--duration-slow) var(--motion-ease) both;
+  }
+  .visual-grow-x {
+    transform-origin: left;
+    animation: visual-grow-x var(--duration-slow) var(--motion-ease) both;
+  }
+  .visual-rise {
+    animation: visual-rise var(--duration-slow) var(--motion-ease) both;
+  }
+  .visual-fade {
+    animation: visual-fade var(--duration-slow) var(--motion-ease) both;
+  }
+  .visual-draw {
+    stroke-dasharray: 1;
+    animation: visual-draw var(--duration-slow) var(--motion-ease) both;
+  }
+}
+
+@keyframes visual-grow-y {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes visual-grow-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes visual-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@keyframes visual-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes visual-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes visual-burst {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.4) rotate(0deg);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) scale(1) rotate(var(--spin));
   }
 }
 

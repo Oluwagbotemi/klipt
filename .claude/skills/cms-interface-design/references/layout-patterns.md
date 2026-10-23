@@ -12,7 +12,11 @@ Account -> Sites/Projects -> Selected Site -> CMS. Persistent site sidebar: Over
 
 ## Route archetypes
 - Sites index: multi-site cards/table, owner/role badges, create site.
-- Overview: actionable summaries, recent content, health issues; no invented real metrics.
+- Overview: actionable summaries, recent content, health issues; no invented real metrics. Built in
+  the 2026 visual direction (reference implementation): greeting + status chips + period pills, quick
+  action pills, 4 stat tiles, then a bento of Publishing chart (8) + dark "Next up" card (4), Needs
+  attention (8) + SEO health donut (4), Recently edited (8) + Activity (4), then Setup / Your work /
+  Core Web Vitals.
 - Content index: search, type/status filters, sortable table/list, create CTA, bulk actions.
 - Content editor: title/content primary column; secondary publishing/SEO settings in tabs, accordion, or side panel. Preserve edit state and clear save/publish status.
 - Media: grid/list toggle, uploader, media detail drawer, alt text and usage.

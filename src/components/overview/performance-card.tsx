@@ -1,7 +1,24 @@
 import Link from "next/link";
-import { RatingIcon } from "@/components/performance/parts";
+import { CircleCheck, CircleX, Gauge, TriangleAlert } from "lucide-react";
+import { CardHeader, VisualCard } from "@/components/visual/card";
+import { InfoChip, type ChipTone } from "@/components/visual/info-chip";
+import { Illustration } from "@/components/visual/illustration";
+import { KeyValueList } from "@/components/visual/key-value-list";
 import { siteHref } from "@/lib/navigation";
-import { formatMetric, METRIC_INFO, RATING_LABELS, type MetricSummary } from "@/lib/performance";
+import {
+  formatMetric,
+  METRIC_INFO,
+  RATING_LABELS,
+  type MetricSummary,
+  type Rating,
+} from "@/lib/performance";
+
+const RATING_TONE: Record<Rating, ChipTone> = {
+  good: "success",
+  "needs-improvement": "warning",
+  poor: "danger",
+};
+const RATING_ICON = { good: CircleCheck, "needs-improvement": TriangleAlert, poor: CircleX };
 
 /** Core Web Vitals for the last 28 days on the site Overview, or a prompt to connect. */
 export function PerformanceCard({
@@ -12,46 +29,61 @@ export function PerformanceCard({
   summary: { connected: boolean; summaries: MetricSummary[] };
 }) {
   const href = siteHref(siteId, "performance");
+  const samples = Math.max(0, ...summary.summaries.map((item) => item.samples));
   return (
-    <section aria-labelledby="performance-heading" className="bg-card rounded-2xl border">
-      <div className="flex items-baseline justify-between gap-3 p-5 pb-3 sm:px-6">
-        <h2 id="performance-heading" className="text-base font-semibold">
-          Core Web Vitals
-        </h2>
-        <Link href={href} className="text-primary text-sm underline-offset-4 hover:underline">
-          {summary.connected ? "Details" : "Connect"}
-        </Link>
-      </div>
+    <VisualCard aria-labelledby="performance-heading">
+      <CardHeader
+        id="performance-heading"
+        title="Core Web Vitals"
+        description={summary.connected ? "Real visits, last 28 days" : undefined}
+        icon={Gauge}
+        href={href}
+        hrefLabel={summary.connected ? "Performance details" : "Connect performance reporting"}
+      />
       {!summary.connected ? (
-        <p className="text-muted-foreground border-t px-5 py-5 text-sm sm:px-6">
-          Not connected. Add Klipt&apos;s reporting code to your website to see how fast it is for
-          real visitors.
-        </p>
-      ) : (
-        <>
-          <ul className="divide-y border-t">
-            {summary.summaries.map((item) => (
-              <li
-                key={item.metric}
-                className="flex items-center justify-between gap-3 px-5 py-2.5 text-sm sm:px-6"
-              >
-                <span className="min-w-0">
-                  {item.metric}{" "}
-                  <span className="text-muted-foreground">· {METRIC_INFO[item.metric].short}</span>
-                </span>
-                <span className="flex items-center gap-1.5 tabular-nums">
-                  {item.rating && <RatingIcon rating={item.rating} />}
-                  {formatMetric(item.metric, item.p75)}
-                  {item.rating && <span className="sr-only">({RATING_LABELS[item.rating]})</span>}
-                </span>
-              </li>
-            ))}
-          </ul>
-          <p className="text-muted-foreground border-t px-5 py-2.5 text-xs sm:px-6">
-            75th percentile of real visits, last 28 days.
+        <div className="flex flex-col items-center gap-3 px-5 pb-6 text-center sm:px-6">
+          <Illustration scene="connect" />
+          <p className="text-muted-foreground max-w-xs text-sm">
+            Not connected. Add Klipt&apos;s reporting code to your website to see how fast it is for
+            real visitors.
           </p>
-        </>
+          <Link
+            href={href}
+            className="text-primary text-sm font-medium underline-offset-4 hover:underline"
+          >
+            Connect
+          </Link>
+        </div>
+      ) : (
+        <KeyValueList
+          className="px-5 pb-5 sm:px-6 sm:pb-6"
+          items={summary.summaries.map((item) => ({
+            key: item.metric,
+            label: (
+              <>
+                <span className="text-foreground font-medium">{item.metric}</span> ·{" "}
+                {METRIC_INFO[item.metric].short}
+              </>
+            ),
+            value: item.rating ? (
+              <InfoChip
+                tone={RATING_TONE[item.rating]}
+                icon={RATING_ICON[item.rating]}
+                className="tabular-nums"
+              >
+                {formatMetric(item.metric, item.p75)}
+                <span className="sr-only"> ({RATING_LABELS[item.rating]})</span>
+              </InfoChip>
+            ) : (
+              formatMetric(item.metric, item.p75)
+            ),
+          }))}
+          total={{
+            label: "Measured visits (75th percentile)",
+            value: samples.toLocaleString("en-GB"),
+          }}
+        />
       )}
-    </section>
+    </VisualCard>
   );
 }

@@ -29,6 +29,7 @@ Implement a production-minded CMS UI that is visually consistent with `assets/`,
 - Light and dark are both first-class, with light as default; no hardcoded light-only text or surfaces.
 - Primary accent is purple (#635BFF light; accessible adjusted dark tokens); semantic red/amber/green indicate status, not branding.
 - Prioritize clarity and task completion over visual decoration. Keep dense tables scannable and forms legible.
+- In-page content follows the **Visual direction (2026)** in `references/visual-language.md`: grey canvas, white 20px cards in a bento grid, bold numbers, purple used sparingly, semantic tints, geometric vectors, quick motion — built from `src/components/visual/`. It does not change the sidebar or top bar.
 - SEO basics in primary UI; canonical, robots, and schema in advanced settings. Do not present arbitrary character limits or SEO scores as search-engine guarantees.
 - Distinguish account, site, and workspace. Transfer **site ownership**, not account ownership. Never simulate a completed transfer without acceptance and authoritative server confirmation.
 - No unverified performance measurements. Field CWV requires real measurement sources; lab results must be labeled lab data.
@@ -39,7 +40,7 @@ Implement a production-minded CMS UI that is visually consistent with `assets/`,
 ## Reference loading map
 - Product scope, roles, phase boundaries: `references/product-context.md`
 - Route hierarchy and navigation: `references/information-architecture.md`
-- Design tokens, color, typography: `references/visual-language.md`
+- Design tokens, color, typography, the 2026 visual direction (cards, charts, vectors, motion): `references/visual-language.md`
 - Component conventions: `references/design-system.md`
 - App shell and page composition: `references/layout-patterns.md`
 - Breakpoints and responsive behavior: `references/responsive-guidelines.md`
