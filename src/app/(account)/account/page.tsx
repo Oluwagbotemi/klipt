@@ -20,7 +20,7 @@ export default async function ProfilePage() {
   ]);
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 sm:px-8">
+    <div className="flex w-full flex-col gap-6 px-4 py-6 sm:px-8">
       <SettingsCard title="Profile" icon={UserRound}>
         <div className="flex flex-col gap-5">
           <div className="flex min-w-0 items-center gap-3">

@@ -23,7 +23,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -36,6 +35,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { InfoChip } from "@/components/visual/info-chip";
 import { formatDate } from "@/lib/format";
 import { siteHref } from "@/lib/navigation";
 import { REDIRECT_CODES, type RedirectRow } from "@/lib/seo";
@@ -96,7 +96,10 @@ export function RedirectsManager({
         </div>
       )}
       {redirects.length === 0 ? null : (
-        <ul className="bg-card divide-y rounded-2xl border" aria-label="Redirects">
+        <ul
+          className="visual-card divide-card-border divide-y overflow-hidden"
+          aria-label="Redirects"
+        >
           {redirects.map((redirect) => (
             <li
               key={redirect.id}
@@ -126,9 +129,9 @@ export function RedirectsManager({
                   · {formatDate(redirect.updatedAt)}
                 </p>
               </div>
-              <Badge variant={redirect.statusCode === 301 ? "secondary" : "outline"}>
+              <InfoChip tone={redirect.statusCode === 301 ? "accent" : "neutral"}>
                 {redirect.statusCode === 301 ? "301 Permanent" : "302 Temporary"}
-              </Badge>
+              </InfoChip>
               {canManage && (
                 <div className="flex gap-1">
                   <Button

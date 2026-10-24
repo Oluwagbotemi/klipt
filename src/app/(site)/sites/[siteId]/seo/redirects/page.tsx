@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CornerDownRight, Search, SearchX } from "lucide-react";
-import { EmptyState } from "@/components/empty-state";
+import { Search } from "lucide-react";
+import { EmptyCard } from "@/components/insights/parts";
 import { PermissionDenied } from "@/components/permission-denied";
 import { RedirectsManager } from "@/components/seo/redirects-manager";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,7 @@ export default async function RedirectsPage({
   const base = siteHref(site.id, "seo", "redirects");
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-6 sm:px-8">
+    <div className="flex w-full flex-col gap-4 px-4 py-6 sm:px-8">
       <p className="text-muted-foreground max-w-prose text-sm">
         When a page moves, a redirect sends visitors and search engines from the old address to the
         new one, so links keep working and rankings carry over. Klipt adds one automatically when
@@ -50,26 +50,26 @@ export default async function RedirectsPage({
           type="search"
           defaultValue={q}
           placeholder="Search addresses, then press Enter"
-          className="pl-9"
+          className="rounded-full pl-9"
           autoComplete="off"
         />
       </form>
       <RedirectsManager siteId={site.id} redirects={redirects} canManage prefillFrom={prefill} />
       {redirects.length === 0 &&
         (q ? (
-          <EmptyState
-            icon={SearchX}
+          <EmptyCard
+            scene="content"
             title="No matching redirects"
             description={`Nothing matches “${q}”.`}
             action={
-              <Button variant="outline" asChild>
+              <Button variant="soft" asChild>
                 <Link href={base}>Clear search</Link>
               </Button>
             }
           />
         ) : (
-          <EmptyState
-            icon={CornerDownRight}
+          <EmptyCard
+            scene="connect"
             title="No redirects yet"
             description="Redirects appear here when you change a published page's URL, or when you add one."
           />

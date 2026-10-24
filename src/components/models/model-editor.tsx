@@ -142,7 +142,7 @@ export function ModelEditor({
   const editingField = editing?.index != null ? fields[editing.index] : null;
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-6 sm:px-8">
+    <div className="flex w-full flex-col gap-6 px-4 py-6 sm:px-8">
       <div className="flex flex-col gap-3">
         <Link
           href={siteHref(siteId, "models")}
@@ -173,6 +173,7 @@ export function ModelEditor({
       )}
 
       <SettingsCard
+        layout="stacked"
         title="Fields"
         icon={ListTree}
         description={

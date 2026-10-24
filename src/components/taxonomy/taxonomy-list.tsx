@@ -86,7 +86,7 @@ export function TaxonomyList({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl min-w-0 flex-col gap-4 px-4 py-6 sm:px-8">
+    <div className="flex w-full min-w-0 flex-col gap-4 px-4 py-6 sm:px-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <p className="text-muted-foreground max-w-prose text-sm">
           Add your own ways of grouping content beyond categories and tags, such as Region,

@@ -42,6 +42,16 @@ words below; the images themselves are third-party and not kept in the repo).
   `--card-border-hover`). The dark hero card keeps its fill and gets `--hero-border`.
 - Bento: 12-column grid on `lg` (8 + 4, 4 × 3, 3 × 4 …), `gap-4`/`gap-5`. Below `lg` cards stack
   full width; stat tiles stay 2-up on phones.
+- **Content fills the available width** (owner feedback, round 2): no centred max-width page
+  container leaving empty gutters. Wide screens get more columns (`xl`/`2xl` breakpoints or
+  `auto-fill`/`minmax`), tables fill the width. Exceptions: the editor's writing column, previews,
+  auth pages and empty-state text.
+- **Forms on wide screens:** two-column sections (`SettingsCard`, default `layout="split"`): title and
+  description left (1/3), fields right (2/3) with inputs capped around `max-w-xl` (≈576px); stacked
+  below `lg`. The Save row is the last thing in the fields column, above a light divider.
+- Stat tiles always have something in their chart slot when it means something: a sparkline, a
+  share-of-whole `ProgressBar`, an avatar stack for people, or striped `NothingYetBar` for "nothing
+  yet". Never draw an empty bar as if it were data.
 
 ### Equal-height rows (rule for every screen)
 - **Every card in a grid row has the same height.** Grids stretch their items (`items-stretch`, the

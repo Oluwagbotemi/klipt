@@ -18,14 +18,14 @@ export function ConnectWebsite({ apiBase, hasKeys }: { apiBase: string; hasKeys:
   const example = `curl "${apiBase}/entries?type=post" \\\n  -H "Authorization: Bearer $KLIPT_API_KEY"`;
 
   return (
-    <section aria-labelledby="connect-heading" className="bg-card rounded-2xl border">
+    <section aria-labelledby="connect-heading" className="visual-card">
       <div className="flex flex-col gap-4 p-5 sm:p-6">
         <div className="flex items-start gap-3">
           <span
             aria-hidden
-            className="bg-primary/10 text-primary grid size-10 shrink-0 place-items-center rounded-xl"
+            className="bg-primary-soft text-primary-strong grid size-9 shrink-0 place-items-center rounded-xl"
           >
-            <Globe className="size-5" />
+            <Globe className="size-4.5" />
           </span>
           <div className="min-w-0">
             <h2 id="connect-heading" className="text-base font-semibold">
@@ -69,7 +69,7 @@ export function ConnectWebsite({ apiBase, hasKeys }: { apiBase: string; hasKeys:
         </div>
       </div>
 
-      <details className="group border-t">
+      <details className="group border-card-border border-t">
         <summary className="focus-visible:ring-ring/50 flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-3 text-sm font-medium outline-none focus-visible:ring-[3px] sm:px-6 [&::-webkit-details-marker]:hidden">
           What your website can request
           <ChevronDown
@@ -78,7 +78,7 @@ export function ConnectWebsite({ apiBase, hasKeys }: { apiBase: string; hasKeys:
           />
         </summary>
         <div className="flex flex-col gap-4 px-5 pb-5 sm:px-6">
-          <dl className="divide-y rounded-xl border text-sm">
+          <dl className="divide-card-border divide-y rounded-xl border text-sm">
             {ENDPOINTS.map((endpoint) => (
               <div
                 key={endpoint.path}

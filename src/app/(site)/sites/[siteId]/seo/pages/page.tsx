@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Search, SearchX } from "lucide-react";
-import { EmptyState } from "@/components/empty-state";
-import { SiteHiddenNotice, TruncatedNote, seoCard } from "@/components/seo/seo-parts";
-import { Badge } from "@/components/ui/badge";
+import { CircleCheck, Search, SearchX, TriangleAlert } from "lucide-react";
+import { EmptyCard } from "@/components/insights/parts";
+import { FilterPills } from "@/components/visual/filter-pills";
+import { SiteHiddenNotice, TruncatedNote } from "@/components/seo/seo-parts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { InfoChip } from "@/components/visual/info-chip";
 import { getSeoReport } from "@/lib/data/seo";
 import { getSite } from "@/lib/data/sites";
 import { siteHref } from "@/lib/navigation";
@@ -46,7 +47,7 @@ export default async function SeoPagesPage({
   const entryHref = (id: string) => `${siteHref(site.id, "content")}/${id}`;
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-6 sm:px-8">
+    <div className="flex w-full flex-col gap-4 px-4 py-6 sm:px-8">
       {!report.allowIndexing && (
         <SiteHiddenNotice siteId={site.id} canManage={can(site.currentUserRole, "seo.manage")} />
       )}
@@ -65,66 +66,61 @@ export default async function SeoPagesPage({
           type="search"
           defaultValue={q}
           placeholder="Search by title or URL, then press Enter"
-          className="pl-9"
+          className="rounded-full pl-9"
           autoComplete="off"
         />
       </form>
-      <nav aria-label="Filter by recommendation" className="flex flex-wrap gap-2">
-        <Link
-          href={href({ issue: null })}
-          aria-current={!issue ? "page" : undefined}
-          className={cn(
-            "rounded-full border px-3 py-1 text-sm",
-            !issue ? "bg-foreground text-background border-transparent" : "hover:bg-accent",
-          )}
-        >
-          All live pages <span className="opacity-70">{report.pages.length}</span>
-        </Link>
-        {PAGE_ISSUE_KEYS.filter((key) => report.issueCounts[key] > 0).map((key) => (
-          <Link
-            key={key}
-            href={href({ issue: key })}
-            aria-current={issue === key ? "page" : undefined}
-            className={cn(
-              "rounded-full border px-3 py-1 text-sm",
-              issue === key
-                ? "bg-foreground text-background border-transparent"
-                : "hover:bg-accent",
-            )}
-          >
-            {PAGE_ISSUES[key].title} <span className="opacity-70">{report.issueCounts[key]}</span>
-          </Link>
-        ))}
-      </nav>
+      <FilterPills
+        label="Filter by recommendation"
+        current={issue ?? "all"}
+        items={[
+          {
+            value: "all",
+            label: "All live pages",
+            count: report.pages.length,
+            href: href({ issue: null }),
+          },
+          ...PAGE_ISSUE_KEYS.filter((key) => report.issueCounts[key] > 0).map((key) => ({
+            value: key,
+            label: PAGE_ISSUES[key].title,
+            count: report.issueCounts[key],
+            href: href({ issue: key }),
+            dot: "warning" as const,
+          })),
+        ]}
+      />
       {issue && <p className="text-muted-foreground text-sm">{PAGE_ISSUES[issue].why}</p>}
 
       {pages.length === 0 ? (
         report.pages.length === 0 ? (
-          <EmptyState
-            icon={Search}
+          <EmptyCard
+            scene="content"
             title="No live pages yet"
             description="Pages appear here once they're published, with recommendations for each."
           />
         ) : (
-          <EmptyState
-            icon={SearchX}
+          <EmptyCard
+            scene="content"
             title="No matching pages"
             action={
-              <Button variant="outline" asChild>
+              <Button variant="soft" asChild>
                 <Link href={base}>Clear filters</Link>
               </Button>
             }
           />
         )
       ) : (
-        <ul className={cn(seoCard, "divide-y")} aria-label="Live pages">
+        <ul
+          className="visual-card divide-card-border divide-y overflow-hidden"
+          aria-label="Live pages"
+        >
           {pages.map((page) => {
             const titleLong = page.seoTitle.length > SEO_GUIDANCE.title.max;
             return (
               <li key={page.id}>
                 <Link
                   href={entryHref(page.id)}
-                  className="hover:bg-accent/40 focus-visible:ring-ring/50 grid grid-cols-1 gap-2 px-4 py-3 outline-none focus-visible:ring-[3px] focus-visible:ring-inset sm:px-5 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] md:items-center md:gap-4"
+                  className="hover:bg-accent/50 focus-visible:ring-ring/50 grid grid-cols-1 gap-2 px-4 py-3 outline-none focus-visible:ring-[3px] focus-visible:ring-inset sm:px-5 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] md:items-center md:gap-4"
                 >
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-medium">{page.title}</span>
@@ -133,14 +129,14 @@ export default async function SeoPagesPage({
                     </span>
                   </span>
                   <span className="min-w-0 text-xs">
-                    <span className={cn("block truncate", titleLong && "text-warning")}>
+                    <span className={cn("block truncate", titleLong && "text-warning-strong")}>
                       {page.seoTitle}{" "}
                       <span className="text-muted-foreground">({page.seoTitle.length})</span>
                     </span>
                     <span
                       className={cn(
                         "block truncate",
-                        page.description ? "text-muted-foreground" : "text-warning",
+                        page.description ? "text-muted-foreground" : "text-warning-strong",
                       )}
                     >
                       {page.description || "No description"}
@@ -148,17 +144,23 @@ export default async function SeoPagesPage({
                   </span>
                   <span className="flex flex-wrap items-center gap-1.5 md:justify-end">
                     {page.index ? (
-                      <Badge variant="success">Indexable</Badge>
+                      <InfoChip tone="success" icon={Search}>
+                        Indexable
+                      </InfoChip>
                     ) : (
-                      <Badge variant="outline">Noindex</Badge>
+                      <InfoChip tone="neutral" icon={SearchX}>
+                        Noindex
+                      </InfoChip>
                     )}
                     {page.issues.length > 0 ? (
-                      <Badge variant="warning">
+                      <InfoChip tone="warning" icon={TriangleAlert}>
                         {page.issues.length}{" "}
                         {page.issues.length === 1 ? "suggestion" : "suggestions"}
-                      </Badge>
+                      </InfoChip>
                     ) : (
-                      <Badge variant="secondary">No suggestions</Badge>
+                      <InfoChip tone="success" icon={CircleCheck}>
+                        No suggestions
+                      </InfoChip>
                     )}
                   </span>
                 </Link>

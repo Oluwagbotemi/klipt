@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CircleCheck, ExternalLink, Info } from "lucide-react";
-import { EmptyState } from "@/components/empty-state";
+import { ExternalLink, Images, Info, Lightbulb } from "lucide-react";
+import { EmptyCard } from "@/components/insights/parts";
 import { PermissionDenied } from "@/components/permission-denied";
 import { PerformanceFilters, perfCard, RatingBadge } from "@/components/performance/parts";
-import { Badge } from "@/components/ui/badge";
+import { IconTile } from "@/components/visual/card";
+import { InfoChip } from "@/components/visual/info-chip";
 import { getRecommendations } from "@/lib/data/performance";
 import { getSite } from "@/lib/data/sites";
 import { siteHref } from "@/lib/navigation";
@@ -36,7 +37,7 @@ export default async function RecommendationsPage({
   const media = siteHref(site.id, "media");
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-4 py-6 sm:px-8">
+    <div className="flex w-full flex-col gap-4 px-4 py-6 sm:px-8">
       {connected ? (
         <PerformanceFilters
           base={siteHref(site.id, "performance", "recommendations")}
@@ -46,16 +47,16 @@ export default async function RecommendationsPage({
       ) : (
         <div
           role="status"
-          className="bg-muted/50 flex flex-wrap items-start gap-x-3 gap-y-1 rounded-xl border px-4 py-3 text-sm"
+          className="bg-info-soft text-info-strong flex flex-wrap items-start gap-x-3 gap-y-1 rounded-2xl px-4 py-3 text-sm"
         >
-          <Info className="text-muted-foreground mt-0.5 size-4 shrink-0" aria-hidden />
+          <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
           <p className="min-w-0 flex-1">
             Your website isn&apos;t sending measurements yet, so these suggestions only cover the
             media library.
           </p>
           <Link
             href={siteHref(site.id, "performance")}
-            className="text-primary font-medium underline-offset-4 hover:underline"
+            className="font-medium underline underline-offset-4"
           >
             Connect your website
           </Link>
@@ -63,8 +64,8 @@ export default async function RecommendationsPage({
       )}
 
       {recommendations.length === 0 ? (
-        <EmptyState
-          icon={CircleCheck}
+        <EmptyCard
+          scene="success"
           title="Nothing to fix right now"
           description={
             connected
@@ -75,23 +76,39 @@ export default async function RecommendationsPage({
       ) : (
         <ol className="flex flex-col gap-4" aria-label="Recommendations">
           {recommendations.map((rec) => (
-            <li key={rec.key} className={`${perfCard} flex flex-col gap-3 p-5 sm:p-6`}>
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <h2 className="min-w-0 flex-1 basis-60 text-base font-semibold">{rec.title}</h2>
+            <li key={rec.key} className={`${perfCard} flex flex-col gap-4 p-5 sm:p-6`}>
+              <div className="flex flex-wrap items-start gap-3">
+                <IconTile
+                  icon={rec.severity === "info" ? Images : Lightbulb}
+                  tone={
+                    rec.severity === "poor"
+                      ? "danger"
+                      : rec.severity === "needs-improvement"
+                        ? "warning"
+                        : "info"
+                  }
+                />
+                <h2 className="min-w-0 flex-1 basis-56 self-center text-base font-semibold">
+                  {rec.title}
+                </h2>
                 {rec.severity === "info" ? (
-                  <Badge variant="secondary">From your media library</Badge>
+                  <InfoChip tone="info" icon={Images}>
+                    From your media library
+                  </InfoChip>
                 ) : (
                   <RatingBadge rating={rec.severity} />
                 )}
               </div>
-              <p className="text-sm">
-                <span className="font-medium">Why: </span>
-                {rec.why}
-              </p>
-              <p className="text-sm">
-                <span className="font-medium">What to do: </span>
-                {rec.fix}
-              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="visual-nested p-4 text-sm">
+                  <p className="text-muted-foreground mb-1 text-xs font-medium">Why</p>
+                  {rec.why}
+                </div>
+                <div className="visual-nested p-4 text-sm">
+                  <p className="text-muted-foreground mb-1 text-xs font-medium">What to do</p>
+                  {rec.fix}
+                </div>
+              </div>
               {rec.pages.length > 0 && (
                 <div>
                   <p className="text-muted-foreground mb-1 text-xs font-medium">Pages</p>

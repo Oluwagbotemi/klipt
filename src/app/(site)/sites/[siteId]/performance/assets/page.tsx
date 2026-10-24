@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ImageIcon } from "lucide-react";
-import { EmptyState } from "@/components/empty-state";
+import { HardDrive, ImageIcon, TriangleAlert } from "lucide-react";
+import { EmptyCard } from "@/components/insights/parts";
 import { PermissionDenied } from "@/components/permission-denied";
 import { perfCard } from "@/components/performance/parts";
-import { Badge } from "@/components/ui/badge";
+import { InfoChip } from "@/components/visual/info-chip";
+import { ProgressBar } from "@/components/visual/progress-bar";
+import { StatCard } from "@/components/visual/stat-card";
 import { formatDate } from "@/lib/format";
 import { getAssetReport } from "@/lib/data/performance";
 import { getSite } from "@/lib/data/sites";
@@ -15,11 +17,11 @@ import { can } from "@/lib/permissions";
 
 export const metadata: Metadata = { title: "Assets · Performance" };
 
-const ISSUE_TEXT: Record<AssetIssue, { label: string; tone: "warning" | "outline" }> = {
+const ISSUE_TEXT: Record<AssetIssue, { label: string; tone: "warning" | "neutral" }> = {
   large_file: { label: `Over ${LARGE_IMAGE_BYTES / 1024} KB`, tone: "warning" },
   too_wide: { label: `Wider than ${LARGE_IMAGE_WIDTH}px`, tone: "warning" },
-  no_dimensions: { label: "Size unknown", tone: "outline" },
-  no_alt: { label: "No alt text", tone: "outline" },
+  no_dimensions: { label: "Size unknown", tone: "neutral" },
+  no_alt: { label: "No alt text", tone: "neutral" },
 };
 
 /** Images in the media library that can slow pages down or shift the layout. */
@@ -42,16 +44,49 @@ export default async function PerformanceAssetsPage({
   const entryHref = (id: string) => `${siteHref(site.id, "content")}/${id}`;
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-6 sm:px-8">
-      <p className="text-muted-foreground text-sm">
+    <div className="flex w-full flex-col gap-4 px-4 py-6 sm:px-8">
+      <p className="text-muted-foreground max-w-prose text-sm">
         Checked from your media library, no website connection needed. Large images are the most
         common reason pages load slowly, and images without a known size make the page jump while
         they load. {report.imageCount} {report.imageCount === 1 ? "image" : "images"},{" "}
         {formatBytes(report.totalBytes)} in total.
       </p>
-      {report.findings.length === 0 ? (
-        <EmptyState
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+        <StatCard
+          label="Images"
+          value={report.imageCount}
           icon={ImageIcon}
+          caption="In the media library"
+        />
+        <StatCard
+          label="To improve"
+          value={report.findings.length}
+          icon={TriangleAlert}
+          iconTone={report.findings.length > 0 ? "warning" : "success"}
+          caption={report.findings.length > 0 ? "Listed below" : "Nothing to fix"}
+          chart={
+            report.imageCount > 0 ? (
+              <ProgressBar
+                value={report.findings.length}
+                max={report.imageCount}
+                label="Images with something to improve"
+                tone="warning"
+              />
+            ) : null
+          }
+        />
+        <StatCard
+          label="Total size"
+          value={report.totalBytes / (1024 * 1024)}
+          format={{ decimals: 1, unit: " MB", compact: false }}
+          icon={HardDrive}
+          caption={formatBytes(report.totalBytes)}
+          className="col-span-2 lg:col-span-1"
+        />
+      </div>
+      {report.findings.length === 0 ? (
+        <EmptyCard
+          scene={report.imageCount === 0 ? "media" : "success"}
           title={report.imageCount === 0 ? "No images yet" : "All images look good"}
           description={
             report.imageCount === 0
@@ -60,7 +95,10 @@ export default async function PerformanceAssetsPage({
           }
         />
       ) : (
-        <ul className={`${perfCard} divide-y`} aria-label="Images to improve">
+        <ul
+          className={`${perfCard} divide-card-border divide-y overflow-hidden`}
+          aria-label="Images to improve"
+        >
           {report.findings.map((asset) => (
             <li
               key={asset.id}
@@ -73,7 +111,7 @@ export default async function PerformanceAssetsPage({
                 width={56}
                 height={56}
                 loading="lazy"
-                className="bg-muted size-14 shrink-0 rounded-lg border object-cover"
+                className="bg-muted border-card-border size-14 shrink-0 rounded-xl border object-cover"
               />
               <div className="min-w-0 flex-1 basis-56">
                 <Link
@@ -91,9 +129,9 @@ export default async function PerformanceAssetsPage({
                 </p>
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
                   {asset.issues.map((issue) => (
-                    <Badge key={issue} variant={ISSUE_TEXT[issue].tone}>
+                    <InfoChip key={issue} tone={ISSUE_TEXT[issue].tone}>
                       {ISSUE_TEXT[issue].label}
-                    </Badge>
+                    </InfoChip>
                   ))}
                 </div>
               </div>

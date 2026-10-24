@@ -82,7 +82,7 @@ export default async function OverviewPage({
 
   return (
     <div className="flex flex-1 flex-col">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-6 sm:gap-5 sm:px-8 sm:py-8">
+      <div className="flex w-full flex-col gap-4 px-4 py-6 sm:gap-5 sm:px-8 sm:py-8">
         {/* Greeting, status and the period that scopes everything below. */}
         <section
           aria-labelledby="greeting-heading"

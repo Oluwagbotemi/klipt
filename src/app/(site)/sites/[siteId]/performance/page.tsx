@@ -1,16 +1,25 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { Gauge } from "lucide-react";
-import { EmptyState } from "@/components/empty-state";
+import { Activity, Server, Timer } from "lucide-react";
+import { EmptyCard } from "@/components/insights/parts";
 import { PermissionDenied } from "@/components/permission-denied";
 import {
   DataSourceNote,
   MetricTile,
+  MetricValue,
+  RatingBadge,
   PerformanceFilters,
   perfCard,
   RatingIcon,
 } from "@/components/performance/parts";
 import { SetupPanel } from "@/components/performance/setup-panel";
+import {
+  CardContent,
+  CardHeader,
+  FooterLink,
+  CardFooter,
+  IconTile,
+  VisualCard,
+} from "@/components/visual/card";
 import { formatDate } from "@/lib/format";
 import { getPerformanceReport, getPerformanceSetup, requestOrigin } from "@/lib/data/performance";
 import { getSite } from "@/lib/data/sites";
@@ -61,12 +70,11 @@ export default async function PerformanceOverviewPage({
 
   if (!setup.lastReceivedOn) {
     return (
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-6 sm:px-8">
-        <EmptyState
-          icon={Gauge}
+      <div className="flex w-full flex-col gap-6 px-4 py-6 sm:px-8">
+        <EmptyCard
+          scene="connect"
           title="No measurements yet"
           description="Core Web Vitals show how fast your website feels to real visitors. Connect your website below to start collecting them. Klipt never shows estimated numbers."
-          className="py-8 sm:py-10"
         />
         {setupPanel(false)}
       </div>
@@ -83,7 +91,7 @@ export default async function PerformanceOverviewPage({
   const worstPages = report.pages.filter((page) => page.worst && page.worst !== "good").slice(0, 5);
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-8">
+    <div className="flex w-full flex-col gap-6 px-4 py-6 sm:px-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <PerformanceFilters base={base} device={device} days={days} />
         <p className="text-muted-foreground text-xs">
@@ -92,10 +100,11 @@ export default async function PerformanceOverviewPage({
       </div>
 
       {!hasData ? (
-        <p className={`${perfCard} text-muted-foreground px-5 py-6 text-sm`}>
-          No visits were measured for this device type in the last {days} days. Try another filter
-          or a longer period.
-        </p>
+        <EmptyCard
+          scene="activity"
+          title="No visits measured"
+          description={`No visits were measured for this device type in the last ${days} days. Try another filter or a longer period.`}
+        />
       ) : (
         <>
           <section aria-label="Core Web Vitals" className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -103,6 +112,14 @@ export default async function PerformanceOverviewPage({
               <MetricTile
                 key={summary.metric}
                 summary={summary}
+                trend={report.daily[summary.metric]
+                  .filter((point) => point.p75 !== null)
+                  .map((point) => ({
+                    day: point.day,
+                    label: formatDate(point.day),
+                    value: point.p75 ?? 0,
+                    valueText: formatMetric(summary.metric, point.p75),
+                  }))}
                 href={`${withFilters(siteHref(site.id, "performance", "web-vitals"))}#${summary.metric.toLowerCase()}`}
               />
             ))}
@@ -112,42 +129,49 @@ export default async function PerformanceOverviewPage({
             className="grid grid-cols-1 gap-4 sm:grid-cols-2"
           >
             {other.map((summary) => (
-              <div key={summary.metric} className={`${perfCard} flex flex-col gap-1 p-4`}>
-                <p className="text-sm font-medium">
-                  {summary.metric}{" "}
-                  <span className="text-muted-foreground font-normal">
-                    · {METRIC_INFO[summary.metric].name}
-                  </span>
-                </p>
-                <p className="flex items-center gap-2 text-xl font-semibold tabular-nums">
-                  {summary.rating && <RatingIcon rating={summary.rating} />}
-                  {formatMetric(summary.metric, summary.p75)}
-                </p>
-                <p className="text-muted-foreground text-xs">
-                  {METRIC_INFO[summary.metric].what} Helps explain a slow LCP.
-                </p>
+              <div
+                key={summary.metric}
+                className={`${perfCard} flex h-full items-start gap-4 p-5 sm:p-6`}
+              >
+                <IconTile icon={summary.metric === "TTFB" ? Server : Timer} tone="neutral" />
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <p className="text-sm font-medium">
+                      {summary.metric}{" "}
+                      <span className="text-muted-foreground font-normal">
+                        · {METRIC_INFO[summary.metric].name}
+                      </span>
+                    </p>
+                    {summary.rating && <RatingBadge rating={summary.rating} />}
+                  </div>
+                  <MetricValue
+                    text={formatMetric(summary.metric, summary.p75)}
+                    className="text-2xl font-bold tracking-tight"
+                  />
+                  <p className="text-muted-foreground text-xs">
+                    {METRIC_INFO[summary.metric].what} Helps explain a slow LCP.
+                  </p>
+                </div>
               </div>
             ))}
           </section>
 
-          <section aria-labelledby="worst-heading" className={perfCard}>
-            <div className="flex flex-wrap items-baseline justify-between gap-3 p-5 pb-3 sm:px-6">
-              <h2 id="worst-heading" className="text-base font-semibold">
-                Pages to look at first
-              </h2>
-              <Link
-                href={withFilters(siteHref(site.id, "performance", "pages"))}
-                className="text-primary text-sm underline-offset-4 hover:underline"
-              >
-                All {report.pageCount} pages
-              </Link>
-            </div>
+          <VisualCard aria-labelledby="worst-heading">
+            <CardHeader
+              id="worst-heading"
+              title="Pages to look at first"
+              description="Measured pages that miss a Core Web Vitals target, worst first."
+              icon={Activity}
+              iconTone="warning"
+            />
             {worstPages.length === 0 ? (
-              <p className="text-muted-foreground border-t px-5 py-5 text-sm sm:px-6">
-                Every measured page meets the Core Web Vitals targets.
-              </p>
+              <CardContent center className="px-5 pb-8 sm:px-6">
+                <p className="text-muted-foreground text-sm">
+                  Every measured page meets the Core Web Vitals targets.
+                </p>
+              </CardContent>
             ) : (
-              <ul className="divide-y border-t">
+              <ul className="divide-card-border border-card-border divide-y border-t">
                 {worstPages.map((page) => (
                   <li
                     key={page.path}
@@ -164,10 +188,11 @@ export default async function PerformanceOverviewPage({
                         </span>
                       )}
                     </span>
-                    <span className="text-muted-foreground flex flex-wrap gap-x-3 text-xs tabular-nums">
+                    <span className="flex flex-wrap gap-1.5 text-xs tabular-nums">
                       {CORE_METRICS.map((metric) => (
-                        <span key={metric}>
-                          {metric} {formatMetric(metric, page.metrics[metric]?.p75 ?? null)}
+                        <span key={metric} className="bg-muted rounded-full px-2 py-1">
+                          <span className="text-muted-foreground">{metric}</span>{" "}
+                          {formatMetric(metric, page.metrics[metric]?.p75 ?? null)}
                         </span>
                       ))}
                     </span>
@@ -175,7 +200,12 @@ export default async function PerformanceOverviewPage({
                 ))}
               </ul>
             )}
-          </section>
+            <CardFooter>
+              <FooterLink href={withFilters(siteHref(site.id, "performance", "pages"))}>
+                All {report.pageCount} pages
+              </FooterLink>
+            </CardFooter>
+          </VisualCard>
           <DataSourceNote from={formatDate(report.from)} to={formatDate(report.to)} />
         </>
       )}

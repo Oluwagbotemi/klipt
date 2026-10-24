@@ -221,10 +221,10 @@ export function SetupPanel({
   );
 
   return (
-    <section aria-labelledby="setup-heading" className="bg-card rounded-2xl border">
+    <section aria-labelledby="setup-heading" className="visual-card">
       {collapsed ? (
         <details>
-          <summary className="hover:bg-accent/40 focus-visible:ring-ring/50 cursor-pointer rounded-2xl p-5 outline-none focus-visible:ring-[3px] sm:p-6">
+          <summary className="hover:bg-accent/40 focus-visible:ring-ring/50 cursor-pointer rounded-(--radius-card) p-5 outline-none focus-visible:ring-[3px] sm:p-6">
             <span id="setup-heading" className="text-base font-semibold">
               Connection and code
             </span>

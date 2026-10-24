@@ -3,15 +3,20 @@
 import { useState, useTransition } from "react";
 import {
   Clock,
+  Crown,
   Link2,
   Loader2,
   LogOut,
   Mail,
+  MailPlus,
   MailX,
   MoreHorizontal,
+  PenLine,
   RefreshCw,
+  ShieldCheck,
   UserMinus,
   UserPlus,
+  Users,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -35,9 +40,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
+import { CardHeader } from "@/components/visual/card";
+import { InfoChip } from "@/components/visual/info-chip";
+import { ProgressBar } from "@/components/visual/progress-bar";
+import { StatCard } from "@/components/visual/stat-card";
+import { AvatarStack, NothingYetBar } from "@/components/insights/parts";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -80,6 +89,9 @@ export function TeamMembers({
   const [confirm, setConfirm] = useState<Confirm | null>(null);
   const [pending, startTransition] = useTransition();
   const roles = assignableRoles(me.role);
+  const publishers = team.members.filter((m) => can(m.role, "content.publish")).length;
+  const writers = team.members.filter((m) => m.role === "author").length;
+  const expiredInvites = team.invitations?.filter((invite) => invite.expired).length ?? 0;
   const canInvite = can(me.role, "members.manage") && roles.length > 0;
 
   function run<T extends { ok: boolean }>(
@@ -132,26 +144,107 @@ export function TeamMembers({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-6 sm:px-8">
-      <section aria-labelledby="members-heading" className="bg-card rounded-2xl border">
-        <div className="flex flex-wrap items-start justify-between gap-3 p-5 sm:p-6">
-          <div>
-            <h2 id="members-heading" className="text-base font-semibold">
+    <div className="flex w-full flex-col gap-5 px-4 py-6 sm:px-8">
+      <ul aria-label="Team at a glance" className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <li>
+          <StatCard
+            label="Members"
+            value={team.members.length}
+            icon={Users}
+            iconTone="accent"
+            caption="Including you"
+            chart={<AvatarStack names={team.members.map((m) => m.name)} />}
+          />
+        </li>
+        <li>
+          <StatCard
+            label="Can publish"
+            value={publishers}
+            icon={ShieldCheck}
+            iconTone="success"
+            caption="Owner, admins and editors"
+            chart={
+              <ProgressBar
+                value={publishers}
+                max={team.members.length}
+                label="Members who can publish"
+                tone="success"
+              />
+            }
+          />
+        </li>
+        <li>
+          <StatCard
+            label="Writers"
+            value={writers}
+            icon={PenLine}
+            caption="Authors send work for review"
+            chart={
+              writers > 0 ? (
+                <ProgressBar
+                  value={writers}
+                  max={team.members.length}
+                  label="Members who are authors"
+                />
+              ) : (
+                <NothingYetBar label="No authors yet" />
+              )
+            }
+          />
+        </li>
+        <li>
+          <StatCard
+            label="Pending invitations"
+            value={team.invitations?.length ?? 0}
+            icon={MailPlus}
+            iconTone={expiredInvites ? "warning" : "neutral"}
+            caption={
+              !team.invitations
+                ? "Seen by people who manage members"
+                : expiredInvites
+                  ? `${expiredInvites} expired`
+                  : "Waiting to be accepted"
+            }
+            chart={
+              team.invitations && team.invitations.length > 0 ? (
+                <ProgressBar
+                  value={team.invitations.length - expiredInvites}
+                  max={team.invitations.length}
+                  label="Invitations still valid"
+                  tone={expiredInvites ? "warning" : "accent"}
+                />
+              ) : (
+                <NothingYetBar label="No pending invitations" />
+              )
+            }
+          />
+        </li>
+      </ul>
+
+      <section aria-labelledby="members-heading" className="visual-card">
+        <CardHeader
+          id="members-heading"
+          title={
+            <>
               Members{" "}
               <span className="text-muted-foreground font-normal">({team.members.length})</span>
-            </h2>
-            <p className="text-muted-foreground mt-1 text-sm">
-              People who can work on {siteName}. Changes apply immediately.
-            </p>
-          </div>
-          {canInvite && (
-            <Button onClick={openInvite}>
-              <UserPlus aria-hidden />
-              Invite member
-            </Button>
-          )}
-        </div>
-        <ul className="divide-y border-t" aria-label="Members">
+            </>
+          }
+          description={`People who can work on ${siteName}. Changes apply immediately.`}
+          icon={Users}
+          action={
+            canInvite && (
+              <Button variant="ink" onClick={openInvite}>
+                <UserPlus aria-hidden />
+                <span className="sr-only sm:not-sr-only">Invite member</span>
+              </Button>
+            )
+          }
+        />
+        <ul
+          className="divide-card-border border-card-border divide-y border-t"
+          aria-label="Members"
+        >
           {team.members.map((member) => {
             const self = member.userId === me.userId;
             const manageable = canManageMember(me, member);
@@ -162,7 +255,7 @@ export function TeamMembers({
               >
                 <span
                   aria-hidden
-                  className="bg-muted text-muted-foreground grid size-9 shrink-0 place-items-center rounded-full text-xs font-semibold"
+                  className="bg-primary-soft text-primary-strong grid size-9 shrink-0 place-items-center rounded-full text-xs font-semibold"
                 >
                   {initials(member.name)}
                 </span>
@@ -202,9 +295,12 @@ export function TeamMembers({
                     </select>
                   </>
                 ) : (
-                  <Badge variant={member.role === "owner" ? "default" : "secondary"}>
+                  <InfoChip
+                    tone={member.role === "owner" ? "accent" : "neutral"}
+                    icon={member.role === "owner" ? Crown : undefined}
+                  >
                     {ROLE_LABELS[member.role]}
-                  </Badge>
+                  </InfoChip>
                 )}
                 {(manageable || (self && member.role !== "owner")) && (
                   <DropdownMenu>
@@ -234,21 +330,23 @@ export function TeamMembers({
       </section>
 
       {team.invitations && (
-        <section aria-labelledby="invites-heading" className="bg-card rounded-2xl border">
-          <div className="p-5 sm:p-6">
-            <h2 id="invites-heading" className="text-base font-semibold">
-              Pending invitations
-            </h2>
-            <p className="text-muted-foreground mt-1 text-sm">
-              Links you&apos;ve created that haven&apos;t been accepted yet.
-            </p>
-          </div>
+        <section aria-labelledby="invites-heading" className="visual-card">
+          <CardHeader
+            id="invites-heading"
+            title="Pending invitations"
+            description="Links you've created that haven't been accepted yet."
+            icon={MailPlus}
+            iconTone="neutral"
+          />
           {team.invitations.length === 0 ? (
-            <p className="text-muted-foreground border-t px-5 py-6 text-sm sm:px-6">
+            <p className="text-muted-foreground border-card-border border-t px-5 py-6 text-sm sm:px-6">
               No pending invitations.{canInvite && " Use Invite member to add someone."}
             </p>
           ) : (
-            <ul className="divide-y border-t" aria-label="Pending invitations">
+            <ul
+              className="divide-card-border border-card-border divide-y border-t"
+              aria-label="Pending invitations"
+            >
               {team.invitations.map((invitation) => (
                 <li
                   key={invitation.id}
@@ -258,7 +356,7 @@ export function TeamMembers({
                     <p className="truncate text-sm font-medium">{invitation.email}</p>
                     <p className="text-muted-foreground flex flex-wrap items-center gap-x-1.5 text-xs">
                       {invitation.expired ? (
-                        <span className="text-warning flex items-center gap-1">
+                        <span className="text-warning-strong flex items-center gap-1">
                           <Clock className="size-3" aria-hidden />
                           Expired
                         </span>
@@ -270,7 +368,7 @@ export function TeamMembers({
                       )}
                     </p>
                   </div>
-                  <Badge variant="outline">{ROLE_LABELS[invitation.role]}</Badge>
+                  <InfoChip tone="info">{ROLE_LABELS[invitation.role]}</InfoChip>
                   <div className="flex gap-1">
                     {emailEnabled && !invitation.expired && (
                       <Button

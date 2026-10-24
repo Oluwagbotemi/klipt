@@ -3,9 +3,9 @@
 import { useSyncExternalStore, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, History, SearchX } from "lucide-react";
-import { EmptyState } from "@/components/empty-state";
-import { Badge } from "@/components/ui/badge";
+import { ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react";
+import { EmptyCard } from "@/components/insights/parts";
+import { InfoChip, type ChipTone } from "@/components/visual/info-chip";
 import { Button } from "@/components/ui/button";
 import {
   ACTIVITY_KINDS,
@@ -18,7 +18,7 @@ import { formatDateTime } from "@/lib/format";
 import { cn, initials } from "@/lib/utils";
 
 const fieldClass =
-  "border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-10 w-full min-w-0 rounded-lg border px-3 text-sm outline-none focus-visible:ring-[3px]";
+  "border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-10 w-full min-w-0 rounded-full border px-4 text-sm outline-none focus-visible:ring-[3px]";
 
 function hrefWith(pathname: string, filters: ActivityParams, changes: Partial<ActivityParams>) {
   const next = { ...filters, page: 1, ...changes };
@@ -109,8 +109,12 @@ export function ActivityFeedView({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-5 px-4 py-6 sm:px-8">
-      <section aria-label="Filter activity" className="bg-card rounded-2xl border p-4 sm:p-5">
+    <div className="flex w-full flex-col gap-5 px-4 py-6 sm:px-8">
+      <section aria-label="Filter activity" className="visual-card p-4 sm:p-5">
+        <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
+          <SlidersHorizontal className="text-muted-foreground size-4" aria-hidden />
+          Filters
+        </p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="flex min-w-0 flex-col gap-1.5">
             <label htmlFor="activity-person" className="text-sm font-medium">
@@ -202,25 +206,23 @@ export function ActivityFeedView({
       >
         {feed.items.length === 0 ? (
           filtered || feed.page > 1 ? (
-            <EmptyState
-              icon={SearchX}
+            <EmptyCard
+              scene="activity"
               title="No matching activity"
               description="Nothing happened that matches these filters. Try another person, kind or date range."
               action={
-                <Button variant="outline" asChild>
+                <Button variant="soft" asChild>
                   <Link href={pathname} replace>
                     Clear filters
                   </Link>
                 </Button>
               }
-              className="py-12 sm:py-16"
             />
           ) : (
-            <EmptyState
-              icon={History}
+            <EmptyCard
+              scene="activity"
               title="No activity yet"
               description="Changes to content, media, settings and the team will appear here as people work on the site."
-              className="py-12 sm:py-16"
             />
           )
         ) : (
@@ -233,7 +235,7 @@ export function ActivityFeedView({
                 >
                   {dayLabel(group.day, today)}
                 </h2>
-                <ol className="bg-card divide-y rounded-2xl border">
+                <ol className="visual-card divide-card-border divide-y overflow-hidden">
                   {group.items.map((item) => (
                     <ActivityRow key={item.id} item={item} now={now} />
                   ))}
@@ -250,7 +252,7 @@ export function ActivityFeedView({
           className="text-muted-foreground flex items-center justify-between gap-3 text-sm"
         >
           {feed.page > 1 ? (
-            <Button variant="outline" size="sm" asChild>
+            <Button variant="soft" size="sm" asChild>
               <Link href={hrefWith(pathname, filters, { page: feed.page - 1 })} replace>
                 <ChevronLeft aria-hidden /> Newer
               </Link>
@@ -260,7 +262,7 @@ export function ActivityFeedView({
           )}
           <span>Page {feed.page}</span>
           {feed.hasMore ? (
-            <Button variant="outline" size="sm" asChild>
+            <Button variant="soft" size="sm" asChild>
               <Link href={hrefWith(pathname, filters, { page: feed.page + 1 })} replace>
                 Older <ChevronRight aria-hidden />
               </Link>
@@ -274,6 +276,15 @@ export function ActivityFeedView({
   );
 }
 
+const KIND_TONES: Record<ActivityItem["kind"], ChipTone> = {
+  content: "accent",
+  media: "info",
+  structure: "neutral",
+  team: "success",
+  settings: "warning",
+  integrations: "info",
+};
+
 function ActivityRow({ item, now }: { item: ActivityItem; now: number | null }) {
   const exact = formatDateTime(item.createdAt);
   return (
@@ -283,8 +294,8 @@ function ActivityRow({ item, now }: { item: ActivityItem; now: number | null }) 
         className={cn(
           "grid size-8 shrink-0 place-items-center rounded-full text-[0.7rem] font-semibold",
           item.actorActive
-            ? "bg-muted text-muted-foreground"
-            : "bg-muted/50 text-muted-foreground/70",
+            ? "bg-primary-soft text-primary-strong"
+            : "bg-muted text-muted-foreground",
         )}
       >
         {initials(item.actorName) || "?"}
@@ -313,9 +324,9 @@ function ActivityRow({ item, now }: { item: ActivityItem; now: number | null }) 
           <time dateTime={item.createdAt} title={exact}>
             {now === null ? exact : relativeTime(item.createdAt, now)}
           </time>
-          <Badge variant="outline" className="h-5 px-1.5 text-[0.7rem] font-normal">
+          <InfoChip tone={KIND_TONES[item.kind]} className="h-5 px-2 text-[0.7rem]">
             {ACTIVITY_KINDS[item.kind]}
-          </Badge>
+          </InfoChip>
         </p>
       </div>
     </li>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { CopyButton } from "@/components/copy-button";
 import { PermissionDenied } from "@/components/permission-denied";
+import { Fingerprint, Settings2 } from "lucide-react";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { GeneralForm } from "@/components/settings/settings-forms";
 import { getSiteSettings } from "@/lib/data/settings";
@@ -25,29 +26,36 @@ export default async function GeneralSettingsPage({
   if (!timeZones.includes(settings.timezone)) timeZones.unshift(settings.timezone);
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 sm:px-8">
-      <SettingsCard title="General">
-        <GeneralForm
-          siteId={site.id}
-          initial={{
-            name: settings.name,
-            language: settings.language,
-            timezone: settings.timezone,
-          }}
-          timeZones={timeZones}
-        />
-      </SettingsCard>
-      <SettingsCard
-        title="Site ID"
-        description="Identifies this site in support requests and integrations."
-      >
-        <div className="flex flex-wrap items-center gap-2">
-          <code className="bg-muted min-w-0 flex-1 basis-full rounded-lg px-3 py-2 font-mono text-sm break-all sm:basis-0">
-            {site.id}
-          </code>
-          <CopyButton value={site.id} label="Copy ID" />
+    <div className="flex w-full flex-col gap-4 px-4 py-6 sm:px-8">
+      <div className="flex flex-col gap-4">
+        <div>
+          <SettingsCard title="General" icon={Settings2}>
+            <GeneralForm
+              siteId={site.id}
+              initial={{
+                name: settings.name,
+                language: settings.language,
+                timezone: settings.timezone,
+              }}
+              timeZones={timeZones}
+            />
+          </SettingsCard>
         </div>
-      </SettingsCard>
+        <SettingsCard
+          title="Site ID"
+          description="Identifies this site in support requests and integrations."
+          icon={Fingerprint}
+        >
+          <div className="flex flex-1 flex-col gap-3">
+            <code className="visual-nested min-w-0 px-3 py-2.5 font-mono text-sm break-all">
+              {site.id}
+            </code>
+            <div className="border-card-border mt-auto border-t pt-4">
+              <CopyButton value={site.id} label="Copy ID" />
+            </div>
+          </div>
+        </SettingsCard>
+      </div>
     </div>
   );
 }
