@@ -6,6 +6,8 @@ import {
   PublishingRulesForm,
   UrlPatternsForm,
 } from "@/components/settings/publishing-settings";
+import { Layers, Link2, Workflow } from "lucide-react";
+import { IconTile } from "@/components/visual/card";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { getPublishingSettings } from "@/lib/data/publishing";
 import { getSite } from "@/lib/data/sites";
@@ -31,12 +33,17 @@ export default async function PublishingPage({
   const settings = await getPublishingSettings(site.id);
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 sm:px-8">
-      <SettingsCard title="Workflow" description="How entries get from draft to live on this site.">
+    <div className="flex w-full flex-col gap-4 px-4 py-6 sm:px-8">
+      <SettingsCard
+        icon={Workflow}
+        title="Workflow"
+        description="How entries get from draft to live on this site."
+      >
         <PublishingRulesForm siteId={site.id} settings={settings} />
       </SettingsCard>
 
       <SettingsCard
+        icon={Link2}
         title="URL patterns"
         description="The address of every entry on your website. The content API, sitemap, menus, SEO checks and the editor all use these."
       >
@@ -44,15 +51,19 @@ export default async function PublishingPage({
       </SettingsCard>
 
       <section aria-labelledby="environments-heading" className="flex flex-col gap-4">
-        <div>
-          <h2 id="environments-heading" className="text-base font-semibold">
-            Environments
-          </h2>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Your live website, and the route on it that shows drafts before they&apos;re published.
-          </p>
+        <div className="flex items-start gap-3 px-1 pt-2">
+          <IconTile icon={Layers} tone="neutral" />
+          <div>
+            <h2 id="environments-heading" className="text-base font-semibold">
+              Environments
+            </h2>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Your live website, and the route on it that shows drafts before they&apos;re
+              published.
+            </p>
+          </div>
         </div>
-        <div className="bg-card rounded-2xl border p-5 sm:p-6">
+        <div className="visual-card p-5 sm:p-6">
           <LiveAddress siteId={site.id} domain={settings.domain} />
         </div>
         <PreviewSettings siteId={site.id} previewUrl={settings.previewUrl} />

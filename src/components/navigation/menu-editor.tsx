@@ -230,7 +230,7 @@ export function MenuEditor({
   const atLimit = items.length >= MAX_MENU_ITEMS;
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 pb-28 sm:px-8">
+    <div className="flex w-full flex-col gap-6 px-4 py-6 pb-28 sm:px-8">
       <div className="flex flex-col gap-3">
         <Link
           href={siteHref(siteId, "navigation")}
@@ -255,6 +255,7 @@ export function MenuEditor({
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <SettingsCard
+          layout="stacked"
           title="Links"
           icon={Link2}
           description={`Up to ${MAX_MENU_DEPTH} levels: top-level links and one level of links under them. Use the arrow and indent buttons to arrange them.`}

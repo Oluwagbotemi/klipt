@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { FileSearch } from "lucide-react";
-import { EmptyState } from "@/components/empty-state";
+import { EmptyCard } from "@/components/insights/parts";
 import { PermissionDenied } from "@/components/permission-denied";
 import { NotConnected } from "@/components/performance/no-data";
 import {
@@ -10,7 +9,7 @@ import {
   perfCard,
   RatingIcon,
 } from "@/components/performance/parts";
-import { Badge } from "@/components/ui/badge";
+import { InfoChip } from "@/components/visual/info-chip";
 import { formatDate } from "@/lib/format";
 import { getPerformanceReport } from "@/lib/data/performance";
 import { getSite } from "@/lib/data/sites";
@@ -52,21 +51,21 @@ export default async function PerformancePagesPage({
   const entryHref = (id: string) => `${siteHref(site.id, "content")}/${id}`;
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-6 sm:px-8">
+    <div className="flex w-full flex-col gap-4 px-4 py-6 sm:px-8">
       <PerformanceFilters
         base={siteHref(site.id, "performance", "pages")}
         device={device}
         days={days}
       />
       {report.pages.length === 0 ? (
-        <EmptyState
-          icon={FileSearch}
+        <EmptyCard
+          scene="activity"
           title="No pages measured in this period"
           description="Try another device type or a longer period."
         />
       ) : (
-        <div className={perfCard}>
-          <div className="text-muted-foreground hidden grid-cols-[minmax(0,1fr)_repeat(3,6.5rem)_5.5rem] gap-4 border-b px-5 py-2 text-xs font-medium md:grid">
+        <div className={`${perfCard} overflow-hidden`}>
+          <div className="text-muted-foreground border-card-border bg-muted/40 hidden grid-cols-[minmax(0,1fr)_repeat(3,6.5rem)_5.5rem] gap-4 border-b px-5 py-2 text-xs font-medium md:grid">
             <span>Page</span>
             {CORE_METRICS.map((metric) => (
               <span key={metric} className="text-right">
@@ -75,7 +74,7 @@ export default async function PerformancePagesPage({
             ))}
             <span className="text-right">Visits</span>
           </div>
-          <ul className="divide-y" aria-label="Measured pages">
+          <ul className="divide-card-border divide-y" aria-label="Measured pages">
             {report.pages.map((page) => {
               const label =
                 page.path === OTHER_PATH
@@ -101,9 +100,9 @@ export default async function PerformancePagesPage({
                       {page.title && <span className="truncate font-mono">{page.path}</span>}
                       {!page.entryId && page.path !== OTHER_PATH && <span>Not a Klipt page</span>}
                       {page.samples < LOW_SAMPLE && (
-                        <Badge variant="outline" className="font-normal">
+                        <InfoChip tone="warning" className="h-5 px-2">
                           Few visits
-                        </Badge>
+                        </InfoChip>
                       )}
                     </span>
                   </span>

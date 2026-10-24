@@ -217,21 +217,19 @@ export function TrendChart({ metric, points }: { metric: Metric; points: DailyPo
       {point && (
         <div
           role="status"
-          className="bg-popover text-popover-foreground pointer-events-none absolute top-2 w-40 rounded-lg border px-3 py-2 text-xs shadow-md"
+          className="bg-tooltip text-tooltip-foreground visual-fade pointer-events-none absolute top-2 w-40 rounded-xl px-3 py-2 text-xs shadow-lg"
           style={{ left: tooltipLeft }}
         >
           <p className="font-medium">{shortDay(point.day)}</p>
           {point.p75 === null ? (
-            <p className="text-muted-foreground">No visits measured</p>
+            <p className="opacity-70">No visits measured</p>
           ) : (
             <>
               <p className="tabular-nums">
                 {formatMetric(metric, point.p75)}{" "}
-                <span className="text-muted-foreground">
-                  · {RATING_LABELS[rate(metric, point.p75)]}
-                </span>
+                <span className="opacity-70">· {RATING_LABELS[rate(metric, point.p75)]}</span>
               </p>
-              <p className="text-muted-foreground tabular-nums">
+              <p className="tabular-nums opacity-70">
                 {point.samples.toLocaleString("en")} {point.samples === 1 ? "visit" : "visits"}
               </p>
             </>
@@ -273,7 +271,7 @@ export function TrendTable({
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-card-border divide-y">
             {[...points].reverse().map((point) => (
               <tr key={point.day}>
                 <td className="px-3 py-1.5">{shortDay(point.day)}</td>

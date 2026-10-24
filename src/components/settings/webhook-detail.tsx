@@ -268,7 +268,7 @@ export function DeliveryLog({
 
   if (deliveries.length === 0) {
     return (
-      <p className="text-muted-foreground border-t px-5 py-8 text-center text-sm sm:px-6">
+      <p className="text-muted-foreground border-card-border border-t px-5 py-8 text-center text-sm sm:px-6">
         Nothing sent yet. Publish something, or use{" "}
         <span className="font-medium">Send test event</span>.
       </p>
@@ -276,7 +276,7 @@ export function DeliveryLog({
   }
 
   return (
-    <ul className="divide-y border-t" aria-label="Deliveries">
+    <ul className="divide-card-border border-card-border divide-y border-t" aria-label="Deliveries">
       {deliveries.map((delivery) => {
         const entry = (delivery.payload.data as { entry?: { title?: string; path?: string } })
           ?.entry;

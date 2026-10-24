@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { EyeOff } from "lucide-react";
 import { siteHref } from "@/lib/navigation";
-import { cn } from "@/lib/utils";
 
-export const seoCard = "bg-card rounded-2xl border";
+export const seoCard = "visual-card";
 
 /** Shown on SEO pages while the whole site is hidden from search engines. */
 export function SiteHiddenNotice({ siteId, canManage }: { siteId: string; canManage: boolean }) {
@@ -26,40 +25,6 @@ export function SiteHiddenNotice({ siteId, canManage }: { siteId: string; canMan
         </Link>
       )}
     </div>
-  );
-}
-
-export function StatTile({
-  label,
-  value,
-  href,
-  hint,
-}: {
-  label: string;
-  value: number | string;
-  href?: string;
-  hint?: string;
-}) {
-  const body = (
-    <>
-      <span className="text-muted-foreground text-sm">{label}</span>
-      <span className="text-2xl font-semibold tabular-nums">{value}</span>
-      {hint && <span className="text-muted-foreground text-xs">{hint}</span>}
-    </>
-  );
-  const className = cn(seoCard, "flex h-full flex-col gap-1 p-4");
-  return href ? (
-    <Link
-      href={href}
-      className={cn(
-        className,
-        "hover:bg-accent/40 focus-visible:ring-ring/50 outline-none focus-visible:ring-[3px]",
-      )}
-    >
-      {body}
-    </Link>
-  ) : (
-    <div className={className}>{body}</div>
   );
 }
 

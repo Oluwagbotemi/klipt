@@ -33,5 +33,13 @@ Account -> Sites/Projects -> Selected Site -> CMS. Persistent site sidebar: Over
 ## Routing suggestions (adapt to repository)
 `/sites`, `/sites/new`, `/sites/[siteId]/overview`, `/sites/[siteId]/content`, `/sites/[siteId]/content/[entryId]`, `/sites/[siteId]/media`, `/sites/[siteId]/models`, `/sites/[siteId]/navigation`, `/sites/[siteId]/taxonomy`, `/sites/[siteId]/seo`, `/sites/[siteId]/performance`, `/sites/[siteId]/team`, `/sites/[siteId]/settings/ownership`.
 
+## Page width (decided Oct 2026)
+Every in-app page fills the area beside the sidebar: a `flex w-full flex-col` wrapper with the same
+horizontal padding as the page header (`px-4 sm:px-8`), never `mx-auto max-w-*`. Use the width with
+extra grid columns at `xl`/`2xl` and full-width tables. Only the entry editor's writing column, the
+preview route, `/dev/emails`, empty-state text and auth pages stay narrow. Forms: two-column sections
+(label column left, fields right, inputs ≤ ~576px) via `SettingsCard`; lists and editors use
+`layout="stacked"`.
+
 ## Density
 Use whitespace for page-level hierarchy and denser spacing inside rows and analytics. Empty states are centered within the content region, with concise message and one primary action. Avoid dead space on content-rich screens.

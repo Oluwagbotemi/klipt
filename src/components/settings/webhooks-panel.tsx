@@ -5,8 +5,10 @@ import Link from "next/link";
 import { ChevronRight, Plus, Webhook } from "lucide-react";
 import { WebhookForm } from "@/components/settings/webhook-form";
 import { DeliveryStatusBadge } from "@/components/settings/webhook-status";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CardHeader } from "@/components/visual/card";
+import { Illustration } from "@/components/visual/illustration";
+import { InfoChip } from "@/components/visual/info-chip";
 import {
   Dialog,
   DialogContent,
@@ -48,55 +50,50 @@ export function WebhooksPanel({
   }
 
   return (
-    <section aria-labelledby="webhooks-heading" className="bg-card rounded-2xl border">
-      <div className="flex flex-wrap items-start justify-between gap-3 p-5 sm:p-6">
-        <div className="min-w-0">
-          <h2 id="webhooks-heading" className="text-base font-semibold">
-            Webhooks
-          </h2>
-          <p className="text-muted-foreground mt-1 max-w-prose text-sm">
-            Klipt tells your website the moment content is published, edited, moved or taken down,
-            so it can refresh those pages straight away.
-          </p>
-        </div>
-        {webhooks.length > 0 && (
-          <Button onClick={openAdd} disabled={atLimit}>
-            <Plus aria-hidden />
-            Add webhook
-          </Button>
-        )}
-      </div>
+    <section aria-labelledby="webhooks-heading" className="visual-card">
+      <CardHeader
+        id="webhooks-heading"
+        title="Webhooks"
+        description="Klipt tells your website the moment content is published, edited, moved or taken down, so it can refresh those pages straight away."
+        icon={Webhook}
+        action={
+          webhooks.length > 0 && (
+            <Button variant="ink" onClick={openAdd} disabled={atLimit}>
+              <Plus aria-hidden />
+              Add webhook
+            </Button>
+          )
+        }
+      />
 
       {webhooks.length === 0 ? (
-        <div className="flex flex-col items-center border-t px-5 py-10 text-center">
-          <span
-            aria-hidden
-            className="bg-muted text-muted-foreground mb-3 grid size-10 place-items-center rounded-xl"
-          >
-            <Webhook className="size-5" />
-          </span>
+        <div className="border-card-border flex flex-col items-center border-t px-5 py-10 text-center">
+          <Illustration scene="connect" className="mb-3" />
           <p className="font-medium">No webhooks yet</p>
           <p className="text-muted-foreground mt-1 max-w-sm text-sm">
             Add your website&apos;s webhook address to get notified about changes instead of
             checking for them.
           </p>
-          <Button className="mt-4" onClick={openAdd}>
+          <Button variant="ink" className="mt-4" onClick={openAdd}>
             <Plus aria-hidden />
             Add webhook
           </Button>
         </div>
       ) : (
-        <ul className="divide-y border-t" aria-label="Webhooks">
+        <ul
+          className="divide-card-border border-card-border divide-y border-t"
+          aria-label="Webhooks"
+        >
           {webhooks.map((hook) => (
             <li key={hook.id}>
               <Link
                 href={webhookHref(siteId, hook.id)}
-                className="hover:bg-accent/40 focus-visible:ring-ring/50 flex items-center gap-4 px-5 py-3.5 outline-none focus-visible:ring-[3px] focus-visible:ring-inset sm:px-6"
+                className="group hover:bg-accent/50 focus-visible:ring-ring/50 flex items-center gap-4 px-5 py-3.5 outline-none focus-visible:ring-[3px] focus-visible:ring-inset sm:px-6"
               >
                 <div className="min-w-0 flex-1">
                   <p className="flex min-w-0 items-center gap-2">
                     <span className="truncate font-mono text-sm">{hook.url}</span>
-                    {!hook.enabled && <Badge variant="outline">Off</Badge>}
+                    {!hook.enabled && <InfoChip tone="neutral">Off</InfoChip>}
                   </p>
                   <p className="text-muted-foreground mt-0.5 truncate text-xs">
                     {hook.description ? `${hook.description} · ` : ""}
@@ -122,7 +119,7 @@ export function WebhooksPanel({
         </ul>
       )}
       {atLimit && (
-        <p className="text-muted-foreground border-t px-5 py-3 text-xs sm:px-6">
+        <p className="text-muted-foreground border-card-border border-t px-5 py-3 text-xs sm:px-6">
           You&apos;ve reached the limit of {MAX_WEBHOOKS} webhooks. Delete one to add another.
         </p>
       )}

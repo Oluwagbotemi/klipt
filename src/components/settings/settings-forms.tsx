@@ -29,7 +29,7 @@ function SaveRow({
   label?: string;
 }) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="border-card-border mt-auto flex items-center gap-3 border-t pt-4">
       <Button type="submit" disabled={pending}>
         {pending && <Loader2 className="animate-spin" aria-hidden />}
         {pending ? "Saving…" : label}
@@ -54,7 +54,7 @@ export function GeneralForm({
     values: initial,
   } satisfies FormState<GeneralValues>);
   return (
-    <form action={formAction} className="flex flex-col gap-5">
+    <form action={formAction} className="flex flex-1 flex-col gap-5">
       {state.errors?.form && <InlineAlert>{state.errors.form}</InlineAlert>}
       <input type="hidden" name="siteId" value={siteId} />
       <FormField
@@ -126,7 +126,7 @@ export function DomainForm({ siteId, domain }: { siteId: string; domain: string 
     values: { domain: domain ?? "" },
   } satisfies FormState<{ domain: string }>);
   return (
-    <form action={formAction} className="flex flex-col gap-5">
+    <form action={formAction} className="flex flex-1 flex-col gap-5">
       {state.errors?.form && <InlineAlert>{state.errors.form}</InlineAlert>}
       <input type="hidden" name="siteId" value={siteId} />
       <FormField
@@ -166,7 +166,7 @@ export function SeoDefaultsForm({
   const [picking, setPicking] = useState(false);
 
   return (
-    <form action={formAction} className="flex flex-col gap-5">
+    <form action={formAction} className="flex flex-1 flex-col gap-5">
       {state.errors?.form && <InlineAlert>{state.errors.form}</InlineAlert>}
       <input type="hidden" name="siteId" value={siteId} />
       <input type="hidden" name="ogImageId" value={image?.id ?? ""} />

@@ -49,7 +49,7 @@ export function ModelList({
   const custom = models.filter((model) => !model.isSystem);
 
   return (
-    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-6 sm:px-8">
+    <div className="flex w-full flex-col gap-6 px-4 py-6 sm:px-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <p className="text-muted-foreground max-w-prose text-sm">
           A content type describes one kind of content, like a product or an event: the fields it

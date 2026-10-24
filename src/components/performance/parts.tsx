@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { CircleAlert, CircleCheck, CircleX, type LucideIcon } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { InfoChip, type ChipTone } from "@/components/visual/info-chip";
 import {
   formatMetric,
   LOW_SAMPLE,
@@ -12,32 +12,50 @@ import {
   type Rating,
 } from "@/lib/performance";
 import { cn } from "@/lib/utils";
+import { AreaChart } from "@/components/visual/area-chart";
 
-export const perfCard = "bg-card rounded-2xl border";
+export const perfCard = "visual-card";
 
 const RATING_STYLE: Record<
   Rating,
-  { icon: LucideIcon; badge: "success" | "warning" | "destructive"; text: string; fill: string }
+  { icon: LucideIcon; tone: ChipTone; text: string; fill: string }
 > = {
-  good: { icon: CircleCheck, badge: "success", text: "text-success", fill: "bg-success" },
+  good: { icon: CircleCheck, tone: "success", text: "text-success-strong", fill: "bg-success" },
   "needs-improvement": {
     icon: CircleAlert,
-    badge: "warning",
-    text: "text-warning",
+    tone: "warning",
+    text: "text-warning-strong",
     fill: "bg-warning",
   },
-  poor: { icon: CircleX, badge: "destructive", text: "text-destructive", fill: "bg-destructive" },
+  poor: { icon: CircleX, tone: "danger", text: "text-danger-strong", fill: "bg-destructive" },
 };
 
 /** A rating always carries an icon and a word, never color alone. */
 export function RatingBadge({ rating }: { rating: Rating | null }) {
-  if (!rating) return <Badge variant="outline">No data</Badge>;
+  if (!rating) return <InfoChip tone="neutral">No data</InfoChip>;
   const style = RATING_STYLE[rating];
   return (
-    <Badge variant={style.badge}>
-      <style.icon aria-hidden />
+    <InfoChip tone={style.tone} icon={style.icon} className="shrink-0">
       {RATING_LABELS[rating]}
-    </Badge>
+    </InfoChip>
+  );
+}
+
+/** "2.9 s" → the number in full weight, the unit muted. */
+export function MetricValue({ text, className }: { text: string; className?: string }) {
+  const match = /^([\d.,]+)\s*(\S*)$/.exec(text);
+  return (
+    <span className={className}>
+      {match ? (
+        <>
+          {match[1]}
+          {match[2] && " "}
+          {match[2] && <span className="text-[0.6em] font-semibold opacity-60">{match[2]}</span>}
+        </>
+      ) : (
+        text
+      )}
+    </span>
   );
 }
 
@@ -60,7 +78,7 @@ export function ShareBar({ shares }: { shares: Record<Rating, number> }) {
   return (
     <div className="flex flex-col gap-1.5">
       <div
-        className="flex h-2 gap-0.5 overflow-hidden rounded-full"
+        className="flex h-2.5 gap-1"
         role="img"
         aria-label={parts.map((p) => `${RATING_LABELS[p.rating]} ${p.share}%`).join(", ")}
       >
@@ -69,15 +87,15 @@ export function ShareBar({ shares }: { shares: Record<Rating, number> }) {
           .map((p) => (
             <span
               key={p.rating}
-              className={cn(
-                "h-full first:rounded-l-full last:rounded-r-full",
-                RATING_STYLE[p.rating].fill,
-              )}
+              className={cn("visual-grow-x h-full rounded-full", RATING_STYLE[p.rating].fill)}
               style={{ width: `${(p.value / total) * 100}%` }}
             />
           ))}
       </div>
-      <ul className="text-muted-foreground flex flex-wrap gap-x-3 gap-y-0.5 text-xs" aria-hidden>
+      <ul
+        className="text-muted-foreground flex min-h-9 flex-wrap content-start gap-x-3 gap-y-0.5 text-xs"
+        aria-hidden
+      >
         {parts.map((p) => (
           <li key={p.rating} className="flex items-center gap-1">
             <span className={cn("size-2 rounded-full", RATING_STYLE[p.rating].fill)} />
@@ -89,12 +107,21 @@ export function ShareBar({ shares }: { shares: Record<Rating, number> }) {
   );
 }
 
-/** Headline tile for one metric: its p75 value, rating, sample count and distribution. */
-export function MetricTile({ summary, href }: { summary: MetricSummary; href?: string }) {
+/** Headline tile for one metric: its p75 value, rating, sample count, trend and distribution. */
+export function MetricTile({
+  summary,
+  href,
+  trend,
+}: {
+  summary: MetricSummary;
+  href?: string;
+  /** Daily p75 values for a sparkline (days without visits left out). */
+  trend?: { day: string; label: string; value: number; valueText: string }[];
+}) {
   const info = METRIC_INFO[summary.metric];
   const body = (
     <>
-      <div className="flex flex-wrap items-start justify-between gap-2">
+      <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-sm font-medium">
             {summary.metric}{" "}
@@ -104,24 +131,40 @@ export function MetricTile({ summary, href }: { summary: MetricSummary; href?: s
         </div>
         <RatingBadge rating={summary.rating} />
       </div>
-      <p className="text-3xl font-semibold tracking-tight tabular-nums">
-        {formatMetric(summary.metric, summary.p75)}
-      </p>
+      <MetricValue
+        text={formatMetric(summary.metric, summary.p75)}
+        className="visual-rise mt-1 block text-[2.25rem] leading-10 font-bold tracking-tight"
+      />
       <p className="text-muted-foreground text-xs">
         75th percentile · {summary.samples.toLocaleString("en")}{" "}
         {summary.samples === 1 ? "visit" : "visits"} measured
         {summary.samples > 0 && summary.samples < LOW_SAMPLE && " (few, so this can change a lot)"}
       </p>
-      <ShareBar shares={summary.shares} />
+      {trend && trend.length > 1 && (
+        <AreaChart
+          variant="sparkline"
+          height={48}
+          title={`${summary.metric} 75th percentile per day`}
+          points={trend.map((point) => ({
+            key: point.day,
+            label: point.label,
+            value: point.value,
+            valueText: point.valueText,
+          }))}
+        />
+      )}
+      <div className="mt-auto pt-1">
+        <ShareBar shares={summary.shares} />
+      </div>
     </>
   );
-  const className = cn(perfCard, "flex h-full flex-col gap-2 p-4 sm:p-5");
+  const className = cn(perfCard, "flex h-full flex-col gap-2 p-5 sm:p-6");
   return href ? (
     <Link
       href={href}
       className={cn(
         className,
-        "hover:bg-accent/40 focus-visible:ring-ring/50 outline-none focus-visible:ring-[3px]",
+        "group visual-lift focus-visible:ring-ring/50 outline-none focus-visible:ring-[3px]",
       )}
     >
       {body}
@@ -152,14 +195,14 @@ export function PerformanceFilters({
   };
   const segment = (active: boolean) =>
     cn(
-      "focus-visible:ring-ring/50 rounded-md px-3 py-1 text-sm whitespace-nowrap outline-none focus-visible:ring-[3px]",
+      "focus-visible:ring-ring/50 rounded-full px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-[3px]",
       active
-        ? "bg-background text-foreground shadow-sm"
+        ? "bg-surface-card text-foreground ring-card-border ring-1"
         : "text-muted-foreground hover:text-foreground",
     );
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <nav aria-label="Device" className="bg-muted inline-flex gap-0.5 rounded-lg p-1">
+      <nav aria-label="Device" className="bg-muted inline-flex gap-0.5 rounded-full p-1">
         {(
           [
             ["all", "All devices"],
@@ -177,7 +220,7 @@ export function PerformanceFilters({
           </Link>
         ))}
       </nav>
-      <nav aria-label="Period" className="bg-muted inline-flex gap-0.5 rounded-lg p-1">
+      <nav aria-label="Period" className="bg-muted inline-flex gap-0.5 rounded-full p-1">
         {([7, 28] as const).map((value) => (
           <Link
             key={value}

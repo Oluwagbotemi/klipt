@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function Loading() {
   return (
     <div aria-busy="true" aria-label="Loading" className="flex flex-1 flex-col">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-6 sm:gap-5 sm:px-8 sm:py-8">
+      <div className="flex w-full flex-col gap-4 px-4 py-6 sm:gap-5 sm:px-8 sm:py-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="flex flex-col gap-3">
             <Skeleton className="h-9 w-64 rounded-xl" />

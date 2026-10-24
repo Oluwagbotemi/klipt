@@ -5,6 +5,7 @@ import {
   DataSourceNote,
   PerformanceFilters,
   perfCard,
+  MetricValue,
   RatingBadge,
   ShareBar,
 } from "@/components/performance/parts";
@@ -41,7 +42,7 @@ export default async function WebVitalsPage({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 sm:px-8">
+    <div className="flex w-full flex-col gap-5 px-4 py-6 sm:px-8">
       <PerformanceFilters
         base={siteHref(site.id, "performance", "web-vitals")}
         device={device}
@@ -59,7 +60,7 @@ export default async function WebVitalsPage({
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0 flex-1 basis-64">
-                <h2 id={`${id}-heading`} className="text-base font-semibold">
+                <h2 id={`${id}-heading`} className="text-lg font-semibold">
                   {info.name} ({summary.metric})
                 </h2>
                 <p className="text-muted-foreground mt-1 text-sm">
@@ -78,9 +79,10 @@ export default async function WebVitalsPage({
               </div>
               <div className="flex flex-col items-end gap-1">
                 <RatingBadge rating={summary.rating} />
-                <p className="text-2xl font-semibold tabular-nums">
-                  {formatMetric(summary.metric, summary.p75)}
-                </p>
+                <MetricValue
+                  text={formatMetric(summary.metric, summary.p75)}
+                  className="visual-rise text-[2rem] leading-9 font-bold tracking-tight"
+                />
                 <p className="text-muted-foreground text-xs">
                   {summary.samples.toLocaleString("en")} visits
                 </p>

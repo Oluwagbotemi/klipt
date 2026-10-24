@@ -49,7 +49,7 @@ export function DangerZone({ siteId, siteName }: { siteId: string; siteName: str
 
   return (
     <>
-      <ul className="divide-y">
+      <ul className="divide-card-border divide-y">
         <li className="flex flex-wrap items-center justify-between gap-4 py-4 first:pt-0">
           <div className="max-w-prose">
             <p className="text-sm font-medium">Archive this site</p>

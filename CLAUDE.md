@@ -118,6 +118,13 @@ before creating or changing any screen.
   URL filters, `LinkCard`/`CardArrow` for card grids of links (`data-card-grid`), `EmptyState scene=…`,
   and `SettingsCard`/`SettingsSection` with an `icon`. `Badge` is a tinted pill (`info`, `accent`,
   `danger` too). Sticky side panels are exempt from equal-height rows (`data-sticky-panel`).
+  **Pages fill the available width** beside the sidebar (`flex w-full flex-col … px-4 py-6 sm:px-8`,
+  matching the page header) — no centred `mx-auto max-w-*` wrappers. Only the editor's writing column,
+  the preview route, `/dev/emails`, empty-state text and auth pages stay narrow. Forms use
+  `SettingsCard` (default `layout="split"`: title and description in the left third, fields in the
+  right two-thirds capped at `max-w-xl`, from `lg`; `layout="stacked"` for lists and editors). Grids may
+  add columns at `xl`/`2xl`; equal-height rows still apply. SEO/Performance/Team/Settings extras live in
+  `src/components/insights/parts.tsx` (`EmptyCard`, `NothingYetBar`, `AvatarStack`, `CardNote`).
 - Team (`src/server/team.ts`): invitations are shareable links (token hashed for lookup, encrypted so
   managers can copy it again; 7 days; must be accepted by an account with the invited email). Only
   the owner grants Admin or manages admins; nobody changes the owner (that's ownership transfer).

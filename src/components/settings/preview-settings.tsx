@@ -24,13 +24,16 @@ export function PreviewSettings({
   const active = state.saved ? state.values.previewUrl !== "" : Boolean(previewUrl);
 
   return (
-    <section aria-labelledby="previews-heading" className="bg-card rounded-2xl border">
-      <div className="flex items-start gap-3 p-5 sm:p-6">
+    <section
+      aria-labelledby="previews-heading"
+      className="visual-card flex flex-col gap-5 p-5 sm:p-6 lg:grid lg:grid-cols-3 lg:gap-8"
+    >
+      <div className="flex items-start gap-3">
         <span
           aria-hidden
-          className="bg-primary/10 text-primary grid size-10 shrink-0 place-items-center rounded-xl"
+          className="bg-primary-soft text-primary-strong grid size-9 shrink-0 place-items-center rounded-xl"
         >
-          <Eye className="size-5" />
+          <Eye className="size-4.5" />
         </span>
         <div className="min-w-0">
           <h2 id="previews-heading" className="text-base font-semibold">
@@ -44,7 +47,9 @@ export function PreviewSettings({
           </p>
           <p className="mt-2 text-sm">
             {active ? (
-              <span className="text-success font-medium">On: Preview opens your website.</span>
+              <span className="text-success-strong font-medium">
+                On: Preview opens your website.
+              </span>
             ) : (
               <span className="text-muted-foreground">
                 Off: Preview shows a plain version inside Klipt.
@@ -53,7 +58,7 @@ export function PreviewSettings({
           </p>
         </div>
       </div>
-      <form action={formAction} className="flex flex-col gap-4 border-t p-5 sm:p-6">
+      <form action={formAction} className="flex w-full max-w-xl flex-col gap-4 lg:col-span-2">
         {state.errors?.form && <InlineAlert>{state.errors.form}</InlineAlert>}
         <input type="hidden" name="siteId" value={siteId} />
         <FormField
@@ -69,7 +74,7 @@ export function PreviewSettings({
           autoComplete="off"
           spellCheck={false}
         />
-        <div className="flex items-center gap-3">
+        <div className="border-card-border flex items-center gap-3 border-t pt-4">
           <Button type="submit" disabled={pending}>
             {pending && <Loader2 className="animate-spin" aria-hidden />}
             {pending ? "Saving…" : "Save"}

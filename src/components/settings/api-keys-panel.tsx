@@ -23,6 +23,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { CardHeader } from "@/components/visual/card";
+import { Illustration } from "@/components/visual/illustration";
 import {
   Dialog,
   DialogBody,
@@ -50,44 +52,39 @@ export function ApiKeysPanel({ siteId, keys }: { siteId: string; keys: ApiKeySum
   }
 
   return (
-    <section aria-labelledby="keys-heading" className="bg-card rounded-2xl border">
-      <div className="flex flex-wrap items-start justify-between gap-3 p-5 sm:p-6">
-        <div className="min-w-0">
-          <h2 id="keys-heading" className="text-base font-semibold">
-            API keys
-          </h2>
-          <p className="text-muted-foreground mt-1 max-w-prose text-sm">
-            Read-only. A key can read this site&apos;s published content and nothing else. Use a
-            separate key for each website so you can revoke one without affecting the others.
-          </p>
-        </div>
-        {keys.length > 0 && (
-          <Button onClick={openCreate}>
-            <Plus aria-hidden />
-            Create API key
-          </Button>
-        )}
-      </div>
+    <section aria-labelledby="keys-heading" className="visual-card">
+      <CardHeader
+        id="keys-heading"
+        title="API keys"
+        description="Read-only. A key can read this site's published content and nothing else. Use a separate key for each website so you can revoke one without affecting the others."
+        icon={KeyRound}
+        action={
+          keys.length > 0 && (
+            <Button variant="ink" onClick={openCreate}>
+              <Plus aria-hidden />
+              Create API key
+            </Button>
+          )
+        }
+      />
 
       {keys.length === 0 ? (
-        <div className="flex flex-col items-center border-t px-5 py-10 text-center">
-          <span
-            aria-hidden
-            className="bg-muted text-muted-foreground mb-3 grid size-10 place-items-center rounded-xl"
-          >
-            <KeyRound className="size-5" />
-          </span>
+        <div className="border-card-border flex flex-col items-center border-t px-5 py-10 text-center">
+          <Illustration scene="connect" className="mb-3" />
           <p className="font-medium">No API keys yet</p>
           <p className="text-muted-foreground mt-1 max-w-sm text-sm">
             Create a key to let your website fetch published content from this site.
           </p>
-          <Button className="mt-4" onClick={openCreate}>
+          <Button variant="ink" className="mt-4" onClick={openCreate}>
             <Plus aria-hidden />
             Create API key
           </Button>
         </div>
       ) : (
-        <ul className="divide-y border-t" aria-label="API keys">
+        <ul
+          className="divide-card-border border-card-border divide-y border-t"
+          aria-label="API keys"
+        >
           {keys.map((key) => (
             <li
               key={key.id}

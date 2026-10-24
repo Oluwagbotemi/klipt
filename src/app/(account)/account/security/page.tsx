@@ -11,7 +11,7 @@ export default async function SecurityPage() {
   const sessions = await getAccountSessions();
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 sm:px-8">
+    <div className="flex w-full flex-col gap-6 px-4 py-6 sm:px-8">
       <SettingsCard title="Password" icon={KeyRound}>
         <PasswordForm />
       </SettingsCard>

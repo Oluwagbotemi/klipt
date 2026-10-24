@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PermissionDenied } from "@/components/permission-denied";
+import { SearchCheck } from "lucide-react";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SeoDefaultsForm } from "@/components/settings/settings-forms";
 import { getSiteSettings } from "@/lib/data/settings";
@@ -27,8 +28,9 @@ export default async function SeoDefaultsPage({
   const settings = await getSiteSettings(site.id);
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 sm:px-8">
+    <div className="flex w-full flex-col gap-4 px-4 py-6 sm:px-8">
       <SettingsCard
+        icon={SearchCheck}
         title="SEO defaults"
         description="Used for every page, unless the page sets its own. Your website reads them from the content API."
       >

@@ -13,8 +13,10 @@ import {
 import { toast } from "sonner";
 import { setAssignmentAction } from "@/app/(site)/sites/[siteId]/content/actions";
 import { ContentStatusBadge } from "@/components/content/status-badge";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CardHeader } from "@/components/visual/card";
+import { InfoChip } from "@/components/visual/info-chip";
+import { StatCard } from "@/components/visual/stat-card";
 import {
   assignmentRights,
   formatDue,
@@ -53,23 +55,40 @@ export function AssignmentBoardView({
   const rowProps = { siteId, board, me, people: board.people };
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 sm:px-8">
-      <ul className="grid grid-cols-3 gap-2 sm:gap-3" aria-label="Summary">
-        <SummaryTile
-          icon={ClipboardCheck}
-          label="Waiting for review"
-          value={board.awaitingReview.length}
-        />
-        <SummaryTile
-          icon={AlertTriangle}
-          label="Overdue"
-          value={board.overdue.length}
-          tone={board.overdue.length > 0 ? "warning" : undefined}
-        />
-        <SummaryTile icon={Inbox} label="Unassigned drafts" value={board.unassigned.length} />
+    <div className="flex w-full flex-col gap-6 px-4 py-6 sm:px-8">
+      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4" aria-label="Summary">
+        <li>
+          <StatCard
+            icon={ClipboardCheck}
+            iconTone={board.awaitingReview.length > 0 ? "info" : "neutral"}
+            label="Waiting for review"
+            value={board.awaitingReview.length}
+            caption={board.awaitingReview.length > 0 ? "Sent by writers" : "Nothing waiting"}
+          />
+        </li>
+        <li>
+          <StatCard
+            icon={AlertTriangle}
+            iconTone={board.overdue.length > 0 ? "danger" : "neutral"}
+            label="Overdue"
+            value={board.overdue.length}
+            caption={board.overdue.length > 0 ? "Past their due date" : "All on time"}
+          />
+        </li>
+        <li className="col-span-2 sm:col-span-1">
+          <StatCard
+            icon={Inbox}
+            iconTone={board.unassigned.length > 0 ? "warning" : "neutral"}
+            label="Unassigned drafts"
+            value={board.unassigned.length}
+            caption={
+              board.unassigned.length > 0 ? "Nobody has taken them on" : "Everything has an owner"
+            }
+          />
+        </li>
       </ul>
 
-      <p className="text-muted-foreground text-sm">
+      <p className="text-muted-foreground max-w-prose text-sm">
         {canAssign
           ? "Assign drafts to members and set due dates here or in the editor. "
           : "Editors assign work; you can take on your own drafts in the editor. "}
@@ -107,23 +126,24 @@ export function AssignmentBoardView({
       )}
 
       <section aria-labelledby="people-heading" className="flex flex-col gap-3">
-        <h2 id="people-heading" className="text-base font-semibold">
+        <h2 id="people-heading" className="flex items-center gap-2 text-base font-semibold">
+          <UserRound className="text-muted-foreground size-4" aria-hidden />
           By person
         </h2>
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-3">
           {people.map((person) => (
             <section
               key={person.id}
               aria-labelledby={`person-${person.id}`}
               className={cn(
-                "bg-card rounded-2xl border",
+                "visual-card flex h-full flex-col",
                 person.id === me.userId && "border-primary/50",
               )}
             >
-              <div className="flex items-center gap-3 p-4">
+              <div className="flex items-center gap-3 p-4 sm:px-5">
                 <span
                   aria-hidden
-                  className="bg-muted text-muted-foreground grid size-9 shrink-0 place-items-center rounded-full text-xs font-semibold"
+                  className="bg-primary-soft text-primary-strong grid size-9 shrink-0 place-items-center rounded-full text-xs font-semibold"
                 >
                   {initials(person.name)}
                 </span>
@@ -136,14 +156,16 @@ export function AssignmentBoardView({
                   </h3>
                   <p className="text-muted-foreground text-xs">{ROLE_LABELS[person.role]}</p>
                 </div>
-                <Badge variant="secondary">{person.items.length} open</Badge>
+                <InfoChip tone={person.items.length > 0 ? "accent" : "neutral"}>
+                  {person.items.length} open
+                </InfoChip>
               </div>
               {person.items.length === 0 ? (
-                <p className="text-muted-foreground border-t px-4 py-4 text-sm">
+                <p className="text-muted-foreground border-card-border flex flex-1 items-center justify-center border-t px-4 py-6 text-sm">
                   Nothing assigned.
                 </p>
               ) : (
-                <ul className="divide-y border-t">
+                <ul className="divide-card-border border-card-border divide-y border-t">
                   {person.items.map((entry) => (
                     <EntryRow key={entry.id} entry={entry} compact {...rowProps} />
                   ))}
@@ -168,40 +190,11 @@ export function AssignmentBoardView({
   );
 }
 
-function SummaryTile({
-  icon: Icon,
-  label,
-  value,
-  tone,
-}: {
-  icon: typeof Inbox;
-  label: string;
-  value: number;
-  tone?: "warning";
-}) {
-  return (
-    <li className="bg-card flex min-w-0 items-center gap-3 rounded-2xl border p-3 sm:p-4">
-      <Icon
-        className={cn(
-          "hidden size-5 shrink-0 sm:block",
-          tone === "warning" ? "text-warning" : "text-muted-foreground",
-        )}
-        aria-hidden
-      />
-      <div className="min-w-0">
-        <p
-          className={cn(
-            "text-2xl leading-none font-semibold tabular-nums",
-            tone === "warning" && "text-warning sm:text-foreground",
-          )}
-        >
-          {value}
-        </p>
-        <p className="text-muted-foreground mt-1 text-xs">{label}</p>
-      </div>
-    </li>
-  );
-}
+const GROUP_ICONS: Record<string, typeof Inbox> = {
+  review: ClipboardCheck,
+  overdue: CalendarClock,
+  unassigned: Inbox,
+};
 
 function Group({
   id,
@@ -217,17 +210,24 @@ function Group({
   children: React.ReactNode[];
 }) {
   return (
-    <section aria-labelledby={`${id}-heading`} className="bg-card rounded-2xl border">
-      <div className="p-4 sm:px-5">
-        <h2 id={`${id}-heading`} className="text-base font-semibold">
-          {title} <span className="text-muted-foreground font-normal">({children.length})</span>
-        </h2>
-        <p className="text-muted-foreground mt-1 text-sm">{description}</p>
-      </div>
+    <section aria-labelledby={`${id}-heading`} className="visual-card">
+      <CardHeader
+        id={`${id}-heading`}
+        title={
+          <>
+            {title} <span className="text-muted-foreground font-normal">({children.length})</span>
+          </>
+        }
+        description={description}
+        icon={GROUP_ICONS[id] ?? Inbox}
+        iconTone={id === "overdue" ? "danger" : id === "review" ? "info" : "warning"}
+      />
       {children.length === 0 ? (
-        <p className="text-muted-foreground border-t px-4 py-4 text-sm sm:px-5">{empty}</p>
+        <p className="text-muted-foreground border-card-border border-t px-4 py-4 text-sm sm:px-5">
+          {empty}
+        </p>
       ) : (
-        <ul className="divide-y border-t">{children}</ul>
+        <ul className="divide-card-border border-card-border divide-y border-t">{children}</ul>
       )}
     </section>
   );
