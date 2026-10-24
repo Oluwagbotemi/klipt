@@ -100,6 +100,7 @@ export async function TermsPage({
       {terms.length === 0 ? (
         <EmptyState
           icon={Tags}
+          scene="structure"
           title={`No ${nameLower} yet`}
           description={
             canManage
@@ -112,10 +113,11 @@ export async function TermsPage({
         !terms.some((term) => matchesTerm(term, q)) && (
           <EmptyState
             icon={SearchX}
+            scene="search"
             title="Nothing matches"
             description={`No ${nameLower} match “${query.trim()}”.`}
             action={
-              <Button variant="outline" asChild>
+              <Button variant="soft" asChild>
                 <Link href={base}>Clear search</Link>
               </Button>
             }

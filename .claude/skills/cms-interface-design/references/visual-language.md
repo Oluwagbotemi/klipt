@@ -3,7 +3,8 @@
 ## Visual direction (2026) — in-page content
 Decided Oct 2026 with the product owner. It applies to **content inside the page** (cards, numbers,
 charts, empty and success states). The **sidebar, top bar and section header are out of scope**: leave
-the shell as it is. Rolled out first on the site Overview; other screens follow screen by screen.
+the shell as it is. Rolled out on the site Overview first, then (phase 2) Content, the entry
+page panels, Media, Structure (models, navigation, taxonomy), Sites and Account.
 
 The goal is a calm, mostly black/white/grey interface that feels **interactive and engaging**:
 bold numbers, one purposeful accent, small geometric vectors, and quick motion that responds to the

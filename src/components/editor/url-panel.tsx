@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Loader2, TriangleAlert, Wand2 } from "lucide-react";
+import { Link2, Loader2, TriangleAlert, Wand2 } from "lucide-react";
 import { SettingsSection } from "@/components/editor/settings-section";
 import { Button } from "@/components/ui/button";
 import { slugify } from "@/lib/content";
@@ -61,7 +61,11 @@ export function UrlPanel({
   }
 
   return (
-    <SettingsSection title="URL" description={domain ? `${domain}${oldPath}` : oldPath}>
+    <SettingsSection
+      title="URL"
+      icon={Link2}
+      description={domain ? `${domain}${oldPath}` : oldPath}
+    >
       <div className="flex flex-col gap-1.5">
         <label htmlFor="entry-slug" className="text-sm font-medium">
           URL slug

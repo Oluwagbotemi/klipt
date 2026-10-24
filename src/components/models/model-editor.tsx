@@ -9,10 +9,12 @@ import {
   ArrowUp,
   Calendar,
   CheckCircle2,
+  FileText,
   Hash,
   ImageIcon,
   Link2,
   ListChecks,
+  ListTree,
   Loader2,
   type LucideIcon,
   Pencil,
@@ -172,6 +174,7 @@ export function ModelEditor({
 
       <SettingsCard
         title="Fields"
+        icon={ListTree}
         description={
           model.isSystem
             ? `Extra fields for every ${model.name.toLowerCase()}, besides its title, body and SEO.`
@@ -181,12 +184,15 @@ export function ModelEditor({
         <div className="flex flex-col gap-4">
           {fieldsError && <InlineAlert>{fieldsError}</InlineAlert>}
           {fields.length === 0 ? (
-            <p className="text-muted-foreground rounded-xl border border-dashed px-4 py-6 text-center text-sm">
+            <p className="text-muted-foreground border-card-border bg-card-nested rounded-(--radius-nested) border border-dashed px-4 py-6 text-center text-sm">
               No fields yet.
               {canManage && " Add one for each piece of information, e.g. a price or a photo."}
             </p>
           ) : (
-            <ol className="divide-y rounded-xl border" aria-busy={saving}>
+            <ol
+              className="border-card-border divide-card-border divide-y rounded-(--radius-nested) border"
+              aria-busy={saving}
+            >
               {fields.map((field, index) => {
                 const Icon = FIELD_ICONS[field.type as FieldType] ?? Type;
                 const targets = field.referenceModelKeys
@@ -279,7 +285,7 @@ export function ModelEditor({
         </div>
       </SettingsCard>
 
-      <SettingsCard title="Details">
+      <SettingsCard title="Details" icon={FileText}>
         <DetailsForm
           siteId={siteId}
           model={model}
@@ -290,7 +296,7 @@ export function ModelEditor({
       </SettingsCard>
 
       {!model.isSystem && canManage && (
-        <SettingsCard title="Delete content type" tone="danger">
+        <SettingsCard title="Delete content type" tone="danger" icon={Trash2}>
           <DeleteModel siteId={siteId} model={model} entriesHref={entriesHref} />
         </SettingsCard>
       )}

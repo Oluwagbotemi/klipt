@@ -94,7 +94,7 @@ export function AssignmentPanel({
     .join(", ");
 
   return (
-    <SettingsSection title="Assigned to" description={summary}>
+    <SettingsSection title="Assigned to" icon={UserRound} description={summary}>
       {rights.assignAnyone && !archived ? (
         <>
           <div className="flex flex-col gap-1.5">

@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { ChevronRight, Layers, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Layers, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   deleteTaxonomyAction,
@@ -25,6 +25,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CardArrow, IconTile } from "@/components/visual/card";
+import { Illustration } from "@/components/visual/illustration";
+import { TABLE_ROW } from "@/components/visual/table-card";
 import {
   Dialog,
   DialogBody,
@@ -39,6 +42,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import type { CollectionType } from "@/lib/models";
 import { keyFromLabel } from "@/lib/models";
+import { cn } from "@/lib/utils";
 import { siteHref } from "@/lib/navigation";
 import { termPath, type TaxonomySummary } from "@/lib/taxonomy";
 
@@ -103,39 +107,48 @@ export function TaxonomyList({
       {taxonomies.length === 0 ? (
         <section
           aria-labelledby="no-custom-taxonomies"
-          className="flex flex-col items-start gap-3 rounded-2xl border border-dashed p-5"
+          className="border-card-border flex flex-col items-start gap-4 rounded-(--radius-card) border border-dashed p-5 sm:flex-row sm:items-center sm:p-6"
         >
-          <span className="bg-muted grid size-10 place-items-center rounded-xl" aria-hidden>
-            <Layers className="text-muted-foreground size-5" />
-          </span>
-          <div>
-            <h2 id="no-custom-taxonomies" className="text-base font-semibold">
-              No custom taxonomies yet
-            </h2>
-            <p className="text-muted-foreground text-sm">
-              Categories and Tags cover most sites. Add a custom taxonomy when you need another
-              grouping with its own archive pages, e.g. {termPath("region", "europe")}.
-            </p>
+          <Illustration scene="structure" className="h-20" />
+          <div className="flex flex-1 flex-col items-start gap-3">
+            <div>
+              <h2 id="no-custom-taxonomies" className="text-base font-semibold">
+                No custom taxonomies yet
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                Categories and Tags cover most sites. Add a custom taxonomy when you need another
+                grouping with its own archive pages, e.g. {termPath("region", "europe")}.
+              </p>
+            </div>
+            {canManage && (
+              <Button variant="soft" onClick={() => open({})}>
+                <Plus aria-hidden /> New taxonomy
+              </Button>
+            )}
           </div>
-          {canManage && (
-            <Button variant="outline" onClick={() => open({})}>
-              <Plus aria-hidden /> New taxonomy
-            </Button>
-          )}
         </section>
       ) : (
-        <ul className="bg-card divide-y rounded-2xl border" aria-label="Custom taxonomies">
+        <ul
+          className="visual-card divide-card-border divide-y overflow-hidden"
+          aria-label="Custom taxonomies"
+        >
           {taxonomies.map((taxonomy) => (
-            <li key={taxonomy.id} className="flex min-w-0 items-center gap-2 pr-2 sm:pr-3">
+            <li
+              key={taxonomy.id}
+              className={cn(TABLE_ROW, "group flex min-w-0 items-center gap-2 pr-2 sm:pr-3")}
+            >
               <Link
                 href={`${siteHref(siteId, "taxonomy", "custom")}/${taxonomy.key}`}
-                className="hover:bg-accent/50 focus-visible:ring-ring/50 flex min-w-0 flex-1 items-center gap-4 rounded-2xl px-4 py-3 outline-none focus-visible:ring-[3px] focus-visible:ring-inset sm:px-5"
+                className="focus-visible:ring-ring/50 flex min-w-0 flex-1 items-center gap-4 rounded-2xl px-4 py-3.5 outline-none focus-visible:ring-[3px] focus-visible:ring-inset sm:px-5"
               >
+                <IconTile icon={Layers} tone={taxonomy.termCount > 0 ? "accent" : "neutral"} />
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <span className="font-medium">{taxonomy.name}</span>
                     <code className="text-muted-foreground font-mono text-xs">{taxonomy.key}</code>
-                    <Badge variant="outline">{taxonomy.hierarchical ? "Nested" : "Flat"}</Badge>
+                    <Badge variant={taxonomy.hierarchical ? "info" : "secondary"}>
+                      {taxonomy.hierarchical ? "Nested" : "Flat"}
+                    </Badge>
                   </span>
                   <span className="text-muted-foreground block text-sm break-words">
                     {taxonomy.modelKeys.length > 0
@@ -145,7 +158,7 @@ export function TaxonomyList({
                     {count(taxonomy.termCount, "term", "terms")}
                   </span>
                 </span>
-                <ChevronRight className="text-muted-foreground size-4 shrink-0" aria-hidden />
+                <CardArrow />
               </Link>
               {canManage && (
                 <div className="flex shrink-0 gap-1">

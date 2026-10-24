@@ -1,7 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { CircleCheck, Image as ImageIcon, Info, TriangleAlert } from "lucide-react";
+import {
+  CircleCheck,
+  Image as ImageIcon,
+  Info,
+  Search,
+  Share2,
+  SlidersHorizontal,
+  TriangleAlert,
+} from "lucide-react";
 import { LengthHint, SettingsSection } from "@/components/editor/settings-section";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -78,7 +86,11 @@ export function SearchPanel({
   const checks = seoChecks({ title, seo, words, images });
 
   return (
-    <SettingsSection title="Search engines" description="How this page may appear in search">
+    <SettingsSection
+      title="Search engines"
+      description="How this page may appear in search"
+      icon={Search}
+    >
       <div className="flex flex-col gap-1.5">
         <label htmlFor="seo-title" className="text-sm font-medium">
           SEO title
@@ -181,6 +193,7 @@ export function SocialPanel({ seo, onChange, title, domain, readOnly }: SeoProps
     <SettingsSection
       title="Social sharing"
       description="When the link is shared"
+      icon={Share2}
       defaultOpen={false}
     >
       <div className="flex flex-col gap-1.5">
@@ -260,6 +273,7 @@ export function AdvancedPanel({
     <SettingsSection
       title="Advanced"
       description="Canonical URL, indexing and structured data"
+      icon={SlidersHorizontal}
       defaultOpen={false}
     >
       <div className="flex flex-col gap-1.5">

@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { Check, Loader2, Plus, X } from "lucide-react";
+import { Check, Loader2, Plus, Tags, X } from "lucide-react";
 import {
   createTermFromEditorAction,
   searchTermsAction,
@@ -47,7 +47,7 @@ export function TermsPanel({
 
   if (taxonomies.length === 0) return null;
   return (
-    <SettingsSection title="Categories & tags" description={summary || "None chosen"}>
+    <SettingsSection title="Categories & tags" icon={Tags} description={summary || "None chosen"}>
       {taxonomies.map((taxonomy) => (
         <TaxonomyField
           key={taxonomy.key}

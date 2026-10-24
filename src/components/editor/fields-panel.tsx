@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { ImageIcon, Link2, Loader2, Search, X } from "lucide-react";
+import { ImageIcon, Link2, ListTree, Loader2, Search, X } from "lucide-react";
 import { searchLinkTargetsAction } from "@/app/(site)/sites/[siteId]/content/actions";
 import { ContentStatusBadge } from "@/components/content/status-badge";
 import { MediaPicker } from "@/components/media/media-picker";
@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { IconTile } from "@/components/visual/card";
 import type { ContentStatus } from "@/lib/content";
 import {
   LONG_TEXT_MAX,
@@ -64,16 +65,20 @@ export function FieldsPanel({
   return (
     <section
       aria-labelledby="entry-fields-heading"
-      className="bg-card mt-8 flex flex-col gap-5 rounded-2xl border p-4 sm:p-5"
+      className="visual-card mt-8 flex flex-col gap-5 p-4 sm:p-5"
     >
-      <div>
-        <h2 id="entry-fields-heading" className="text-sm font-semibold">
-          {modelName} fields
-        </h2>
-        <p className="text-muted-foreground text-xs">
-          Your website gets these in the content API under <code className="font-mono">fields</code>
-          . Drafts can leave required fields empty; they&apos;re needed to publish.
-        </p>
+      <div className="flex items-start gap-3">
+        <IconTile icon={ListTree} size="sm" />
+        <div className="min-w-0">
+          <h2 id="entry-fields-heading" className="text-sm font-semibold">
+            {modelName} fields
+          </h2>
+          <p className="text-muted-foreground text-xs">
+            Your website gets these in the content API under{" "}
+            <code className="font-mono">fields</code>. Drafts can leave required fields empty;
+            they&apos;re needed to publish.
+          </p>
+        </div>
       </div>
       {fields.map((field) => (
         <FieldInput
@@ -300,7 +305,7 @@ function ImageField({
       className="flex flex-wrap items-center gap-3"
     >
       {mediaId ? (
-        <div className="flex w-full min-w-0 items-center gap-3 rounded-xl border p-2 sm:w-auto sm:flex-1">
+        <div className="border-card-border flex w-full min-w-0 items-center gap-3 rounded-(--radius-nested) border p-2 sm:w-auto sm:flex-1">
           <span className="bg-muted size-16 shrink-0 overflow-hidden rounded-lg">
             {asset ? (
               // eslint-disable-next-line @next/next/no-img-element -- files come from Blob/local storage
@@ -393,7 +398,7 @@ function LinkField({
       className="flex flex-wrap items-center gap-3"
     >
       {targetId ? (
-        <div className="flex w-full min-w-0 items-center gap-3 rounded-xl border px-3 py-2 sm:w-auto sm:flex-1">
+        <div className="border-card-border flex w-full min-w-0 items-center gap-3 rounded-(--radius-nested) border px-3 py-2 sm:w-auto sm:flex-1">
           <Link2 className="text-muted-foreground size-4 shrink-0" aria-hidden />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-medium">

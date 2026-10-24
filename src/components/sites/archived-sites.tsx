@@ -16,7 +16,7 @@ export function ArchivedSites({
   const [pending, startTransition] = useTransition();
   if (sites.length === 0) return null;
   return (
-    <section aria-labelledby="archived-heading" className="bg-card mt-4 rounded-2xl border">
+    <section aria-labelledby="archived-heading" className="visual-card mt-4 overflow-hidden">
       <div className="p-5 pb-3 sm:px-6">
         <h2 id="archived-heading" className="text-base font-semibold">
           Archived sites
@@ -26,9 +26,12 @@ export function ArchivedSites({
           back on.
         </p>
       </div>
-      <ul className="divide-y border-t">
+      <ul className="border-card-border divide-card-border divide-y border-t">
         {sites.map((site) => (
-          <li key={site.id} className="flex flex-wrap items-center gap-3 px-5 py-3 sm:px-6">
+          <li
+            key={site.id}
+            className="hover:bg-card-nested/60 flex flex-wrap items-center gap-3 px-5 py-3 transition-colors sm:px-6"
+          >
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{site.name}</p>
               <p className="text-muted-foreground text-xs">
@@ -36,7 +39,7 @@ export function ArchivedSites({
               </p>
             </div>
             <Button
-              variant="outline"
+              variant="soft"
               size="sm"
               disabled={pending}
               onClick={() =>

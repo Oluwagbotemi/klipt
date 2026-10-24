@@ -1,8 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import Link from "next/link";
-import { Boxes, ChevronRight, Loader2, Plus } from "lucide-react";
+import { Boxes, FileText, ListTree, Loader2, Plus } from "lucide-react";
 import {
   createModelAction,
   type ModelFormState,
@@ -10,8 +9,10 @@ import {
 } from "@/app/(site)/sites/[siteId]/models/actions";
 import { FormField } from "@/components/form-field";
 import { InlineAlert } from "@/components/inline-alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CardArrow, LinkCard } from "@/components/visual/card";
+import { Illustration } from "@/components/visual/illustration";
+import { InfoChip } from "@/components/visual/info-chip";
 import {
   Dialog,
   DialogBody,
@@ -74,25 +75,25 @@ export function ModelList({
       ) : (
         <section
           aria-labelledby="custom-models"
-          className="flex flex-col items-start gap-3 rounded-2xl border border-dashed p-5"
+          className="border-card-border flex flex-col items-start gap-4 rounded-(--radius-card) border border-dashed p-5 sm:flex-row sm:items-center sm:p-6"
         >
-          <span className="bg-muted grid size-10 place-items-center rounded-xl" aria-hidden>
-            <Boxes className="text-muted-foreground size-5" />
-          </span>
-          <div>
-            <h2 id="custom-models" className="text-base font-semibold">
-              No custom content types yet
-            </h2>
-            <p className="text-muted-foreground text-sm">
-              Add one for content that isn&apos;t a page or a post, such as products, team members
-              or events. Its entries appear under Content › Collections.
-            </p>
+          <Illustration scene="structure" className="h-20" />
+          <div className="flex flex-1 flex-col items-start gap-3">
+            <div>
+              <h2 id="custom-models" className="text-base font-semibold">
+                No custom content types yet
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                Add one for content that isn&apos;t a page or a post, such as products, team members
+                or events. Its entries appear under Content › Collections.
+              </p>
+            </div>
+            {canManage && (
+              <Button variant="soft" onClick={() => setCreating(true)}>
+                <Plus aria-hidden /> New content type
+              </Button>
+            )}
           </div>
-          {canManage && (
-            <Button variant="outline" onClick={() => setCreating(true)}>
-              <Plus aria-hidden /> New content type
-            </Button>
-          )}
         </section>
       )}
 
@@ -120,32 +121,39 @@ function ModelGroup({
       <h2 id={id} className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
         {title}
       </h2>
-      <ul className="bg-card divide-y rounded-2xl border">
+      <ul data-card-grid className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {models.map((model) => (
-          <li key={model.id}>
-            <Link
+          <li key={model.id} className="min-w-0">
+            <LinkCard
               href={`${siteHref(siteId, "models")}/${model.id}`}
-              className="hover:bg-accent/50 focus-visible:ring-ring/50 flex items-center gap-4 px-4 py-3 outline-none first:rounded-t-2xl last:rounded-b-2xl focus-visible:ring-[3px] focus-visible:ring-inset sm:px-5"
+              footer={
+                <>
+                  <InfoChip icon={ListTree}>
+                    {count(model.fields.length, "field", "fields")}
+                  </InfoChip>
+                  <InfoChip icon={FileText} tone={model.entryCount > 0 ? "accent" : "neutral"}>
+                    {count(model.entryCount, "entry", "entries")}
+                  </InfoChip>
+                  {model.schemaType && (
+                    <span className="ml-auto truncate font-mono">{model.schemaType}</span>
+                  )}
+                </>
+              }
             >
-              <span className="bg-primary/10 text-primary grid size-10 shrink-0 place-items-center rounded-xl text-sm font-semibold uppercase">
-                {model.name.slice(0, 1)}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span className="font-medium">{model.name}</span>
+              <span className="flex items-start gap-3">
+                <span className="bg-primary-soft text-primary-strong grid size-10 shrink-0 place-items-center rounded-xl text-sm font-semibold uppercase">
+                  {model.name.slice(0, 1)}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-semibold">{model.name}</span>
                   <code className="text-muted-foreground font-mono text-xs">{model.key}</code>
-                  {model.schemaType && <Badge variant="outline">{model.schemaType}</Badge>}
                 </span>
-                <span className="text-muted-foreground block truncate text-sm">
-                  {model.description || `URLs like ${model.urlPattern}`}
-                </span>
+                <CardArrow />
               </span>
-              <span className="text-muted-foreground hidden shrink-0 text-right text-xs sm:block">
-                <span className="block">{count(model.fields.length, "field", "fields")}</span>
-                <span className="block">{count(model.entryCount, "entry", "entries")}</span>
+              <span className="text-muted-foreground line-clamp-2 text-sm">
+                {model.description || `URLs like ${model.urlPattern}`}
               </span>
-              <ChevronRight className="text-muted-foreground size-4 shrink-0" aria-hidden />
-            </Link>
+            </LinkCard>
           </li>
         ))}
       </ul>

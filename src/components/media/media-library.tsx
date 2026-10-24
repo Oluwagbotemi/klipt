@@ -15,6 +15,7 @@ import {
   Upload,
 } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
+import { TABLE_BODY, TABLE_ROW, TableCard } from "@/components/visual/table-card";
 import { MediaDetailsSheet } from "@/components/media/media-details";
 import { MediaThumb } from "@/components/media/media-thumb";
 import { UploadQueue } from "@/components/media/upload-queue";
@@ -144,7 +145,7 @@ export function MediaLibrary({
       {dragging && (
         <div
           aria-hidden
-          className="border-primary bg-primary/5 text-primary pointer-events-none absolute inset-2 z-20 flex items-center justify-center rounded-2xl border-2 border-dashed text-sm font-medium"
+          className="border-primary bg-primary-soft/80 text-primary-strong pointer-events-none absolute inset-2 z-20 flex items-center justify-center rounded-(--radius-card) border-2 border-dashed text-sm font-medium"
         >
           Drop files to upload
         </div>
@@ -173,12 +174,13 @@ export function MediaLibrary({
         <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
           {kind !== "files" && list.counts.missingAlt > 0 && (
             <Button
-              variant="outline"
+              variant="soft"
               size="sm"
               aria-pressed={params.alt === "missing"}
               onClick={() => go({ alt: params.alt === "missing" ? undefined : "missing" })}
               className={cn(
-                params.alt === "missing" && "bg-warning-soft text-warning border-transparent",
+                params.alt === "missing" &&
+                  "bg-warning-soft text-warning-strong hover:bg-warning-soft border-transparent",
               )}
             >
               <TriangleAlert aria-hidden />
@@ -200,7 +202,7 @@ export function MediaLibrary({
               </option>
             ))}
           </select>
-          <div role="group" aria-label="View" className="flex rounded-lg border p-0.5">
+          <div role="group" aria-label="View" className="bg-muted flex gap-0.5 rounded-full p-1">
             {(["grid", "list"] as const).map((view) => {
               const Icon = view === "grid" ? LayoutGrid : List;
               return (
@@ -208,7 +210,12 @@ export function MediaLibrary({
                   key={view}
                   variant="ghost"
                   size="icon-sm"
-                  className={cn("size-8", params.view === view && "bg-accent text-foreground")}
+                  className={cn(
+                    "size-8 rounded-full border border-transparent",
+                    params.view === view
+                      ? "border-card-border bg-surface-card text-foreground hover:bg-surface-card"
+                      : "text-muted-foreground",
+                  )}
                   aria-pressed={params.view === view}
                   aria-label={view === "grid" ? "Grid view" : "List view"}
                   onClick={() => go({ view, page: params.page })}
@@ -256,6 +263,7 @@ export function MediaLibrary({
           filtered && !isEmptyLibrary ? (
             <EmptyState
               icon={SearchX}
+              scene={params.q ? "search" : "success"}
               title={`No matching ${NOUN[kind]}`}
               description={
                 params.q
@@ -263,7 +271,7 @@ export function MediaLibrary({
                   : "Every image here has alt text. Nice work."
               }
               action={
-                <Button variant="outline" asChild>
+                <Button variant="soft" asChild>
                   <Link href={pathname} onClick={() => setQuery("")}>
                     Clear filters
                   </Link>
@@ -273,6 +281,7 @@ export function MediaLibrary({
           ) : (
             <EmptyState
               icon={ImageIcon}
+              scene="media"
               title={kind === "all" ? "No media yet" : `No ${NOUN[kind]} yet`}
               description={
                 canUpload
@@ -295,26 +304,26 @@ export function MediaLibrary({
             className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6"
           >
             {list.items.map((asset) => (
-              <li key={asset.id}>
+              <li key={asset.id} className="flex">
                 <button
                   type="button"
                   onClick={() => open(asset)}
                   aria-label={`${asset.filename}${isMissingAlt(asset) ? ", missing alt text" : ""}`}
-                  className="group bg-card focus-visible:ring-ring/50 flex w-full flex-col overflow-hidden rounded-xl border text-left outline-none focus-visible:ring-[3px]"
+                  className="group visual-card visual-lift focus-visible:ring-ring/50 flex w-full flex-col overflow-hidden p-1.5 text-left outline-none focus-visible:ring-[3px]"
                 >
-                  <span className="relative block aspect-square overflow-hidden">
+                  <span className="bg-card-nested relative block aspect-square overflow-hidden rounded-(--radius-nested)">
                     <MediaThumb
                       asset={asset}
                       className="transition-transform group-hover:scale-[1.03]"
                     />
                     {isMissingAlt(asset) && (
-                      <Badge variant="warning" className="absolute top-2 left-2 shadow-sm">
+                      <Badge variant="warning" className="absolute top-2 left-2">
                         <TriangleAlert aria-hidden />
                         No alt text
                       </Badge>
                     )}
                   </span>
-                  <span className="flex flex-col gap-0.5 px-2.5 py-2">
+                  <span className="flex flex-col gap-0.5 px-1.5 pt-2 pb-1">
                     <span className="truncate text-sm font-medium">{asset.filename}</span>
                     <span className="text-muted-foreground truncate text-xs">
                       {formatBytes(asset.sizeBytes)}
@@ -326,15 +335,18 @@ export function MediaLibrary({
             ))}
           </ul>
         ) : (
-          <ul aria-label={NOUN[kind]} className="bg-card divide-y rounded-xl border">
+          <TableCard as="ul" aria-label={NOUN[kind]} className={TABLE_BODY}>
             {list.items.map((asset) => (
               <li key={asset.id}>
                 <button
                   type="button"
                   onClick={() => open(asset)}
-                  className="hover:bg-accent/40 focus-visible:ring-ring/50 flex w-full items-center gap-3 px-3 py-2.5 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-inset"
+                  className={cn(
+                    TABLE_ROW,
+                    "focus-visible:ring-ring/50 flex w-full items-center gap-3 px-3 py-2.5 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-inset",
+                  )}
                 >
-                  <span className="size-11 shrink-0 overflow-hidden rounded-lg border">
+                  <span className="bg-card-nested size-11 shrink-0 overflow-hidden rounded-xl">
                     <MediaThumb asset={asset} />
                   </span>
                   <span className="min-w-0 flex-1">
@@ -363,7 +375,7 @@ export function MediaLibrary({
                 </button>
               </li>
             ))}
-          </ul>
+          </TableCard>
         )}
       </div>
 
@@ -374,7 +386,7 @@ export function MediaLibrary({
           </p>
           <div className="flex gap-2">
             <Button
-              variant="outline"
+              variant="soft"
               size="sm"
               disabled={list.page <= 1}
               onClick={() => go({ page: list.page - 1 })}
@@ -383,7 +395,7 @@ export function MediaLibrary({
               <ChevronLeft aria-hidden />
             </Button>
             <Button
-              variant="outline"
+              variant="soft"
               size="sm"
               disabled={list.page >= list.pageCount}
               onClick={() => go({ page: list.page + 1 })}

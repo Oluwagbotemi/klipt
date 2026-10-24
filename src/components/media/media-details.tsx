@@ -119,7 +119,7 @@ function Details({
       </div>
 
       <div className="flex flex-col gap-5 p-5">
-        <div className="bg-muted flex max-h-72 items-center justify-center overflow-hidden rounded-xl border">
+        <div className="bg-card-nested visual-hatch flex max-h-72 items-center justify-center overflow-hidden rounded-(--radius-card)">
           {image ? (
             // eslint-disable-next-line @next/next/no-img-element -- files come from Blob/local storage
             <img
@@ -204,7 +204,7 @@ function Details({
           )}
         </form>
 
-        <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 border-t pt-4 text-sm">
+        <dl className="visual-nested grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 p-4 text-sm">
           <dt className="text-muted-foreground">Uploaded</dt>
           <dd>
             {formatDate(asset.createdAt)}

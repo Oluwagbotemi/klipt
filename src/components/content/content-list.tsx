@@ -32,7 +32,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { useOverflowFade } from "@/hooks/use-overflow-fade";
+import { FilterPills, type FilterDot } from "@/components/visual/filter-pills";
+import { TABLE_BODY, TABLE_HEAD, TABLE_ROW, TableCard } from "@/components/visual/table-card";
 import {
   CONTENT_STATUSES,
   PAGE_SIZE,
@@ -40,6 +41,7 @@ import {
   STATUS_LABELS,
   entryActions,
   type BulkAction,
+  type ContentStatus,
   type ContentListParams,
   type ContentSort,
   type ContentType,
@@ -238,8 +240,8 @@ export function ContentList({
             className={cn(
               "focus-visible:ring-ring/50 flex h-8 items-center gap-1.5 rounded-full border px-3 transition-colors outline-none focus-visible:ring-[3px]",
               assignedToMe
-                ? "border-primary bg-primary/10 text-primary"
-                : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                ? "bg-primary-soft text-primary-strong border-transparent font-medium"
+                : "border-card-border bg-surface-card text-muted-foreground hover:text-foreground hover:border-card-border-hover",
             )}
           >
             <UserRound className="size-3.5" aria-hidden />
@@ -311,6 +313,7 @@ export function ContentList({
           filtered ? (
             <EmptyState
               icon={SearchX}
+              scene="search"
               title={`No matching ${noun.many}`}
               description={
                 params.q
@@ -329,6 +332,7 @@ export function ContentList({
           ) : type === "collection" && collections.length === 0 ? (
             <EmptyState
               icon={FileText}
+              scene="structure"
               title="No custom content types yet"
               description="Collections hold entries of your own content types, like Products or Events. Owners and admins set them up in Content models."
               action={
@@ -341,6 +345,7 @@ export function ContentList({
           ) : (
             <EmptyState
               icon={FileText}
+              scene="content"
               title={`No ${noun.many} yet`}
               description={
                 canCreate
@@ -424,6 +429,14 @@ export function ContentList({
   );
 }
 
+const STATUS_DOTS: Record<ContentStatus, FilterDot> = {
+  draft: "neutral",
+  in_review: "warning",
+  scheduled: "info",
+  published: "success",
+  archived: "neutral",
+};
+
 function StatusFilters({
   counts,
   current,
@@ -433,51 +446,25 @@ function StatusFilters({
   current: StatusFilter;
   hrefFor: (status: StatusFilter) => string;
 }) {
-  const ref = useRef<HTMLUListElement>(null);
-  const fade = useOverflowFade(ref);
   const active = CONTENT_STATUSES.filter((s) => s !== "archived").reduce(
     (sum, s) => sum + counts[s],
     0,
   );
-  const filters: { value: StatusFilter; label: string; count: number }[] = [
-    { value: "active", label: "All", count: active },
-    ...CONTENT_STATUSES.map((s) => ({ value: s, label: STATUS_LABELS[s], count: counts[s] })),
-  ];
-
   return (
-    <nav aria-label="Filter by status">
-      <ul
-        ref={ref}
-        onScroll={fade.onScroll}
-        style={fade.style}
-        className="flex [scrollbar-width:none] gap-1.5 overflow-x-auto [&::-webkit-scrollbar]:hidden"
-      >
-        {filters.map((filter) => {
-          const isCurrent = filter.value === current;
-          return (
-            <li key={filter.value} className="shrink-0">
-              <Link
-                href={hrefFor(filter.value)}
-                replace
-                scroll={false}
-                aria-current={isCurrent ? "true" : undefined}
-                className={cn(
-                  "focus-visible:ring-ring/50 flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm transition-colors outline-none focus-visible:ring-[3px]",
-                  isCurrent
-                    ? "border-foreground bg-foreground text-background"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent",
-                )}
-              >
-                {filter.label}
-                <span className={cn("text-xs tabular-nums", !isCurrent && "text-muted-foreground")}>
-                  {filter.count}
-                </span>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
+    <FilterPills
+      label="Filter by status"
+      current={current}
+      items={[
+        { value: "active", label: "All", count: active, href: hrefFor("active") },
+        ...CONTENT_STATUSES.map((s) => ({
+          value: s,
+          label: STATUS_LABELS[s],
+          count: counts[s],
+          dot: STATUS_DOTS[s],
+          href: hrefFor(s),
+        })),
+      ]}
+    />
   );
 }
 
@@ -499,26 +486,29 @@ function BulkBar({
     <div
       role="region"
       aria-label="Bulk actions"
-      className="bg-background sticky top-16 z-10 flex flex-wrap items-center gap-2 rounded-xl border p-2 pl-3 shadow-sm"
+      className="border-primary/30 bg-surface-card sticky top-16 z-10 flex flex-wrap items-center gap-2 rounded-2xl border p-2 pl-4"
     >
-      <p className="mr-auto text-sm font-medium">
-        {count} selected
+      <p className="mr-auto flex items-center gap-2 text-sm font-medium">
+        <span className="bg-primary-soft text-primary-strong grid h-6 min-w-6 place-items-center rounded-full px-1.5 text-xs tabular-nums">
+          {count}
+        </span>
+        selected
         {pending && <Loader2 className="ml-2 inline size-4 animate-spin" aria-label="Working" />}
       </p>
       {counts.archive > 0 && (
-        <Button size="sm" variant="outline" disabled={pending} onClick={() => onAction("archive")}>
+        <Button size="sm" variant="soft" disabled={pending} onClick={() => onAction("archive")}>
           <Archive aria-hidden /> {label("Archive", counts.archive)}
         </Button>
       )}
       {counts.restore > 0 && (
-        <Button size="sm" variant="outline" disabled={pending} onClick={() => onAction("restore")}>
+        <Button size="sm" variant="soft" disabled={pending} onClick={() => onAction("restore")}>
           <ArchiveRestore aria-hidden /> {label("Restore", counts.restore)}
         </Button>
       )}
       {counts.delete > 0 && (
         <Button
           size="sm"
-          variant="outline"
+          variant="soft"
           disabled={pending}
           onClick={() => onAction("delete")}
           className="text-destructive"
@@ -637,7 +627,7 @@ function StatusCell({ entry, today }: { entry: EntrySummary; today: string }) {
         <span
           className={cn(
             "flex items-center gap-1 text-xs",
-            overdue ? "text-warning" : "text-muted-foreground",
+            overdue ? "text-warning-strong font-medium" : "text-muted-foreground",
           )}
         >
           <CalendarClock className="size-3 shrink-0" aria-hidden />
@@ -673,7 +663,7 @@ function EntryTable({
   rowActions: (entry: EntrySummary) => React.ReactNode;
 }) {
   return (
-    <div className="hidden overflow-hidden rounded-2xl border md:block">
+    <TableCard className="hidden md:block">
       <table className="w-full table-fixed text-sm">
         <colgroup>
           <col className="w-10" />
@@ -684,7 +674,7 @@ function EntryTable({
           <col className="w-32" />
           <col className="w-14" />
         </colgroup>
-        <thead className="bg-muted/60 text-muted-foreground text-left text-xs">
+        <thead className={TABLE_HEAD}>
           <tr>
             <th scope="col" className="w-10 py-2.5 pl-4">
               <SelectBox
@@ -716,13 +706,13 @@ function EntryTable({
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y">
+        <tbody className={TABLE_BODY}>
           {entries.map((entry) => (
             <tr
               key={entry.id}
               className={cn(
-                "hover:bg-muted/40 transition-colors",
-                selected.has(entry.id) && "bg-primary/5 hover:bg-primary/5",
+                TABLE_ROW,
+                selected.has(entry.id) && "bg-primary-soft/60 hover:bg-primary-soft/60",
               )}
             >
               <td className="py-3 pl-4 align-top">
@@ -760,7 +750,7 @@ function EntryTable({
           ))}
         </tbody>
       </table>
-    </div>
+    </TableCard>
   );
 }
 
@@ -784,11 +774,14 @@ function EntryCards({
   rowActions: (entry: EntrySummary) => React.ReactNode;
 }) {
   return (
-    <ul className="divide-y overflow-hidden rounded-2xl border md:hidden">
+    <TableCard as="ul" className={cn(TABLE_BODY, "md:hidden")}>
       {entries.map((entry) => (
         <li
           key={entry.id}
-          className={cn("flex gap-3 py-3 pr-2 pl-4", selected.has(entry.id) && "bg-primary/5")}
+          className={cn(
+            "flex gap-3 py-3 pr-2 pl-4",
+            selected.has(entry.id) && "bg-primary-soft/60",
+          )}
         >
           <div className="pt-0.5">
             <SelectBox
@@ -817,7 +810,7 @@ function EntryCards({
           <div>{rowActions(entry)}</div>
         </li>
       ))}
-    </ul>
+    </TableCard>
   );
 }
 
@@ -834,13 +827,13 @@ function PageLink({
 }) {
   if (disabled) {
     return (
-      <Button variant="outline" size="sm" disabled aria-label={label}>
+      <Button variant="soft" size="sm" disabled aria-label={label}>
         {children}
       </Button>
     );
   }
   return (
-    <Button variant="outline" size="sm" asChild>
+    <Button variant="soft" size="sm" asChild>
       <Link href={href} aria-label={label} replace>
         {children}
       </Link>

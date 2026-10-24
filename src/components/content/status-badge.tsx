@@ -4,11 +4,11 @@ import { STATUS_LABELS, type ContentStatus } from "@/lib/content";
 
 const STYLE: Record<
   ContentStatus,
-  { variant: "secondary" | "warning" | "outline" | "success"; icon: typeof CircleDot }
+  { variant: "secondary" | "warning" | "outline" | "success" | "info"; icon: typeof CircleDot }
 > = {
   draft: { variant: "secondary", icon: PencilLine },
   in_review: { variant: "warning", icon: Eye },
-  scheduled: { variant: "outline", icon: CalendarClock },
+  scheduled: { variant: "info", icon: CalendarClock },
   published: { variant: "success", icon: CircleDot },
   archived: { variant: "outline", icon: Archive },
 };

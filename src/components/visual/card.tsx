@@ -171,3 +171,52 @@ export function CardHeader({
     </div>
   );
 }
+
+/**
+ * A whole card that is one link (a site, a content type, a menu): bordered, `h-full` flex
+ * column so cards in a grid row match; the border darkens and the corner arrow nudges on hover.
+ * The footer slot (counts, chips) sits on the bottom edge.
+ */
+export function LinkCard({
+  href,
+  className,
+  footer,
+  children,
+  ...props
+}: Omit<React.ComponentProps<typeof Link>, "children"> & {
+  footer?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "group visual-card visual-lift focus-visible:ring-ring/50 flex h-full min-w-0 flex-col outline-none focus-visible:ring-[3px]",
+        className,
+      )}
+      {...props}
+    >
+      <span className="flex flex-1 flex-col gap-3 p-5">{children}</span>
+      {footer && (
+        <span className="border-card-border text-muted-foreground mt-auto flex min-h-12 flex-wrap items-center gap-2 border-t px-5 py-3 text-xs">
+          {footer}
+        </span>
+      )}
+    </Link>
+  );
+}
+
+/** The decorative corner arrow inside a LinkCard (the card itself is the link). */
+export function CardArrow({ className }: { className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "visual-arrow border-card-border text-muted-foreground group-hover:text-foreground grid size-8 shrink-0 place-items-center rounded-full border",
+        className,
+      )}
+    >
+      <ArrowUpRight className="size-4" />
+    </span>
+  );
+}
