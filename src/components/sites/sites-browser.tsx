@@ -9,6 +9,8 @@ import { CreateSiteButton } from "@/components/sites/create-site-dialog";
 import { SiteBadges } from "@/components/sites/site-badges";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CardArrow } from "@/components/visual/card";
+import { TABLE_BODY, TableCard } from "@/components/visual/table-card";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { formatDate } from "@/lib/format";
 import { siteHref } from "@/lib/navigation";
@@ -37,6 +39,7 @@ export function SitesBrowser({ sites }: { sites: SiteSummary[] }) {
     return (
       <EmptyState
         icon={Globe}
+        scene="structure"
         title="No sites yet"
         description="Create your first site to start adding content. Sites you're invited to will also appear here."
         action={
@@ -93,21 +96,22 @@ export function SitesBrowser({ sites }: { sites: SiteSummary[] }) {
       {visible.length === 0 ? (
         <EmptyState
           icon={SearchX}
+          scene="search"
           title="No matching sites"
           description={
             <>Nothing matches &ldquo;{deferredQuery.trim()}&rdquo;. Try another name or domain.</>
           }
           action={
-            <Button variant="outline" onClick={() => setQuery("")}>
+            <Button variant="soft" onClick={() => setQuery("")}>
               Clear search
             </Button>
           }
           className="py-12 sm:py-16"
         />
       ) : view === "grid" ? (
-        <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <ul data-card-grid className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {visible.map((site) => (
-            <li key={site.id}>
+            <li key={site.id} className="min-w-0">
               <SiteCard site={site} />
             </li>
           ))}
@@ -121,29 +125,28 @@ export function SitesBrowser({ sites }: { sites: SiteSummary[] }) {
 
 function SiteCard({ site }: { site: SiteSummary }) {
   return (
-    <article className="group bg-card focus-within:border-ring hover:border-input hover:bg-muted/40 relative flex h-full flex-col gap-4 rounded-2xl border p-4 transition-colors">
-      <div className="flex items-start gap-3">
-        <SiteAvatar name={site.name} className="size-11 rounded-xl text-sm" />
-        <div className="min-w-0 flex-1">
-          <h2 className="truncate font-semibold">
-            <Link
-              href={siteHref(site.id)}
-              className="outline-none after:absolute after:inset-0 after:rounded-2xl"
-            >
-              {site.name}
-            </Link>
-          </h2>
-          <p className="text-muted-foreground truncate text-sm">
-            {site.domain ?? "No domain connected"}
-          </p>
+    <article className="group visual-card visual-lift focus-within:border-ring relative flex h-full flex-col">
+      <div className="flex flex-1 flex-col gap-4 p-5">
+        <div className="flex items-start gap-3">
+          <SiteAvatar name={site.name} className="size-11 rounded-xl text-sm" />
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate font-semibold">
+              <Link
+                href={siteHref(site.id)}
+                className="outline-none after:absolute after:inset-0 after:rounded-(--radius-card)"
+              >
+                {site.name}
+              </Link>
+            </h2>
+            <p className="text-muted-foreground truncate text-sm">
+              {site.domain ?? "No domain connected"}
+            </p>
+          </div>
+          <CardArrow />
         </div>
-        <ChevronRight
-          className="text-muted-foreground size-4 shrink-0 transition-transform group-hover:translate-x-0.5"
-          aria-hidden
-        />
+        <SiteBadges site={site} />
       </div>
-      <SiteBadges site={site} />
-      <dl className="text-muted-foreground mt-auto flex flex-wrap gap-x-4 gap-y-1 border-t border-dashed pt-3 text-xs">
+      <dl className="border-card-border text-muted-foreground mt-auto flex min-h-12 flex-wrap items-center gap-x-4 gap-y-1 border-t px-5 py-3 text-xs">
         <div className="flex gap-1">
           <dt>Owner:</dt>
           <dd className="text-foreground font-medium">{ownerLabel(site)}</dd>
@@ -161,10 +164,10 @@ function SiteCard({ site }: { site: SiteSummary }) {
 
 function SiteList({ sites }: { sites: SiteSummary[] }) {
   return (
-    <div className="overflow-hidden rounded-2xl border">
+    <TableCard>
       <div
         aria-hidden
-        className="bg-muted/60 text-muted-foreground hidden grid-cols-[minmax(0,2fr)_minmax(0,2fr)_minmax(0,1fr)_7rem_1rem] gap-4 border-b px-4 py-2.5 text-xs font-medium md:grid"
+        className="bg-card-nested text-muted-foreground border-card-border hidden grid-cols-[minmax(0,2fr)_minmax(0,2fr)_minmax(0,1fr)_7rem_1rem] gap-4 border-b px-4 py-2.5 text-xs font-medium md:grid"
       >
         <span>Site</span>
         <span>Status</span>
@@ -172,11 +175,11 @@ function SiteList({ sites }: { sites: SiteSummary[] }) {
         <span>Updated</span>
         <span />
       </div>
-      <ul className="divide-y">
+      <ul className={TABLE_BODY}>
         {sites.map((site) => (
           <li
             key={site.id}
-            className="group focus-within:bg-muted/50 hover:bg-muted/50 relative grid grid-cols-[minmax(0,1fr)_1rem] items-center gap-x-4 gap-y-2 px-4 py-3 transition-colors md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_minmax(0,1fr)_7rem_1rem]"
+            className="group focus-within:bg-card-nested/60 hover:bg-card-nested/60 relative grid grid-cols-[minmax(0,1fr)_1rem] items-center gap-x-4 gap-y-2 px-4 py-3 transition-colors md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_minmax(0,1fr)_7rem_1rem]"
           >
             <div className="flex min-w-0 items-center gap-3">
               <SiteAvatar name={site.name} />
@@ -207,6 +210,6 @@ function SiteList({ sites }: { sites: SiteSummary[] }) {
           </li>
         ))}
       </ul>
-    </div>
+    </TableCard>
   );
 }

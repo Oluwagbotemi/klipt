@@ -54,7 +54,10 @@ export function SessionsList({ sessions }: { sessions: AccountSession[] }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <ul className="divide-y rounded-xl border" aria-label="Signed-in devices">
+      <ul
+        className="border-card-border divide-card-border divide-y rounded-(--radius-nested) border"
+        aria-label="Signed-in devices"
+      >
         {sessions.map((session) => {
           const Icon = isMobile(session.device) ? Smartphone : Monitor;
           return (

@@ -24,6 +24,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { TABLE_ROW } from "@/components/visual/table-card";
 import {
   Dialog,
   DialogBody,
@@ -128,13 +129,19 @@ export function TermsManager({
         </div>
       )}
       {rows.length > 0 && (
-        <ul className="bg-card divide-y rounded-2xl border" aria-label={taxonomy.name}>
+        <ul
+          className="visual-card divide-card-border divide-y overflow-hidden"
+          aria-label={taxonomy.name}
+        >
           {rows.map((term) => {
             const parents = query ? ancestry(term) : [];
             return (
               <li
                 key={term.id}
-                className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-5"
+                className={cn(
+                  TABLE_ROW,
+                  "flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-5",
+                )}
               >
                 <div
                   className="flex min-w-0 flex-1 basis-60 items-start gap-2"
@@ -175,12 +182,14 @@ export function TermsManager({
                   {term.entryCount > 0 ? (
                     <Link
                       href={`${contentHref}?term=${taxonomy.key}:${term.slug}`}
-                      className="text-primary mr-2 text-sm underline-offset-4 hover:underline"
+                      className="bg-primary-soft text-primary-strong focus-visible:ring-ring/50 mr-2 inline-flex h-7 items-center rounded-full px-2.5 text-xs font-medium outline-none hover:underline focus-visible:ring-[3px]"
                     >
                       {entries(term.entryCount)}
                     </Link>
                   ) : (
-                    <span className="text-muted-foreground mr-2 text-sm">No entries</span>
+                    <span className="bg-muted text-muted-foreground mr-2 inline-flex h-7 items-center rounded-full px-2.5 text-xs">
+                      No entries
+                    </span>
                   )}
                   {canManage && (
                     <>
@@ -418,7 +427,7 @@ function TermForm({
               </p>
             )}
           </div>
-          <fieldset className={cn("grid gap-3 rounded-xl border p-3")}>
+          <fieldset className="border-card-border grid gap-3 rounded-(--radius-nested) border p-3">
             <legend className="px-1 text-sm font-medium">
               Search appearance of the archive page
             </legend>

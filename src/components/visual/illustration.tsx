@@ -8,7 +8,15 @@ import { cn } from "@/lib/utils";
  */
 
 export type IllustrationScene =
-  "content" | "media" | "success" | "connect" | "activity" | "calendar";
+  | "content"
+  | "media"
+  | "success"
+  | "connect"
+  | "activity"
+  | "calendar"
+  | "search"
+  | "structure"
+  | "people";
 
 const HATCH = "klipt-illustration-hatch";
 
@@ -23,6 +31,7 @@ export function Illustration({
     <svg
       viewBox="0 0 160 112"
       aria-hidden
+      data-illustration={scene}
       className={cn("visual-rise h-24 w-auto shrink-0", className)}
       fill="none"
     >
@@ -174,6 +183,45 @@ const SCENES: Record<IllustrationScene, React.ReactNode> = {
           />
         )),
       )}
+    </>
+  ),
+  search: (
+    <>
+      <circle cx="80" cy="56" r="50" className="fill-primary-soft" />
+      <rect x="30" y="30" width="70" height="56" rx="12" fill={`url(#${HATCH})`} />
+      <rect x="44" y="22" width="70" height="56" rx="12" className={card} strokeWidth="1.5" />
+      <rect x="54" y="34" width="30" height="5" rx="2.5" className="fill-foreground/80" />
+      <rect x="54" y="46" width="44" height="4" rx="2" className={line} />
+      <rect x="54" y="56" width="36" height="4" rx="2" className={line} />
+      <circle cx="108" cy="78" r="16" className="fill-card stroke-foreground/80" strokeWidth="5" />
+      <path d="M120 90l12 12" strokeWidth="6" strokeLinecap="round" className="stroke-primary" />
+    </>
+  ),
+  structure: (
+    <>
+      <circle cx="80" cy="56" r="50" className="fill-primary-soft" />
+      <path
+        d="M80 38v14M52 52h56M52 52v12M108 52v12M80 52v12"
+        strokeWidth="2"
+        strokeLinecap="round"
+        className="stroke-foreground/40"
+      />
+      <rect x="62" y="16" width="36" height="22" rx="7" className="fill-primary" />
+      <rect x="34" y="64" width="36" height="22" rx="7" className={card} strokeWidth="1.5" />
+      <rect x="62" y="64" width="36" height="22" rx="7" fill={`url(#${HATCH})`} />
+      <rect x="90" y="64" width="36" height="22" rx="7" className={card} strokeWidth="1.5" />
+      <rect x="42" y="73" width="20" height="4" rx="2" className="fill-foreground/70" />
+      <rect x="98" y="73" width="20" height="4" rx="2" className="fill-foreground/70" />
+    </>
+  ),
+  people: (
+    <>
+      <circle cx="80" cy="56" r="50" className="fill-primary-soft" />
+      <circle cx="56" cy="50" r="18" fill={`url(#${HATCH})`} />
+      <circle cx="104" cy="50" r="18" className={card} strokeWidth="1.5" />
+      <circle cx="80" cy="44" r="14" className="fill-primary" />
+      <path d="M58 92a22 22 0 0144 0z" className="fill-foreground/80" />
+      <circle cx="104" cy="46" r="6" className="fill-muted" />
     </>
   ),
 };

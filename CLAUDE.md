@@ -114,6 +114,10 @@ before creating or changing any screen.
   `--tooltip`, motion `--duration-*`/`--motion-ease`) live in `globals.css`; motion ≤ 400ms and off
   under reduced motion. Buttons on data screens use `variant="ink"`/`"soft"` pills; purple stays the
   data highlight. Pure helpers (number parts, axis ticks, smooth paths) are in `src/lib/visual.ts`.
+  Lists and work screens use `TableCard` (+ `TABLE_HEAD`/`TABLE_BODY`/`TABLE_ROW`), `FilterPills` for
+  URL filters, `LinkCard`/`CardArrow` for card grids of links (`data-card-grid`), `EmptyState scene=…`,
+  and `SettingsCard`/`SettingsSection` with an `icon`. `Badge` is a tinted pill (`info`, `accent`,
+  `danger` too). Sticky side panels are exempt from equal-height rows (`data-sticky-panel`).
 - Team (`src/server/team.ts`): invitations are shareable links (token hashed for lookup, encrypted so
   managers can copy it again; 7 days; must be accepted by an account with the invited email). Only
   the owner grants Admin or manages admins; nobody changes the owner (that's ownership transfer).

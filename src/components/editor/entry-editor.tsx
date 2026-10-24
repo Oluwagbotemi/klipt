@@ -20,6 +20,8 @@ import { UrlPanel } from "@/components/editor/url-panel";
 import { WorkflowControls } from "@/components/editor/workflow-controls";
 import { Breadcrumbs } from "@/components/shell/breadcrumbs";
 import { Button } from "@/components/ui/button";
+import { VisualNested } from "@/components/visual/card";
+import { KeyValueList } from "@/components/visual/key-value-list";
 import type { Assignee, AssignmentState } from "@/lib/assignments";
 import {
   canEditEntry,
@@ -542,14 +544,20 @@ export function EntryEditor({
             schemaType={doc.schemaType}
             modelName={entry.modelName}
           />
-          <dl className="text-muted-foreground grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 px-1 pt-1 text-xs">
-            <dt>Author</dt>
-            <dd className="text-foreground">{entry.authorName ?? "Former member"}</dd>
-            <dt>Created</dt>
-            <dd>{formatDate(entry.createdAt)}</dd>
-            <dt>First published</dt>
-            <dd>{state.publishedAt ? formatDate(state.publishedAt) : "Not yet"}</dd>
-          </dl>
+          <VisualNested className="px-4 py-3">
+            <KeyValueList
+              className="gap-2 text-xs"
+              items={[
+                { key: "author", label: "Author", value: entry.authorName ?? "Former member" },
+                { key: "created", label: "Created", value: formatDate(entry.createdAt) },
+                {
+                  key: "published",
+                  label: "First published",
+                  value: state.publishedAt ? formatDate(state.publishedAt) : "Not yet",
+                },
+              ]}
+            />
+          </VisualNested>
         </aside>
       </div>
     </div>

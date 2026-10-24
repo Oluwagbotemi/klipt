@@ -36,6 +36,21 @@ Use shadcn/ui where appropriate: Button, Input, Textarea, Select, Checkbox, Swit
 - `HeroCard` + `heroActionClass()` (the one dark highlight card per screen),
   `Illustration` (geometric empty/success scenes), `Celebrate` (milestone confetti).
 - Buttons on data screens: `variant="ink"` (main) and `variant="soft"` (secondary), both pills.
+- Lists and work screens (phase 2):
+  - `TableCard` (bordered card that clips a table or a `<ul>` of rows) with `TABLE_HEAD` (grey header
+    band), `TABLE_BODY` (light dividers) and `TABLE_ROW` (soft row hover). Dense: tables are tools.
+  - `FilterPills` (URL filters as a grey pill track; the current option is a raised white bordered
+    pill with an accent count; optional status dots; scrolls sideways on phones).
+  - `LinkCard` + `CardArrow`: a whole card that is one link (sites, content types), `h-full` flex
+    column with an optional footer on the bottom edge; use in `data-card-grid` grids so rows match.
+  - `EmptyState` takes `scene` (an `Illustration`); without it the icon sits on the same geometric
+    composition. `SettingsCard` (settings-style pages) and the editor's `SettingsSection` take an
+    `icon` for their `IconTile`.
+  - `Badge` is a tinted pill: `secondary`, `outline`, `success`, `warning`, `danger`/`destructive`,
+    `info`, `accent`. Content status: draft grey, in review amber, scheduled blue, published green.
+  - `ToggleGroup` is a pill segmented control like `PillTabs`.
+  - A sticky side panel (an editor preview) is exempt from equal-height rows; mark it
+    `data-sticky-panel`.
 
 Charts take precomputed strings (`valueText`) rather than formatter functions, so Server Components
 can render them.

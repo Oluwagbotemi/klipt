@@ -15,6 +15,7 @@ import {
   Globe,
   IndentDecrease,
   IndentIncrease,
+  Link2,
   Loader2,
   Pencil,
   Plus,
@@ -255,6 +256,7 @@ export function MenuEditor({
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <SettingsCard
           title="Links"
+          icon={Link2}
           description={`Up to ${MAX_MENU_DEPTH} levels: top-level links and one level of links under them. Use the arrow and indent buttons to arrange them.`}
         >
           <div className="flex flex-col gap-4">
@@ -289,12 +291,15 @@ export function MenuEditor({
             )}
 
             {items.length === 0 ? (
-              <p className="text-muted-foreground rounded-xl border border-dashed px-4 py-6 text-center text-sm">
+              <p className="text-muted-foreground border-card-border bg-card-nested rounded-(--radius-nested) border border-dashed px-4 py-6 text-center text-sm">
                 This menu is empty.
                 {canManage && " Add links to pages, posts or other websites."}
               </p>
             ) : (
-              <ol className="divide-y rounded-xl border" aria-label={`${menu.name} links`}>
+              <ol
+                className="border-card-border divide-card-border divide-y rounded-(--radius-nested) border"
+                aria-label={`${menu.name} links`}
+              >
                 {items.map((item, index) => (
                   <ItemRow
                     key={item.id}
@@ -589,7 +594,8 @@ function MenuPreview({
   return (
     <section
       aria-labelledby="menu-preview"
-      className="bg-card flex flex-col gap-3 rounded-2xl border p-5 lg:sticky lg:top-20"
+      data-sticky-panel
+      className="visual-card flex flex-col gap-3 p-5 lg:sticky lg:top-20"
     >
       <div>
         <h2 id="menu-preview" className="text-base font-semibold">

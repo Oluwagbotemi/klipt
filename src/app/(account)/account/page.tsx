@@ -1,3 +1,4 @@
+import { Bell, Mail, Palette, Trash2, UserRound } from "lucide-react";
 import type { Metadata } from "next";
 import { EmailForm, NameForm } from "@/components/account/account-forms";
 import { AppearancePicker } from "@/components/account/appearance-picker";
@@ -20,7 +21,7 @@ export default async function ProfilePage() {
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-6 sm:px-8">
-      <SettingsCard title="Profile">
+      <SettingsCard title="Profile" icon={UserRound}>
         <div className="flex flex-col gap-5">
           <div className="flex min-w-0 items-center gap-3">
             <Avatar className="size-12 text-base">
@@ -36,6 +37,7 @@ export default async function ProfilePage() {
       </SettingsCard>
       <SettingsCard
         title="Email"
+        icon={Mail}
         description={
           email.emailEnabled
             ? "Changes take effect right away: sign in with the new email from then on. We'll send a confirmation link to the new address and let the old one know."
@@ -48,14 +50,18 @@ export default async function ProfilePage() {
         </div>
       </SettingsCard>
       {email.emailEnabled && (
-        <SettingsCard title="Email notifications" description={`Emails go to ${user.email}.`}>
+        <SettingsCard
+          title="Email notifications"
+          description={`Emails go to ${user.email}.`}
+          icon={Bell}
+        >
           <NotificationsForm assignments={email.assignmentEmails} />
         </SettingsCard>
       )}
-      <SettingsCard title="Appearance" description="Applies to this browser.">
+      <SettingsCard title="Appearance" description="Applies to this browser." icon={Palette}>
         <AppearancePicker />
       </SettingsCard>
-      <SettingsCard title="Delete account" tone="danger">
+      <SettingsCard title="Delete account" tone="danger" icon={Trash2}>
         <DeleteAccount email={user.email} ownedSites={ownedSites} />
       </SettingsCard>
     </div>

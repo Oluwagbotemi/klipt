@@ -24,7 +24,10 @@ import { siteHref } from "@/lib/navigation";
 
 function OwnedSitesList({ sites }: { sites: OwnedSite[] }) {
   return (
-    <ul className="divide-y rounded-xl border" aria-label="Sites you own">
+    <ul
+      className="border-card-border divide-card-border divide-y rounded-(--radius-nested) border"
+      aria-label="Sites you own"
+    >
       {sites.map((site) => (
         <li key={site.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
           <p className="flex min-w-0 flex-1 basis-40 items-center gap-2 text-sm font-medium">

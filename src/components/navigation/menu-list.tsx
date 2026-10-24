@@ -2,7 +2,7 @@
 
 import { useActionState, useState, useTransition } from "react";
 import Link from "next/link";
-import { AlertTriangle, ChevronRight, ListTree, Loader2, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, ListTree, Loader2, Plus, Trash2 } from "lucide-react";
 import {
   createMenuAction,
   deleteMenuAction,
@@ -24,6 +24,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CardArrow, IconTile } from "@/components/visual/card";
+import { Illustration } from "@/components/visual/illustration";
+import { TABLE_BODY, TABLE_ROW, TableCard } from "@/components/visual/table-card";
 import {
   Dialog,
   DialogBody,
@@ -38,6 +41,7 @@ import {
 import { formatDateTime } from "@/lib/format";
 import { MAX_CUSTOM_MENUS, type MenuSummary } from "@/lib/menus";
 import { keyFromLabel } from "@/lib/models";
+import { cn } from "@/lib/utils";
 import { siteHref } from "@/lib/navigation";
 
 const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
@@ -95,24 +99,24 @@ export function MenuList({
       ) : (
         <section
           aria-labelledby="custom-menus-empty"
-          className="flex flex-col items-start gap-3 rounded-2xl border border-dashed p-5"
+          className="border-card-border flex flex-col items-start gap-4 rounded-(--radius-card) border border-dashed p-5 sm:flex-row sm:items-center sm:p-6"
         >
-          <span className="bg-muted grid size-10 place-items-center rounded-xl" aria-hidden>
-            <ListTree className="text-muted-foreground size-5" />
-          </span>
-          <div>
-            <h2 id="custom-menus-empty" className="text-base font-semibold">
-              No custom menus yet
-            </h2>
-            <p className="text-muted-foreground text-sm">
-              Add one for other link lists, such as a sidebar, legal links or social profiles.
-            </p>
+          <Illustration scene="structure" className="h-20" />
+          <div className="flex flex-1 flex-col items-start gap-3">
+            <div>
+              <h2 id="custom-menus-empty" className="text-base font-semibold">
+                No custom menus yet
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                Add one for other link lists, such as a sidebar, legal links or social profiles.
+              </p>
+            </div>
+            {canManage && (
+              <Button variant="soft" onClick={() => setCreating(true)}>
+                <Plus aria-hidden /> New menu
+              </Button>
+            )}
           </div>
-          {canManage && (
-            <Button variant="outline" onClick={() => setCreating(true)}>
-              <Plus aria-hidden /> New menu
-            </Button>
-          )}
         </section>
       )}
       {canManage && atLimit && (
@@ -181,16 +185,14 @@ function MenuGroup({
       <h2 id={id} className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
         {title}
       </h2>
-      <ul className="bg-card divide-y rounded-2xl border">
+      <TableCard as="ul" className={TABLE_BODY}>
         {menus.map((menu) => (
-          <li key={menu.id} className="flex items-center first:rounded-t-2xl last:rounded-b-2xl">
+          <li key={menu.id} className={cn(TABLE_ROW, "group flex items-center")}>
             <Link
               href={`${siteHref(siteId, "navigation")}/${menu.key}`}
-              className="hover:bg-accent/50 focus-visible:ring-ring/50 flex min-w-0 flex-1 items-center gap-4 px-4 py-3 outline-none focus-visible:ring-[3px] focus-visible:ring-inset sm:px-5"
+              className="focus-visible:ring-ring/50 flex min-w-0 flex-1 items-center gap-4 px-4 py-3.5 outline-none focus-visible:ring-[3px] focus-visible:ring-inset sm:px-5"
             >
-              <span className="bg-primary/10 text-primary grid size-10 shrink-0 place-items-center rounded-xl">
-                <ListTree className="size-5" aria-hidden />
-              </span>
+              <IconTile icon={ListTree} tone={menu.itemCount === 0 ? "neutral" : "accent"} />
               <span className="min-w-0 flex-1">
                 <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                   <span className="font-medium break-words">{menu.name}</span>
@@ -208,7 +210,7 @@ function MenuGroup({
                     : `${count(menu.itemCount, "link", "links")} · saved ${formatDateTime(menu.updatedAt)}`}
                 </span>
               </span>
-              <ChevronRight className="text-muted-foreground size-4 shrink-0" aria-hidden />
+              <CardArrow />
             </Link>
             {onDelete && (
               <div className="pr-2 sm:pr-3">
@@ -225,7 +227,7 @@ function MenuGroup({
             )}
           </li>
         ))}
-      </ul>
+      </TableCard>
     </section>
   );
 }
