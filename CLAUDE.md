@@ -125,6 +125,13 @@ before creating or changing any screen.
   right two-thirds capped at `max-w-xl`, from `lg`; `layout="stacked"` for lists and editors). Grids may
   add columns at `xl`/`2xl`; equal-height rows still apply. SEO/Performance/Team/Settings extras live in
   `src/components/insights/parts.tsx` (`EmptyCard`, `NothingYetBar`, `AvatarStack`, `CardNote`).
+- Stageshow (`.claude/skills/stageshow/`, MIT, copied from benjitaylor/skills at 299140f): only for
+  marketing illustrations of Klipt (landing-page heroes, feature cards, cursor demos, what's-new
+  animations). Never use it for Klipt's own app screens, which follow `cms-interface-design`; where
+  the two disagree (purple, bordered cards), Klipt's guide wins inside the app. Copy its `kit/` next to
+  the illustration that uses it, never into `src/components/ui` or `src/components/visual`. Its
+  playground and filming scripts run from its own folder (`npm install` there); they are not Klipt
+  dependencies. `.claude/` is excluded from Klipt's lint, typecheck and Prettier.
 - Team (`src/server/team.ts`): invitations are shareable links (token hashed for lookup, encrypted so
   managers can copy it again; 7 days; must be accepted by an account with the invited email). Only
   the owner grants Admin or manages admins; nobody changes the owner (that's ownership transfer).
