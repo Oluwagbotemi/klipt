@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { CopyButton } from "@/components/copy-button";
 import { PermissionDenied } from "@/components/permission-denied";
-import { Fingerprint, Settings2 } from "lucide-react";
+import { Fingerprint, Palette, Settings2 } from "lucide-react";
+import { BrandSettings } from "@/components/settings/brand-settings";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { GeneralForm } from "@/components/settings/settings-forms";
-import { getSiteSettings } from "@/lib/data/settings";
+import { getSiteBranding, getSiteSettings } from "@/lib/data/settings";
 import { getSite } from "@/lib/data/sites";
 import { siteHref } from "@/lib/navigation";
 import { can } from "@/lib/permissions";
@@ -21,7 +22,10 @@ export default async function GeneralSettingsPage({
       <PermissionDenied area="Settings" role={site.currentUserRole} backHref={siteHref(site.id)} />
     );
   }
-  const settings = await getSiteSettings(site.id);
+  const [settings, branding] = await Promise.all([
+    getSiteSettings(site.id),
+    getSiteBranding(site.id),
+  ]);
   const timeZones = Intl.supportedValuesOf("timeZone");
   if (!timeZones.includes(settings.timezone)) timeZones.unshift(settings.timezone);
 
@@ -41,6 +45,18 @@ export default async function GeneralSettingsPage({
             />
           </SettingsCard>
         </div>
+        <SettingsCard
+          title="Brand"
+          description="Your logo and favicon. They show on the site's tile in Klipt, and your website can use them through the content API."
+          icon={Palette}
+        >
+          <BrandSettings
+            siteId={site.id}
+            siteName={site.name}
+            initial={branding}
+            canUpload={can(site.currentUserRole, "media.upload")}
+          />
+        </SettingsCard>
         <SettingsCard
           title="Site ID"
           description="Identifies this site in support requests and integrations."

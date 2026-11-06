@@ -33,6 +33,9 @@ export interface SiteSummary {
   currentUserRole: SiteRole;
   updatedAt: string; // ISO 8601
   pendingTransfer: PendingOwnershipTransfer | null;
+  /** Image URLs from Settings › General › Brand, for the site's avatar (null: initials). */
+  logoUrl: string | null;
+  faviconUrl: string | null;
 }
 
 export const ROLE_LABELS: Record<SiteRole, string> = {

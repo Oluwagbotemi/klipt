@@ -140,6 +140,12 @@ before creating or changing any screen.
   recipient accepts; acceptance demotes or removes the old owner and promotes the new one in one
   transaction. Archived sites vanish for everyone (getSiteRole ignores them) except the owner's
   Archived sites list. SEO defaults (title template, default OG image) feed the content API.
+  Branding (`src/server/branding.ts`, rules in `src/lib/branding.ts`): `sites.logo_media_id` and
+  `sites.favicon_media_id` link media library images (set null when the file is deleted; removing
+  only unlinks). `setBrandImage` needs `site.update` and checks the stored type and size
+  (`brandImageError`: favicon PNG/WebP ≥ 48px). `SiteSummary.logoUrl`/`faviconUrl` feed `SiteAvatar`
+  (favicon on small tiles, logo on large); `GET /api/v1/site` returns `logo`/`favicon` with absolute
+  URLs; the media library lists them under "Used in" (`brandUses`). No webhook event for changes yet.
 - Content models (`src/server/models.ts`, rules in `src/lib/models.ts`): field definitions live in
   `content_models.fields`, values in `content_entries.data[fieldKey]` beside `body`. Field keys and types
   never change after creation (removing a field keeps stored values, unseen). `saveEntry` validates

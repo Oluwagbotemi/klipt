@@ -128,7 +128,13 @@ function SiteCard({ site }: { site: SiteSummary }) {
     <article className="group visual-card visual-lift focus-within:border-ring relative flex h-full flex-col">
       <div className="flex flex-1 flex-col gap-4 p-5">
         <div className="flex items-start gap-3">
-          <SiteAvatar name={site.name} className="size-11 rounded-xl text-sm" />
+          <SiteAvatar
+            name={site.name}
+            logoUrl={site.logoUrl}
+            faviconUrl={site.faviconUrl}
+            prefer="logo"
+            className="size-11 rounded-xl text-sm"
+          />
           <div className="min-w-0 flex-1">
             <h2 className="truncate font-semibold">
               <Link
@@ -182,7 +188,7 @@ function SiteList({ sites }: { sites: SiteSummary[] }) {
             className="group focus-within:bg-card-nested/60 hover:bg-card-nested/60 relative grid grid-cols-[minmax(0,1fr)_1rem] items-center gap-x-4 gap-y-2 px-4 py-3 transition-colors md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_minmax(0,1fr)_7rem_1rem]"
           >
             <div className="flex min-w-0 items-center gap-3">
-              <SiteAvatar name={site.name} />
+              <SiteAvatar name={site.name} logoUrl={site.logoUrl} faviconUrl={site.faviconUrl} />
               <div className="min-w-0">
                 <Link
                   href={siteHref(site.id)}

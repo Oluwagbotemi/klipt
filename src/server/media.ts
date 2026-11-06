@@ -16,6 +16,7 @@ import {
 import type { DbOrTx } from "@/server/db";
 import { auditEvents, contentEntries, contentModels, mediaAssets, users } from "@/server/db/schema";
 import { NotAllowedError } from "@/server/errors";
+import { brandUsesOf } from "@/server/branding";
 import { identifyFile } from "@/server/file-type";
 import { getSiteRole } from "@/server/sites";
 import type { Storage } from "@/server/storage";
@@ -32,6 +33,7 @@ import {
   type MediaListParams,
   type MediaUsage,
 } from "@/lib/media";
+import type { BrandSlot } from "@/lib/branding";
 import { can } from "@/lib/permissions";
 
 /*
@@ -180,7 +182,7 @@ export async function getMediaAsset(
   userId: string,
   siteId: string,
   assetId: string,
-): Promise<(MediaAssetSummary & { usage: MediaUsage[] }) | null> {
+): Promise<(MediaAssetSummary & { usage: MediaUsage[]; brandUses: BrandSlot[] }) | null> {
   await requireRole(db, userId, siteId);
   const [row] = await db
     .select(summaryColumns)
@@ -189,8 +191,11 @@ export async function getMediaAsset(
     .where(and(eq(mediaAssets.siteId, siteId), eq(mediaAssets.id, assetId)))
     .limit(1);
   if (!row) return null;
-  const usage = await usageOf(db, siteId, [row]);
-  return { ...toSummary(row), usage: usage.get(row.id) ?? [] };
+  const [usage, brand] = await Promise.all([
+    usageOf(db, siteId, [row]),
+    brandUsesOf(db, siteId, [row.id]),
+  ]);
+  return { ...toSummary(row), usage: usage.get(row.id) ?? [], brandUses: brand.get(row.id) ?? [] };
 }
 
 /** "Harbour Seals (1).JPG" → "harbour-seals-1.jpg", with the extension of the real type. */

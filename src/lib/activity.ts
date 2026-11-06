@@ -267,6 +267,10 @@ export function describeActivity(
         null,
         str(meta.to) ? `to ${meta.to}` : null,
       );
+    case "site.logo_changed":
+      return say(meta.removed ? "removed the site logo" : "changed the site logo");
+    case "site.favicon_changed":
+      return say(meta.removed ? "removed the favicon" : "changed the favicon");
     case "site.archived":
       return say("archived the site");
     case "site.restored":

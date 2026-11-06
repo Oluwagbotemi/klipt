@@ -33,7 +33,7 @@ curl "https://klipt.example.com/api/v1/entries?type=post" \
 
 | Request                          | Returns                                                                                            |
 | -------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `GET /site`                      | Site name, domain, URL, language, timezone and `allowIndexing`                                     |
+| `GET /site`                      | Site name, domain, URL, language, timezone, `allowIndexing`, `logo` and `favicon`                  |
 | `GET /entries`                   | Published entries, newest first. Query: `type`, `page`, `limit` (≤ 100), `category`, `tag`, `term` |
 | `GET /entries/{type}/{slug}`     | One published entry with its body and SEO                                                          |
 | `GET /taxonomies/{key}`          | A taxonomy's terms with published-entry counts (a tree when nested)                                |
@@ -244,6 +244,73 @@ Errors use `{ "error": { "code": "…", "message": "…" } }` with status `400` 
 
 Responses are sent with `Cache-Control: private, no-store`. Cache on your side, and use
 [webhooks](#4-webhooks) to refresh as soon as something changes.
+
+### Logo and favicon
+
+`GET /site` includes the logo and favicon set under Settings › General › Brand, each as
+`{ "url", "width", "height", "alt" }` with an absolute URL, or `null` when none is set:
+
+```json
+{
+  "data": {
+    "name": "Northwind Journal",
+    "logo": {
+      "url": "https://…/logo.png",
+      "width": 800,
+      "height": 200,
+      "alt": "Northwind Journal"
+    },
+    "favicon": { "url": "https://…/icon.png", "width": 512, "height": 512, "alt": "" }
+  }
+}
+```
+
+The favicon is a square PNG or WebP of at least 48 × 48 pixels (512 × 512 is best). In Next.js,
+use it for the browser tab and the logo in your header:
+
+```tsx
+// lib/site.ts: the helper is defined in section 3
+import { klipt } from "@/lib/klipt";
+
+type Image = { url: string; width: number | null; height: number | null; alt: string };
+type Site = {
+  name: string;
+  titleTemplate: string | null;
+  logo: Image | null;
+  favicon: Image | null;
+};
+
+export async function getSite() {
+  return (await klipt<{ data: Site }>("/site"))!.data;
+}
+
+// app/layout.tsx
+import type { Metadata } from "next";
+import { getSite } from "@/lib/site";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const site = await getSite();
+  return {
+    title: { default: site.name, template: site.titleTemplate ?? "%s" },
+    icons: site.favicon ? { icon: site.favicon.url, apple: site.favicon.url } : undefined,
+  };
+}
+
+// components/header.tsx
+import { getSite } from "@/lib/site";
+
+export async function Header() {
+  const site = await getSite();
+  if (!site.logo) return <span>{site.name}</span>;
+  const { url, alt, width, height } = site.logo;
+  return (
+    <img src={url} alt={alt || site.name} width={width ?? undefined} height={height ?? undefined} />
+  );
+}
+```
+
+Changing the logo or favicon doesn't send a webhook yet, so refresh `/site` on your usual
+schedule (or redeploy) after a change.
 
 ### Menus
 

@@ -10,6 +10,7 @@ import {
   sites,
   users,
 } from "@/server/db/schema";
+import { brandingForSites } from "@/server/branding";
 import { SYSTEM_TAXONOMIES } from "@/lib/taxonomy";
 import type { SiteRole, SiteSummary } from "@/lib/types";
 import type { CreateSiteInput } from "@/lib/validation/site";
@@ -33,7 +34,7 @@ async function toSummaries(
   if (rows.length === 0) return [];
   const siteIds = rows.map((row) => row.site.id);
 
-  const [owners, pending] = await Promise.all([
+  const [owners, pending, branding] = await Promise.all([
     db
       .select({ siteId: siteMembers.siteId, id: users.id, name: users.name, email: users.email })
       .from(siteMembers)
@@ -48,6 +49,7 @@ async function toSummaries(
           eq(siteOwnershipTransfers.status, "pending"),
         ),
       ),
+    brandingForSites(db, siteIds),
   ]);
 
   const ownerBySite = new Map(owners.map((o) => [o.siteId, o]));
@@ -75,6 +77,8 @@ async function toSummaries(
                 initiatedAt: transfer.createdAt.toISOString(),
               }
             : null,
+        logoUrl: branding.get(site.id)?.logo?.url ?? null,
+        faviconUrl: branding.get(site.id)?.favicon?.url ?? null,
       },
     ];
   });

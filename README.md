@@ -80,7 +80,7 @@ Team: members and roles, invitations by email and as shareable links, a Roles & 
 
 SEO: recommendations for live pages (descriptions, titles, duplicates, thin content, alt text, broken links, noindex), internal links (broken links, pages nothing links to), a redirects manager that keeps redirects one hop, the sitemap with reasons pages are left out, and a site-wide search visibility switch.
 
-Settings: general (name, language, time zone), your website's domain, SEO defaults (title template, default sharing image), ownership transfer (password-confirmed, accepted by the new owner via a link), and the danger zone (archive and restore, or delete with password and name confirmation).
+Settings: general (name, language, time zone, and a brand section for the site logo and favicon, shown on the site's tile in Klipt and returned by the content API), your website's domain, SEO defaults (title template, default sharing image), ownership transfer (password-confirmed, accepted by the new owner via a link), and the danger zone (archive and restore, or delete with password and name confirmation).
 
 Content models: custom content types (e.g. Product) and extra fields on any type (text, long text, number, date, yes/no, dropdown, image, link to content), with required fields checked on publish. Entries of custom types live under Content › Collections, and the content API returns every entry's `fields` with images and published links resolved.
 

@@ -39,6 +39,7 @@ import {
   type MediaSort,
   type MediaUsage,
 } from "@/lib/media";
+import type { BrandSlot } from "@/lib/branding";
 import { can } from "@/lib/permissions";
 import type { SiteRole } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -78,7 +79,7 @@ export function MediaLibrary({
   userId: string;
   list: MediaList;
   params: MediaListParams;
-  selected: (MediaAssetSummary & { usage: MediaUsage[] }) | null;
+  selected: (MediaAssetSummary & { usage: MediaUsage[]; brandUses?: BrandSlot[] }) | null;
 }) {
   const pathname = usePathname();
   const router = useRouter();

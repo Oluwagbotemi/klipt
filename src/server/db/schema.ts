@@ -136,6 +136,13 @@ export const sites = pgTable(
     requireReview: boolean("require_review").notNull().default(false),
     /** Content type key the "New" buttons offer first; null means posts. */
     defaultModelKey: text("default_model_key"),
+    /** Settings › General › Brand: media library images (see src/server/branding.ts). */
+    logoMediaId: text("logo_media_id").references((): AnyPgColumn => mediaAssets.id, {
+      onDelete: "set null",
+    }),
+    faviconMediaId: text("favicon_media_id").references((): AnyPgColumn => mediaAssets.id, {
+      onDelete: "set null",
+    }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
     archivedAt: timestamp("archived_at", { withTimezone: true }),

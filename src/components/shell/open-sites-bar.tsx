@@ -26,6 +26,8 @@ export interface BarSite {
   id: string;
   name: string;
   domain: string | null;
+  logoUrl?: string | null;
+  faviconUrl?: string | null;
 }
 
 const SITE_PATH = /^\/sites\/([^/]+)\/.+/;
@@ -133,7 +135,12 @@ export function OpenSitesBar({
                     title={site.domain ?? site.name}
                     className="focus-visible:ring-ring/50 flex h-full items-center gap-2 rounded-lg pr-1 pl-2 text-sm outline-none focus-visible:ring-[3px]"
                   >
-                    <SiteAvatar name={site.name} className="size-5 rounded text-[0.5625rem]" />
+                    <SiteAvatar
+                      name={site.name}
+                      logoUrl={site.logoUrl}
+                      faviconUrl={site.faviconUrl}
+                      className="size-5 rounded text-[0.5625rem]"
+                    />
                     <span className={cn("max-w-40 truncate", active && "font-medium")}>
                       {site.name}
                     </span>
@@ -172,7 +179,12 @@ export function OpenSitesBar({
                 {closedSites.map((site) => (
                   <DropdownMenuItem key={site.id} asChild>
                     <Link href={siteHref(site.id)}>
-                      <SiteAvatar name={site.name} className="size-7 rounded-md text-[0.625rem]" />
+                      <SiteAvatar
+                        name={site.name}
+                        logoUrl={site.logoUrl}
+                        faviconUrl={site.faviconUrl}
+                        className="size-7 rounded-md text-[0.625rem]"
+                      />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate">{site.name}</span>
                         <span className="text-muted-foreground block truncate text-xs">

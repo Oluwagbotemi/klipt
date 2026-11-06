@@ -14,7 +14,9 @@ import {
   type ContentFieldDefinition,
 } from "@/server/db/schema";
 import { publishDueEntries } from "@/server/editor";
+import { getSiteBranding } from "@/server/branding";
 import { absoluteMediaUrl, resolveMediaInDoc } from "@/server/media-render";
+import type { BrandImage } from "@/lib/branding";
 import { verifyPreviewToken } from "@/server/previews";
 import {
   docToText,
@@ -365,6 +367,31 @@ async function defaultOgImage(db: DbOrTx, site: DeliverySite) {
     .where(and(eq(mediaAssets.siteId, site.id), eq(mediaAssets.id, site.defaultOgImageId)))
     .limit(1);
   return image ? { ...image, url: absoluteMediaUrl(image.url), alt: image.alt ?? "" } : null;
+}
+
+export interface DeliveryImage {
+  url: string;
+  width: number | null;
+  height: number | null;
+  alt: string;
+}
+
+/** The site's logo and favicon (Settings › General › Brand), with absolute URLs. */
+export async function getDeliveryBranding(
+  db: DbOrTx,
+  site: DeliverySite,
+): Promise<{ logo: DeliveryImage | null; favicon: DeliveryImage | null }> {
+  const branding = await getSiteBranding(db, site.id);
+  const toImage = (image: BrandImage | null): DeliveryImage | null =>
+    image
+      ? {
+          url: absoluteMediaUrl(image.url),
+          width: image.width,
+          height: image.height,
+          alt: image.altText ?? "",
+        }
+      : null;
+  return { logo: toImage(branding.logo), favicon: toImage(branding.favicon) };
 }
 
 async function toEntry(db: DbOrTx, row: EntryRow, site: DeliverySite): Promise<DeliveryEntry> {

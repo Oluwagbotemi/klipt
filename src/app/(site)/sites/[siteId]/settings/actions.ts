@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { BrandImageError, setBrandImage } from "@/server/branding";
 import { getDb } from "@/server/db";
 import { NotAllowedError } from "@/server/errors";
 import {
@@ -28,6 +29,7 @@ import { isEmailEnabled, sendLater } from "@/lib/data/email";
 import { verifyCurrentPassword } from "@/lib/data/session";
 import { transferUrl } from "@/lib/data/settings";
 import { ForbiddenError, requireSitePermission } from "@/lib/data/sites";
+import type { BrandSlot, SiteBranding } from "@/lib/branding";
 import { domainSchema, generalSettingsSchema, seoDefaultsSchema } from "@/lib/site-settings";
 
 /*
@@ -280,4 +282,38 @@ export async function deleteSiteAction(
     throw error;
   }
   redirect("/sites?deleted=1");
+}
+
+const brandInput = z.object({
+  siteId: id,
+  slot: z.enum(["logo", "favicon"]),
+  mediaId: id.nullable(),
+});
+
+/** Links (or, with null, unlinks) a media library image as the site's logo or favicon. */
+export async function setBrandImageAction(
+  siteId: string,
+  slot: BrandSlot,
+  mediaId: string | null,
+): Promise<{ ok: true; branding: SiteBranding } | { ok: false; error: string }> {
+  const parsed = brandInput.safeParse({ siteId, slot, mediaId });
+  if (!parsed.success) return { ok: false, error: "That image couldn't be used." };
+  try {
+    const { user } = await requireSitePermission(parsed.data.siteId, "site.update");
+    const branding = await setBrandImage(
+      await getDb(),
+      user.id,
+      parsed.data.siteId,
+      parsed.data.slot,
+      parsed.data.mediaId,
+    );
+    refresh();
+    return { ok: true, branding };
+  } catch (error) {
+    if (error instanceof ForbiddenError || error instanceof NotAllowedError) {
+      return { ok: false, error: NO_PERMISSION };
+    }
+    if (error instanceof BrandImageError) return { ok: false, error: error.message };
+    throw error;
+  }
 }
