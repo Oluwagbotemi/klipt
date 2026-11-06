@@ -79,6 +79,7 @@ export function EntryEditor({
   assignees = [],
   today,
   emailEnabled = false,
+  schedulerConnected = true,
 }: {
   siteId: string;
   siteName: string;
@@ -96,6 +97,8 @@ export function EntryEditor({
   today: string;
   /** Whether Klipt emails people about assignments and reviews. */
   emailEnabled?: boolean;
+  /** Whether a minute scheduler publishes scheduled entries on time (Settings › Publishing). */
+  schedulerConnected?: boolean;
 }) {
   const { entry } = doc;
   const [state, setState] = useState<EntryState>({
@@ -388,6 +391,7 @@ export function EntryEditor({
             suggestions={suggestions}
             emailEnabled={emailEnabled}
             reviewRequired={reviewRequired(role, doc.workflowRules) && can(role, "content.publish")}
+            schedulerConnected={schedulerConnected}
             onAction={runWorkflow}
           />
           <EntryActionsMenu

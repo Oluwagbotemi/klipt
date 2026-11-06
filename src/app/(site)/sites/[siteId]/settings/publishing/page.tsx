@@ -8,8 +8,11 @@ import {
 } from "@/components/settings/publishing-settings";
 import { Layers, Link2, Workflow } from "lucide-react";
 import { IconTile } from "@/components/visual/card";
+import { SchedulerStatusCard } from "@/components/settings/scheduler-status";
 import { SettingsCard } from "@/components/settings/settings-card";
+import { appOrigin } from "@/lib/data/email";
 import { getPublishingSettings } from "@/lib/data/publishing";
+import { getSchedulerStatus } from "@/lib/data/scheduler";
 import { getSite } from "@/lib/data/sites";
 import { siteHref } from "@/lib/navigation";
 import { can } from "@/lib/permissions";
@@ -30,7 +33,11 @@ export default async function PublishingPage({
       />
     );
   }
-  const settings = await getPublishingSettings(site.id);
+  const [settings, scheduler, origin] = await Promise.all([
+    getPublishingSettings(site.id),
+    getSchedulerStatus(site.id),
+    appOrigin(),
+  ]);
 
   return (
     <div className="flex w-full flex-col gap-4 px-4 py-6 sm:px-8">
@@ -41,6 +48,8 @@ export default async function PublishingPage({
       >
         <PublishingRulesForm siteId={site.id} settings={settings} />
       </SettingsCard>
+
+      <SchedulerStatusCard status={scheduler} endpoint={`${origin}/api/cron/publish`} />
 
       <SettingsCard
         icon={Link2}

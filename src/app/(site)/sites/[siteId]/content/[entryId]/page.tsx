@@ -4,6 +4,7 @@ import { isEmailEnabled } from "@/lib/data/email";
 import { getAssignees } from "@/lib/data/assignments";
 import { getEntryDocument } from "@/lib/data/content";
 import { getSitePreviewUrl } from "@/lib/data/previews";
+import { getSchedulerConnected } from "@/lib/data/scheduler";
 import { requireUser } from "@/lib/data/session";
 import { getSite } from "@/lib/data/sites";
 import { getEntryTaxonomies } from "@/lib/data/taxonomy";
@@ -20,14 +21,16 @@ export default async function EntryPage({
   params,
 }: PageProps<"/sites/[siteId]/content/[entryId]">) {
   const { siteId, entryId } = await params;
-  const [user, site, doc, previewUrl, taxonomies, { assignees, today }] = await Promise.all([
-    requireUser(),
-    getSite(siteId),
-    getEntryDocument(siteId, entryId),
-    getSitePreviewUrl(siteId),
-    getEntryTaxonomies(siteId, entryId),
-    getAssignees(siteId),
-  ]);
+  const [user, site, doc, previewUrl, taxonomies, { assignees, today }, schedulerConnected] =
+    await Promise.all([
+      requireUser(),
+      getSite(siteId),
+      getEntryDocument(siteId, entryId),
+      getSitePreviewUrl(siteId),
+      getEntryTaxonomies(siteId, entryId),
+      getAssignees(siteId),
+      getSchedulerConnected(siteId),
+    ]);
 
   return (
     <EntryEditor
@@ -43,6 +46,7 @@ export default async function EntryPage({
       assignees={assignees}
       today={today}
       emailEnabled={isEmailEnabled()}
+      schedulerConnected={schedulerConnected}
     />
   );
 }
