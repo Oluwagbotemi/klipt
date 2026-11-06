@@ -2,6 +2,7 @@ import "server-only";
 
 import { headers } from "next/headers";
 import { getDb } from "@/server/db";
+import * as branding from "@/server/branding";
 import * as ownership from "@/server/ownership";
 import * as settings from "@/server/site-settings";
 import { appOrigin } from "@/lib/data/email";
@@ -13,6 +14,11 @@ import { getSite } from "@/lib/data/sites";
 export async function getSiteSettings(siteId: string) {
   const [user] = await Promise.all([requireUser(), getSite(siteId)]);
   return settings.getSiteSettings(await getDb(), user.id, siteId);
+}
+
+export async function getSiteBranding(siteId: string) {
+  await Promise.all([requireUser(), getSite(siteId)]);
+  return branding.getSiteBranding(await getDb(), siteId);
 }
 
 export async function getOwnership(siteId: string) {

@@ -37,6 +37,7 @@ import {
   type MediaUsage,
 } from "@/lib/media";
 import { siteHref } from "@/lib/navigation";
+import { BRAND_LABELS, type BrandSlot } from "@/lib/branding";
 
 /** Side panel for one file: preview, alt text and caption, details, usage, delete. */
 export function MediaDetailsSheet({
@@ -46,7 +47,7 @@ export function MediaDetailsSheet({
   onClose,
 }: {
   siteId: string;
-  asset: (MediaAssetSummary & { usage: MediaUsage[] }) | null;
+  asset: (MediaAssetSummary & { usage: MediaUsage[]; brandUses?: BrandSlot[] }) | null;
   canManage: boolean;
   onClose: () => void;
 }) {
@@ -78,11 +79,12 @@ function Details({
   onClose,
 }: {
   siteId: string;
-  asset: MediaAssetSummary & { usage: MediaUsage[] };
+  asset: MediaAssetSummary & { usage: MediaUsage[]; brandUses?: BrandSlot[] };
   canManage: boolean;
   onClose: () => void;
 }) {
   const image = isImageType(asset.mimeType);
+  const brandUses = asset.brandUses ?? [];
   const [state, formAction, pending] = useActionState(saveMediaDetailsAction, {
     values: { altText: asset.altText ?? "", caption: asset.caption ?? "" },
   } satisfies MediaDetailsState);
@@ -231,8 +233,25 @@ function Details({
 
         <div className="border-t pt-4">
           <h3 className="text-sm font-medium">Used in</h3>
+          {brandUses.length > 0 && (
+            <ul className="mt-2 flex flex-col gap-1.5">
+              {brandUses.map((slot) => (
+                <li key={slot} className="flex items-center justify-between gap-3 text-sm">
+                  <Link
+                    href={siteHref(siteId, "settings")}
+                    className="text-primary min-w-0 truncate underline-offset-4 hover:underline"
+                  >
+                    {BRAND_LABELS[slot]}
+                  </Link>
+                  <span className="text-muted-foreground shrink-0 text-xs">Settings</span>
+                </li>
+              ))}
+            </ul>
+          )}
           {asset.usage.length === 0 ? (
-            <p className="text-muted-foreground mt-1 text-sm">Not used in any content yet.</p>
+            brandUses.length === 0 && (
+              <p className="text-muted-foreground mt-1 text-sm">Not used in any content yet.</p>
+            )
           ) : (
             <ul className="mt-2 flex flex-col gap-1.5">
               {asset.usage.map((entry) => (
@@ -277,6 +296,9 @@ function Details({
             <AlertDialogDescription>
               {asset.usage.length > 0
                 ? `It's used in ${asset.usage.length} ${asset.usage.length === 1 ? "entry" : "entries"}. The image will disappear from ${asset.usage.length === 1 ? "it" : "them"}, including any that are live. `
+                : ""}
+              {brandUses.length > 0
+                ? `It's the ${brandUses.map((slot) => BRAND_LABELS[slot].toLowerCase()).join(" and ")}; the site will go back to its initials. `
                 : ""}
               The file is removed permanently and its URL stops working. This can&apos;t be undone.
             </AlertDialogDescription>
