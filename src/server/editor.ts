@@ -1,6 +1,6 @@
 import { and, eq, lte, ne, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
-import { recordEntryEdit } from "@/server/activity";
+import { recordActivity, recordEntryEdit } from "@/server/activity";
 import type { DbOrTx } from "@/server/db";
 import {
   auditEvents,
@@ -8,6 +8,7 @@ import {
   contentModels,
   contentRevisions,
   redirects,
+  sites,
   users,
 } from "@/server/db/schema";
 import { NotAllowedError } from "@/server/errors";
@@ -56,12 +57,18 @@ export class EditorValidationError extends Error {
 const iso = (date: Date | null) => date?.toISOString() ?? null;
 const assignee = alias(users, "assignee");
 
+/** Name shown in Activity for entries Klipt publishes on their schedule. */
+export const SCHEDULER_ACTOR = "Klipt";
+
 /**
- * Publishes scheduled entries whose time has come. Runs before reads until a
- * background job does this; it only affects the given site.
+ * Publishes the site's scheduled entries whose time has come, keeping the
+ * scheduled time as `publishedAt`. Runs from the scheduler (`/api/cron/publish`),
+ * the daily cron and before reads, so it is safe to call any time and
+ * concurrently: the update re-checks `status = 'scheduled'` under its row locks,
+ * so each entry is promoted, logged and announced once. Returns the count.
  */
-export async function publishDueEntries(db: DbOrTx, siteId: string) {
-  await db.transaction(async (tx) => {
+export async function publishDueEntries(db: DbOrTx, siteId: string, now = new Date()) {
+  return db.transaction(async (tx) => {
     const promoted = await tx
       .update(contentEntries)
       .set({
@@ -73,7 +80,7 @@ export async function publishDueEntries(db: DbOrTx, siteId: string) {
         and(
           eq(contentEntries.siteId, siteId),
           eq(contentEntries.status, "scheduled"),
-          lte(contentEntries.scheduledAt, new Date()),
+          lte(contentEntries.scheduledAt, now),
         ),
       )
       .returning({
@@ -83,7 +90,7 @@ export async function publishDueEntries(db: DbOrTx, siteId: string) {
         modelId: contentEntries.modelId,
         publishedAt: contentEntries.publishedAt,
       });
-    if (promoted.length === 0) return;
+    if (promoted.length === 0) return 0;
     const models = await tx
       .select({ id: contentModels.id, key: contentModels.key })
       .from(contentModels)
@@ -94,20 +101,40 @@ export async function publishDueEntries(db: DbOrTx, siteId: string) {
         ...entry,
         modelKey: keyOf.get(entry.modelId) ?? "page",
       });
+      await recordActivity(tx, {
+        siteId,
+        actorId: null,
+        actorName: SCHEDULER_ACTOR,
+        action: "content.published",
+        targetType: "entry",
+        targetId: entry.id,
+        metadata: { title: entry.title, from: "scheduled" },
+      });
     }
+    return promoted.length;
   });
 }
 
-/** publishDueEntries for every site with something due (for the scheduled job). */
-export async function publishAllDueEntries(db: DbOrTx) {
+/**
+ * publishDueEntries for every site with something due. Finds those sites
+ * through the (site_id, status) index, one probe per site, so a run with
+ * nothing due stays cheap.
+ */
+export async function publishAllDueEntries(db: DbOrTx, now = new Date()) {
   const due = await db
     .selectDistinct({ siteId: contentEntries.siteId })
-    .from(contentEntries)
-    .where(
-      and(eq(contentEntries.status, "scheduled"), lte(contentEntries.scheduledAt, new Date())),
+    .from(sites)
+    .innerJoin(
+      contentEntries,
+      and(
+        eq(contentEntries.siteId, sites.id),
+        eq(contentEntries.status, "scheduled"),
+        lte(contentEntries.scheduledAt, now),
+      ),
     );
-  for (const { siteId } of due) await publishDueEntries(db, siteId);
-  return due.length;
+  let published = 0;
+  for (const { siteId } of due) published += await publishDueEntries(db, siteId, now);
+  return { sites: due.length, published };
 }
 
 export async function getEntryDocument(

@@ -51,6 +51,7 @@ export function WorkflowControls({
   suggestions,
   emailEnabled = false,
   reviewRequired = false,
+  schedulerConnected = true,
   onAction,
 }: {
   allowed: Record<WorkflowAction, boolean>;
@@ -60,6 +61,8 @@ export function WorkflowControls({
   emailEnabled?: boolean;
   /** A publisher on a site with "Require review" on (Settings › Publishing). */
   reviewRequired?: boolean;
+  /** False when no minute scheduler is running, so the schedule dialog says when it goes live. */
+  schedulerConnected?: boolean;
   onAction: (
     action: WorkflowAction,
     options?: { scheduledAt?: string; note?: string },
@@ -237,8 +240,19 @@ export function WorkflowControls({
                 onChange={(e) => setWhen(e.target.value)}
                 className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-10 rounded-lg border px-3 text-sm outline-none focus-visible:ring-[3px]"
                 aria-invalid={error ? true : undefined}
-                aria-describedby={error ? "schedule-error" : undefined}
+                aria-describedby={
+                  [error && "schedule-error", !schedulerConnected && "schedule-hint"]
+                    .filter(Boolean)
+                    .join(" ") || undefined
+                }
               />
+              {!schedulerConnected && (
+                <p id="schedule-hint" className="text-muted-foreground text-xs">
+                  It goes live the next time someone opens Klipt or your website asks for content,
+                  or at the daily check. Set up scheduled publishing in Settings › Publishing to go
+                  live within a minute of this time.
+                </p>
+              )}
               {error && (
                 <p id="schedule-error" className="text-destructive text-sm" role="alert">
                   {error}
