@@ -20,7 +20,13 @@ export async function AppTopBar({ siteId }: { siteId?: Promise<string> }) {
     siteId ? siteId.then(getSite) : null,
     siteId ? siteId.then(getCollectionTypes) : [],
   ]);
-  const barSites = sites.map(({ id, name, domain }) => ({ id, name, domain }));
+  const barSites = sites.map(({ id, name, domain, logoUrl, faviconUrl }) => ({
+    id,
+    name,
+    domain,
+    logoUrl,
+    faviconUrl,
+  }));
 
   return (
     <OpenSitesBar

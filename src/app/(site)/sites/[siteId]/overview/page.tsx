@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { ContentStatusBadge } from "@/components/content/status-badge";
 import { Greeting } from "@/components/overview/greeting";
+import { SiteAvatar } from "@/components/shell/site-avatar";
 import { PerformanceCard } from "@/components/overview/performance-card";
 import { PublishingCard } from "@/components/overview/publishing-card";
 import { HeroCreateButton, QuickActions } from "@/components/overview/quick-actions";
@@ -89,12 +90,23 @@ export default async function OverviewPage({
           className="flex flex-wrap items-end justify-between gap-4"
         >
           <div className="flex min-w-0 flex-col gap-3">
-            <h2
-              id="greeting-heading"
-              className="text-[1.75rem] leading-tight font-bold tracking-tight sm:text-[2rem]"
-            >
-              <Greeting firstName={user.name.split(/\s+/)[0] ?? ""} />
-            </h2>
+            <div className="flex min-w-0 items-center gap-3">
+              {(site.logoUrl || site.faviconUrl) && (
+                <SiteAvatar
+                  name={site.name}
+                  logoUrl={site.logoUrl}
+                  faviconUrl={site.faviconUrl}
+                  prefer="logo"
+                  className="size-11 rounded-xl sm:size-12"
+                />
+              )}
+              <h2
+                id="greeting-heading"
+                className="text-[1.75rem] leading-tight font-bold tracking-tight sm:text-[2rem]"
+              >
+                <Greeting firstName={user.name.split(/\s+/)[0] ?? ""} />
+              </h2>
+            </div>
             <div className="flex flex-wrap gap-2">
               {overview.allowIndexing ? (
                 <InfoChip tone="success" icon={Search}>
