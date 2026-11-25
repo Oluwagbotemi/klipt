@@ -92,6 +92,8 @@ Publishing settings: URL patterns per content type (e.g. posts at `/blog/{slug}`
 
 Taxonomy: nested categories (up to three levels), tags and custom taxonomies (e.g. Region, for the content types you choose), with entry counts, search, and a "Categories & tags" panel in the editor that saves on its own. Authors can assign terms to their own drafts and create new tags; editors and above manage all terms. The content API returns each entry's terms, filters by `category`, `tag` or `term`, lists terms with counts (`/taxonomies/{key}`), resolves archive paths like `/category/news`, and adds archive pages with published entries to the sitemap.
 
+Sign-in and welcome: every sign-in, sign-up, password, invitation and transfer page is one card with a gently animated illustration of Klipt beside the form (desktop). New people get a short welcome flow: their role, what they're building (which sets up the first site: e.g. a Docs or Products content type), the first site, then optional steps to invite the team and get an API key for their website.
+
 Account: profile (name, email, appearance), security (change password with an option to sign out other devices, signed-in devices you can sign out one by one or all at once), and account deletion (password and email confirmation; blocked while you own a site, so sites are transferred or deleted first).
 
 Navigation: header and footer menus plus custom menus, with links to entries (they follow URL changes) or URLs, two levels of nesting, keyboard-friendly reordering, warnings for links to unpublished or deleted entries, save conflict detection, and `GET /api/v1/menus/{key}` for your website (plus an opt-in `menu.updated` webhook).

@@ -36,11 +36,12 @@ import {
   type IconTone,
 } from "@/components/visual/card";
 import { heroActionClass, HeroCard } from "@/components/visual/hero-card";
-import { Illustration } from "@/components/visual/illustration";
+import { Celebrate, Illustration } from "@/components/visual/illustration";
 import { InfoChip } from "@/components/visual/info-chip";
 import { PillTabs } from "@/components/visual/pill-tabs";
 import { ProgressBar } from "@/components/visual/progress-bar";
 import { StatCard } from "@/components/visual/stat-card";
+import { getOnboarding } from "@/lib/data/onboarding";
 import { getOverview } from "@/lib/data/overview";
 import { getPerformanceSummary } from "@/lib/data/performance";
 import { requireUser } from "@/lib/data/session";
@@ -68,11 +69,13 @@ export default async function OverviewPage({
 }: PageProps<"/sites/[siteId]/overview">) {
   const [{ siteId }, query] = await Promise.all([params, searchParams]);
   const period = parseOverviewPeriod(query.period);
-  const [site, overview, user] = await Promise.all([
+  const [site, overview, user, onboarding] = await Promise.all([
     getSite(siteId),
     getOverview(siteId, period),
     requireUser(),
+    getOnboarding(),
   ]);
+  const welcome = query.welcome === "1";
   const role = site.currentUserRole;
   const performance = can(role, "performance.view") ? await getPerformanceSummary(site.id) : null;
   const content = siteHref(site.id, "content");
@@ -137,7 +140,35 @@ export default async function OverviewPage({
           />
         </section>
 
+        {welcome && (
+          <section
+            role="status"
+            className="visual-card flex flex-wrap items-center gap-4 px-5 py-4 sm:px-6"
+          >
+            <span
+              aria-hidden
+              className="bg-success-soft text-success-strong relative grid size-11 shrink-0 place-items-center rounded-xl"
+            >
+              <CircleCheck className="size-5" />
+              <Celebrate />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold">You&apos;re all set</p>
+              <p className="text-muted-foreground text-sm">
+                {site.name} is ready. Start with a post, or pick up the setup steps below.
+              </p>
+            </div>
+            <Link
+              href={siteHref(site.id)}
+              className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 rounded text-sm underline-offset-4 outline-none hover:underline focus-visible:ring-[3px]"
+            >
+              Dismiss
+            </Link>
+          </section>
+        )}
+
         <QuickActions
+          order={onboarding.state.role}
           siteId={site.id}
           canCreate={canCreate}
           canUpload={can(role, "media.upload")}

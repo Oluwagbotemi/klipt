@@ -4,6 +4,8 @@ import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 import { InlineAlert } from "@/components/inline-alert";
 import { Button } from "@/components/ui/button";
+import { AuthCard } from "@/components/onboarding/auth-card";
+import { PublishScene } from "@/components/onboarding/scenes";
 import { getCurrentUser } from "@/lib/data/session";
 
 export const metadata: Metadata = { title: "Email confirmation" };
@@ -11,9 +13,11 @@ export const metadata: Metadata = { title: "Email confirmation" };
 /** Where confirmation links land. Better Auth adds ?error=… when the link didn't work. */
 export default function EmailVerifiedPage({ searchParams }: PageProps<"/email-verified">) {
   return (
-    <Suspense>
-      <Result searchParams={searchParams} />
-    </Suspense>
+    <AuthCard visual={<PublishScene />}>
+      <Suspense>
+        <Result searchParams={searchParams} />
+      </Suspense>
+    </AuthCard>
   );
 }
 

@@ -1,0 +1,552 @@
+/* The sign-in and welcome illustrations (scenes.tsx). Faux Klipt UI on the
+   card's grey panel: one card in focus, the rest faded context. Klipt tokens
+   only, so light and dark both work. */
+
+.kl-scene .ss-stage {
+  /* The crop is ours: what bleeds stops at the stage's edge */
+  overflow: hidden;
+  background: transparent;
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: 14px;
+}
+
+.kl-scene .kl-card {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 18px;
+  border: 1px solid var(--card-border);
+  background: var(--surface-card);
+}
+
+/* The one object the eye lands on (on its own layer, so text never hops as it lands) */
+.kl-scene .kl-focus {
+  will-change: transform;
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--foreground) 5%, transparent),
+    0 18px 40px -20px color-mix(in srgb, var(--foreground) 22%, transparent);
+  transition:
+    opacity 600ms var(--motion-ease),
+    transform 700ms var(--motion-ease);
+}
+/* Cards that arrive start below and transparent, until the script lets them in */
+.kl-scene .kl-editor,
+.kl-scene .kl-person.kl-focus,
+.kl-scene .kl-response {
+  opacity: 0;
+  transform: translateY(18px) scale(0.98);
+}
+.kl-scene .kl-card.kl-focus[data-in] {
+  opacity: 1;
+  transform: none;
+}
+.kl-scene .kl-key[data-in],
+.kl-scene .kl-code {
+  opacity: 1;
+}
+
+/* Reactive scenes (no script) settle in once */
+.kl-scene .kl-settle {
+  animation: kl-settle 700ms var(--motion-ease) both;
+}
+@keyframes kl-settle {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+}
+
+/* Context: faded, no words */
+.kl-scene .kl-ghost {
+  opacity: 0.55;
+  gap: 12px;
+}
+.kl-scene .kl-ghost-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.kl-scene .kl-pos-tr {
+  top: 48px;
+  right: -48px;
+  width: 290px;
+}
+.kl-scene .kl-pos-bl {
+  bottom: 40px;
+  left: -40px;
+  width: 270px;
+}
+
+.kl-scene .kl-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.kl-scene .kl-between {
+  justify-content: space-between;
+}
+.kl-scene .kl-foot {
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--card-border);
+}
+.kl-scene .kl-title {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.kl-scene .kl-strong {
+  font-weight: 600;
+  color: var(--foreground);
+}
+.kl-scene .kl-muted {
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+.kl-scene .kl-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kl-scene .kl-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.kl-scene .kl-bar {
+  display: block;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--chart-neutral);
+}
+.kl-scene .kl-bar[data-tone="strong"] {
+  background: var(--muted-foreground);
+}
+.kl-scene .kl-bar--title {
+  width: 45%;
+  height: 10px;
+}
+.kl-scene .kl-dot {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--chart-neutral);
+}
+
+.kl-scene .kl-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+.kl-scene .kl-avatar[data-tone="0"] {
+  background: var(--info-soft);
+  color: var(--info-strong);
+}
+.kl-scene .kl-avatar[data-tone="2"] {
+  background: var(--warning-soft);
+  color: var(--warning-strong);
+}
+
+.kl-scene .kl-tile {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+
+.kl-scene .kl-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    background-color 400ms var(--motion-ease),
+    color 400ms var(--motion-ease);
+}
+.kl-scene .kl-chip[data-tone="neutral"] {
+  background: var(--card-nested);
+  color: var(--muted-foreground);
+}
+.kl-scene .kl-chip[data-tone="success"] {
+  background: var(--success-soft);
+  color: var(--success-strong);
+}
+.kl-scene .kl-chip[data-tone="accent"] {
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+
+/* The button the cursor presses; it confirms on itself */
+.kl-scene .kl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 13px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  transition:
+    background-color 400ms var(--motion-ease),
+    transform 150ms var(--motion-ease);
+}
+/* Whole-pixel widths, so the button and its icon never sit on half pixels */
+.kl-scene .kl-btn[data-target="publish"] {
+  width: 116px;
+}
+.kl-scene .kl-btn[data-target="save"] {
+  width: 92px;
+}
+/* Pressed reads as a darker fill, not a scale, so the label stays on whole pixels */
+.kl-scene .kl-btn[data-pressed] {
+  background: color-mix(in srgb, var(--primary) 82%, var(--foreground));
+}
+.kl-scene .kl-btn[data-done] {
+  background: var(--success);
+}
+.kl-scene .kl-btn,
+.kl-scene .kl-toast {
+  will-change: transform;
+}
+.kl-scene .kl-inline-icon {
+  display: inline;
+  vertical-align: -2px;
+}
+
+.kl-scene .kl-editor {
+  left: 55px;
+  top: 178px;
+  width: 410px;
+}
+.kl-scene .kl-toast {
+  position: absolute;
+  left: 55px;
+  top: 486px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--tooltip);
+  color: var(--tooltip-foreground);
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 500ms var(--motion-ease),
+    transform 600ms var(--motion-ease);
+}
+.kl-scene .kl-toast[data-in] {
+  opacity: 1;
+  transform: none;
+}
+
+/* Key */
+.kl-scene .kl-key {
+  left: 48px;
+  top: 200px;
+  width: 400px;
+}
+.kl-scene .kl-sessions {
+  bottom: 56px;
+}
+.kl-scene .kl-field {
+  display: flex;
+  align-items: center;
+  height: 42px;
+  padding: 0 14px;
+  border: 1px solid var(--input);
+  border-radius: 10px;
+}
+.kl-scene .kl-dots {
+  display: flex;
+  gap: 6px;
+}
+.kl-scene .kl-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--foreground);
+  opacity: 0;
+  transform: scale(0.4);
+  transition:
+    opacity 150ms var(--motion-ease),
+    transform 200ms var(--motion-ease);
+}
+.kl-scene .kl-dots span[data-on] {
+  opacity: 1;
+  transform: none;
+}
+
+/* Two labels in one cell: the box holds the wider, the words crossfade */
+.kl-scene .kl-xfade {
+  display: inline-grid;
+}
+.kl-scene .kl-xfade > span {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  /* Even box, start-aligned: a 14px icon lands on whole pixels */
+  height: 18px;
+  justify-content: flex-start;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 350ms var(--motion-ease);
+}
+.kl-scene .kl-xfade > span[data-show] {
+  opacity: 1;
+  transition-delay: 120ms;
+}
+.kl-scene .kl-meter {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--card-nested);
+  overflow: hidden;
+}
+.kl-scene .kl-meter span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--success);
+  transition: width 200ms var(--motion-ease);
+}
+
+/* People */
+.kl-scene .kl-people {
+  position: absolute;
+  inset: 0;
+}
+.kl-scene .kl-person {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+}
+.kl-scene .kl-person[data-row="0"] {
+  top: 178px;
+  left: 96px;
+  width: 400px;
+}
+.kl-scene .kl-person[data-row="1"] {
+  top: 276px;
+  left: 44px;
+  width: 432px;
+}
+.kl-scene .kl-person[data-row="2"] {
+  top: 374px;
+  left: 24px;
+  width: 400px;
+}
+.kl-scene .kl-person-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.3;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Building */
+.kl-scene .kl-sitemap {
+  left: 44px;
+  top: 172px;
+  width: 400px;
+}
+.kl-scene .kl-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-left: 14px;
+  border-left: 2px solid var(--card-border);
+}
+.kl-scene .kl-node {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--card-nested);
+  color: var(--muted-foreground);
+}
+.kl-scene .kl-node > span:first-of-type {
+  flex: 1;
+  color: var(--foreground);
+}
+.kl-scene .kl-node--new {
+  border: 1px dashed var(--card-border-hover);
+  background: transparent;
+  transition:
+    background-color 400ms var(--motion-ease),
+    border-color 400ms var(--motion-ease);
+}
+.kl-scene .kl-node--new[data-on] {
+  border: 1px solid transparent;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+.kl-scene .kl-note {
+  margin: 0;
+}
+
+/* Site */
+.kl-scene .kl-browser {
+  position: absolute;
+  top: 120px;
+  left: 40px;
+  width: 520px;
+  border-radius: 18px 0 0 18px;
+  border: 1px solid var(--card-border);
+  border-right: 0;
+  background: var(--surface-card);
+  box-shadow: 0 18px 40px -20px color-mix(in srgb, var(--foreground) 22%, transparent);
+  overflow: hidden;
+}
+.kl-scene .kl-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 10px 12px 0;
+  background: var(--card-nested);
+}
+.kl-scene .kl-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 260px;
+  padding: 9px 12px;
+  border-radius: 10px 10px 0 0;
+  background: var(--surface-card);
+}
+.kl-scene .kl-tab--ghost {
+  background: transparent;
+}
+.kl-scene .kl-tab-mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+.kl-scene .kl-url {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 14px 0;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--card-nested);
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+.kl-scene .kl-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px 20px 28px;
+}
+.kl-scene .kl-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 6px;
+}
+.kl-scene .kl-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--card-border);
+}
+.kl-scene .kl-num {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+/* Connect */
+.kl-scene .kl-code {
+  left: 40px;
+  top: 120px;
+  width: 420px;
+}
+.kl-scene .kl-code pre {
+  margin: 0;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--card-nested);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  white-space: pre;
+  overflow: hidden;
+}
+.kl-scene .kl-c {
+  color: var(--muted-foreground);
+}
+.kl-scene .kl-s {
+  color: var(--primary-strong);
+}
+.kl-scene .kl-response {
+  left: 110px;
+  top: 430px;
+  width: 380px;
+  gap: 10px;
+}
+.kl-scene .kl-entry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--success-strong);
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 400ms var(--motion-ease),
+    transform 500ms var(--motion-ease);
+}
+.kl-scene .kl-entry .kl-strong {
+  flex: 1;
+}
+.kl-scene .kl-response[data-in] .kl-entry {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kl-scene .kl-settle,
+  .kl-scene .kl-caret {
+    animation: none;
+  }
+}

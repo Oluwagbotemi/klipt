@@ -133,13 +133,27 @@ before creating or changing any screen.
   right two-thirds capped at `max-w-xl`, from `lg`; `layout="stacked"` for lists and editors). Grids may
   add columns at `xl`/`2xl`; equal-height rows still apply. SEO/Performance/Team/Settings extras live in
   `src/components/insights/parts.tsx` (`EmptyCard`, `NothingYetBar`, `AvatarStack`, `CardNote`).
-- Stageshow (`.claude/skills/stageshow/`, MIT, copied from benjitaylor/skills at 299140f): only for
+- Stageshow (`.claude/skills/stageshow/`, MIT, copied from benjitaylor/skills at 299140f): for
   marketing illustrations of Klipt (landing-page heroes, feature cards, cursor demos, what's-new
-  animations). Never use it for Klipt's own app screens, which follow `cms-interface-design`; where
-  the two disagree (purple, bordered cards), Klipt's guide wins inside the app. Copy its `kit/` next to
-  the illustration that uses it, never into `src/components/ui` or `src/components/visual`. Its
-  playground and filming scripts run from its own folder (`npm install` there); they are not Klipt
-  dependencies. `.claude/` is excluded from Klipt's lint, typecheck and Prettier.
+  animations) and the illustration panel of the sign-in/welcome card. Never for Klipt's working app
+  screens, which follow `cms-interface-design`; where the two disagree (purple, bordered cards),
+  Klipt's guide wins. Copy only the `kit/` parts a scene uses next to it, never into
+  `src/components/ui` or `src/components/visual` (the auth scenes use `src/components/onboarding/stage/kit`,
+  kept close to upstream; ESLint relaxes the React Compiler rules there only). Its playground and
+  filming scripts run from its own folder (`npm install` there); they are not Klipt dependencies.
+  `.claude/` is excluded from Klipt's lint, typecheck and Prettier.
+- Sign-in and welcome (`src/app/(auth)`, card in `src/components/onboarding/auth-card.tsx`, scenes in
+  `scenes.tsx`): every auth page is an `AuthCard` (form left, a Stageshow scene of faux Klipt UI in the
+  grey panel right, from `lg`; phones get the form only). Scenes are illustrations only, use Klipt's
+  tokens through the kit's `--ss-*` variables, play once and show their payoff under reduced motion.
+  `/welcome` (`src/server/onboarding.ts`, rules in `src/lib/onboarding.ts`) runs role → building →
+  first site → team (optional) → connect (optional); answers live on `users.onboarding_role`,
+  `onboarding_building`, and `onboarded_at` marks it finished or skipped. `/sites` sends people with no
+  memberships and no `onboarded_at` to `/welcome`; accepting an invitation as someone new goes to
+  `/welcome?joined=<siteId>` (role only). The building preset (`applyBuildingPreset`, owner only)
+  only adds ordinary settings and content types: company → default Pages; docs → a Docs type
+  (`/docs/…`, default); store → Products (price, image). The role only reorders Overview quick actions
+  (`quickActionOrder`). Team and Connect steps reuse the Team and Integrations Server Actions.
 - Team (`src/server/team.ts`): invitations are shareable links (token hashed for lookup, encrypted so
   managers can copy it again; 7 days; must be accepted by an account with the invited email). Only
   the owner grants Admin or manages admins; nobody changes the owner (that's ownership transfer).
