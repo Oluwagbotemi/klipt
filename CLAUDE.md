@@ -68,8 +68,16 @@ before creating or changing any screen.
   is stripped. Send editor JSON to Server Actions as plain JSON (stringify/parse first).
 - Editor writes (`src/server/editor.ts`) lock the row and compare `expectedUpdatedAt`; a mismatch
   is a `ConflictError`, never a silent overwrite. Slug changes on published entries create 301s
-  without chains or loops. Scheduled entries are promoted by `publishDueEntries()` on read until a
-  background job exists. SEO length hints are guidance only and never block publishing.
+  without chains or loops. SEO length hints are guidance only and never block publishing.
+- Scheduled publishing (`src/server/scheduler.ts`, guide `docs/scheduled-publishing.md`):
+  `publishDueEntries()` promotes due entries (`publishedAt` = the scheduled time), queues
+  `entry.published` and logs "Klipt published … as scheduled" (actor null, `actorName` "Klipt"); its
+  update re-checks `status = 'scheduled'`, so concurrent calls never double-publish. It runs on reads,
+  in the daily cron and from `GET /api/cron/publish` (Bearer `CRON_SECRET`, `isCronAuthorized()`),
+  which an external scheduler (cron-job.org) calls every minute because Vercel Hobby crons are daily.
+  `runScheduler()` also sends queued webhooks and overwrites one site-less `audit_events` row
+  (`scheduler.ran`); Settings › Publishing shows "Running every minute" when it is under 5 minutes old
+  (`isSchedulerConnected`), and the schedule dialog explains the delay otherwise.
 - Delivery is headless (decided): customer websites read `/api/v1/*` with a site API key
   (`src/app/api/v1`, guide in `docs/content-api.md`). Handlers wrap their work in `handleDelivery()`
   from `src/lib/data/delivery.ts`, which authenticates the key and picks the site;

@@ -67,7 +67,9 @@ website when content is published, edited, moved or unpublished.
    the project (this sets `BLOB_READ_WRITE_TOKEN`), then redeploy. Without it, uploads show "File
    storage isn't set up yet". Locally, files are stored in `.data/media`.
 6. Optional but recommended: add `CRON_SECRET` (any long random value). The daily job in
-   `vercel.json` then publishes due scheduled entries and retries failed webhooks.
+   `vercel.json` then publishes due scheduled entries and retries failed webhooks. For posts to go
+   live within a minute of their scheduled time, have a free scheduler call `/api/cron/publish`
+   every minute ([`docs/scheduled-publishing.md`](docs/scheduled-publishing.md)).
 7. **Email:** add `RESEND_API_KEY` and `EMAIL_FROM` for Production (step by step in
    [`docs/email.md`](docs/email.md)), then redeploy. Without them Klipt sends no email: invitations
    and transfers stay shareable links and "Forgot password?" is hidden.
@@ -83,6 +85,8 @@ SEO: recommendations for live pages (descriptions, titles, duplicates, thin cont
 Settings: general (name, language, time zone), your website's domain, SEO defaults (title template, default sharing image), ownership transfer (password-confirmed, accepted by the new owner via a link), and the danger zone (archive and restore, or delete with password and name confirmation).
 
 Content models: custom content types (e.g. Product) and extra fields on any type (text, long text, number, date, yes/no, dropdown, image, link to content), with required fields checked on publish. Entries of custom types live under Content › Collections, and the content API returns every entry's `fields` with images and published links resolved.
+
+Scheduled publishing: `/api/cron/publish` publishes due scheduled entries on every site and sends their webhooks; called every minute by a free scheduler (cron-job.org, see `docs/scheduled-publishing.md`), posts go live within a minute of their time. Settings › Publishing shows whether the scheduler is running.
 
 Publishing settings: URL patterns per content type (e.g. posts at `/blog/{slug}` or `/blog/{yyyy}/{mm}/{slug}`) with a preview of which live addresses move and automatic one-hop 301 redirects, an optional "require review before publishing" rule (owners and admins exempt), the default type for the New button, and the live website and draft preview addresses in one place.
 

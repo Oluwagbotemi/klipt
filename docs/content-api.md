@@ -504,10 +504,12 @@ export async function POST(request: Request) {
 
 ### Timing on Vercel
 
-Klipt sends events right after the change, from the same request. Retries and scheduled entries are
-handled whenever Klipt is next in use and by a daily job (`vercel.json`, needs a `CRON_SECRET`
-environment variable). On Vercel's Hobby plan that job can only run once a day; a paid plan can run
-it more often.
+Klipt sends events right after the change, from the same request. Scheduled entries go live, and
+send `entry.published`, when something calls `/api/cron/publish`: set up a free scheduler to call it
+every minute ([`scheduled-publishing.md`](scheduled-publishing.md)). Without one, they go live
+whenever Klipt is next in use and at a daily job (`vercel.json`, needs a `CRON_SECRET` environment
+variable), which also retries failed deliveries. On Vercel's Hobby plan that job can only run once a
+day.
 
 ## 5. Draft previews on your website
 

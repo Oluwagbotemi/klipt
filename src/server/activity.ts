@@ -40,6 +40,8 @@ import { siteHref } from "@/lib/navigation";
 export interface ActivityInput {
   siteId: string;
   actorId: string | null;
+  /** Shown instead of a member when there is no actor (e.g. "Klipt" for scheduled publishing). */
+  actorName?: string | null;
   action: string;
   targetType?: string | null;
   targetId?: string | null;
@@ -50,6 +52,7 @@ export async function recordActivity(db: DbOrTx, input: ActivityInput) {
   await db.insert(auditEvents).values({
     siteId: input.siteId,
     actorId: input.actorId,
+    actorName: input.actorName ?? null,
     action: input.action,
     targetType: input.targetType ?? null,
     targetId: input.targetId ?? null,

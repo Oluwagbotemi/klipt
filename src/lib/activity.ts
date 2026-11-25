@@ -152,6 +152,7 @@ export function describeActivity(
     case "content.updated":
       return say("edited", title ?? "Untitled");
     case "content.published":
+      if (meta.from === "scheduled") return say("published", title, "as scheduled");
       return say(meta.from === "in_review" ? "approved and published" : "published", title);
     case "content.scheduled":
       return say("scheduled", title, meta.scheduledAt ? "for publishing" : null);
