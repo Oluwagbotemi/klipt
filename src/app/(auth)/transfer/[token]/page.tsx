@@ -6,6 +6,8 @@ import { SignOutButton } from "@/components/team/accept-invitation";
 import { TransferResponse } from "@/components/settings/transfer-response";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AuthCard } from "@/components/onboarding/auth-card";
+import { PeopleScene } from "@/components/onboarding/scenes";
 import { getTransfer } from "@/lib/data/settings";
 import { formatDate } from "@/lib/format";
 
@@ -17,17 +19,19 @@ export const metadata: Metadata = {
 
 export default function TransferPage({ params }: PageProps<"/transfer/[token]">) {
   return (
-    <Suspense
-      fallback={
-        <div aria-busy="true" className="flex flex-col gap-3">
-          <Skeleton className="h-7 w-3/4" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-10 w-full" />
-        </div>
-      }
-    >
-      <Transfer params={params} />
-    </Suspense>
+    <AuthCard visual={<PeopleScene variant="transfer" />}>
+      <Suspense
+        fallback={
+          <div aria-busy="true" className="flex flex-col gap-3">
+            <Skeleton className="h-7 w-3/4" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        }
+      >
+        <Transfer params={params} />
+      </Suspense>
+    </AuthCard>
   );
 }
 

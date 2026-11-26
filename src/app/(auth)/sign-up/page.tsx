@@ -2,16 +2,18 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AuthSwitchLink } from "@/components/auth/auth-switch-link";
 import { SignUpForm } from "@/components/auth/sign-up-form";
+import { AuthCard, AuthHeading } from "@/components/onboarding/auth-card";
+import { PublishScene } from "@/components/onboarding/scenes";
 
 export const metadata: Metadata = { title: "Create account" };
 
 export default function SignUpPage() {
   return (
-    <>
-      <h1 className="text-2xl font-semibold tracking-tight">Create your account</h1>
-      <p className="text-muted-foreground mt-1 text-sm">
-        Create sites, publish content and manage SEO in one place.
-      </p>
+    <AuthCard visual={<PublishScene />}>
+      <AuthHeading
+        title="Create your account"
+        description="Create sites, publish content and manage SEO in one place."
+      />
       {/* The form reads ?next= and ?email= from the URL, which is request-time data. */}
       <Suspense>
         <SignUpForm />
@@ -22,6 +24,6 @@ export default function SignUpPage() {
           <AuthSwitchLink to="/sign-in">Sign in</AuthSwitchLink>
         </Suspense>
       </p>
-    </>
+    </AuthCard>
   );
 }

@@ -3,14 +3,16 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { connection } from "next/server";
 import { ForgotPasswordForm } from "@/components/auth/forgot-password-form";
+import { AuthCard, AuthHeading } from "@/components/onboarding/auth-card";
+import { KeyScene } from "@/components/onboarding/scenes";
 import { isEmailEnabled } from "@/lib/data/email";
 
 export const metadata: Metadata = { title: "Forgot password" };
 
 export default function ForgotPasswordPage() {
   return (
-    <>
-      <h1 className="text-2xl font-semibold tracking-tight">Forgot your password?</h1>
+    <AuthCard visual={<KeyScene />}>
+      <AuthHeading title="Forgot your password?" />
       <Suspense>
         <ForgotPassword />
       </Suspense>
@@ -23,7 +25,7 @@ export default function ForgotPasswordPage() {
           Sign in
         </Link>
       </p>
-    </>
+    </AuthCard>
   );
 }
 

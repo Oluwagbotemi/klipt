@@ -45,6 +45,11 @@ export const users = pgTable("users", {
   image: text("image"),
   /** Email about assignments and reviews. Security emails always send. */
   notifyAssignments: boolean("notify_assignments").notNull().default(true),
+  /** Onboarding answers (src/lib/onboarding.ts); null until chosen. */
+  onboardingRole: text("onboarding_role"),
+  onboardingBuilding: text("onboarding_building"),
+  /** Set when the welcome flow is finished or skipped; null means it may still run. */
+  onboardedAt: timestamp("onboarded_at", { withTimezone: true }),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });

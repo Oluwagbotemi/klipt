@@ -5,6 +5,8 @@ import { CircleAlert } from "lucide-react";
 import { AcceptInvitation, SignOutButton } from "@/components/team/accept-invitation";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AuthCard } from "@/components/onboarding/auth-card";
+import { PeopleScene } from "@/components/onboarding/scenes";
 import { getInvitation } from "@/lib/data/team";
 import { formatDate } from "@/lib/format";
 import { ROLE_DESCRIPTIONS } from "@/lib/team";
@@ -18,17 +20,19 @@ export const metadata: Metadata = {
 
 export default function InvitePage({ params }: PageProps<"/invite/[token]">) {
   return (
-    <Suspense
-      fallback={
-        <div aria-busy="true" className="flex flex-col gap-3">
-          <Skeleton className="h-7 w-3/4" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-10 w-full" />
-        </div>
-      }
-    >
-      <Invitation params={params} />
-    </Suspense>
+    <AuthCard visual={<PeopleScene />}>
+      <Suspense
+        fallback={
+          <div aria-busy="true" className="flex flex-col gap-3">
+            <Skeleton className="h-7 w-3/4" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        }
+      >
+        <Invitation params={params} />
+      </Suspense>
+    </AuthCard>
   );
 }
 
