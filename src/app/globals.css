@@ -478,3 +478,11 @@
     content: attr(data-placeholder);
   }
 }
+
+@layer components {
+  /* The sign-in and welcome card's scrolling middle: a quiet, thin scrollbar */
+  .auth-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--card-border-hover) transparent;
+  }
+}

@@ -144,8 +144,14 @@ before creating or changing any screen.
   `.claude/` is excluded from Klipt's lint, typecheck and Prettier.
 - Sign-in and welcome (`src/app/(auth)`, card in `src/components/onboarding/auth-card.tsx`, scenes in
   `scenes.tsx`): every auth page is an `AuthCard` (form left, a Stageshow scene of faux Klipt UI in the
-  grey panel right, from `lg`; phones get the form only). Scenes are illustrations only, use Klipt's
-  tokens through the kit's `--ss-*` variables, play once and show their payoff under reduced motion.
+  grey panel right, from `lg`; phones get the form only). The card has one fixed height on every page
+  and step (`min(760px, 100dvh − 3rem)`, full screen on phones): the header stays put, the middle
+  scrolls (`data-auth-scroll`) and the `footer` prop is a pinned, opaque bar for the CTAs (welcome steps
+  submit with `form="welcome-step"`). Scenes are illustrations only, use Klipt's tokens through the
+  kit's `--ss-*` variables, loop calmly (each script ends where it began), pause in hidden tabs and show
+  a still poster under reduced motion. Labels that change stack in one cell (`Cycle`), never swap.
+  `/dev/scenes?scene=…` renders one scene locally (not in production unless `ALLOW_DEV_SCENES=1`) so
+  the Stageshow film gate can record the welcome scenes.
   `/welcome` (`src/server/onboarding.ts`, rules in `src/lib/onboarding.ts`) runs role → building →
   first site → team (optional) → connect (optional); answers live on `users.onboarding_role`,
   `onboarding_building`, and `onboarded_at` marks it finished or skipped. `/sites` sends people with no

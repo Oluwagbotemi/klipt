@@ -11,18 +11,24 @@ export const metadata: Metadata = { title: "Sign in" };
 
 export default function SignInPage() {
   return (
-    <AuthCard visual={<PublishScene />}>
+    <AuthCard
+      visual={<PublishScene />}
+      footer={
+        <p className="text-muted-foreground text-center text-sm">
+          New to Klipt?{" "}
+          <Suspense
+            fallback={<span className="text-foreground font-medium">Create an account</span>}
+          >
+            <AuthSwitchLink to="/sign-up">Create an account</AuthSwitchLink>
+          </Suspense>
+        </p>
+      }
+    >
       <AuthHeading title="Sign in" description="Welcome back. Sign in to manage your sites." />
       {/* The form reads ?next= from the URL, which is request-time data. */}
       <Suspense>
         <SignIn />
       </Suspense>
-      <p className="text-muted-foreground mt-6 text-center text-sm">
-        New to Klipt?{" "}
-        <Suspense fallback={<span className="text-foreground font-medium">Create an account</span>}>
-          <AuthSwitchLink to="/sign-up">Create an account</AuthSwitchLink>
-        </Suspense>
-      </p>
     </AuthCard>
   );
 }

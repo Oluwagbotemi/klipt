@@ -9,7 +9,17 @@ export const metadata: Metadata = { title: "Create account" };
 
 export default function SignUpPage() {
   return (
-    <AuthCard visual={<PublishScene />}>
+    <AuthCard
+      visual={<PublishScene />}
+      footer={
+        <p className="text-muted-foreground text-center text-sm">
+          Already have an account?{" "}
+          <Suspense fallback={<span className="text-foreground font-medium">Sign in</span>}>
+            <AuthSwitchLink to="/sign-in">Sign in</AuthSwitchLink>
+          </Suspense>
+        </p>
+      }
+    >
       <AuthHeading
         title="Create your account"
         description="Create sites, publish content and manage SEO in one place."
@@ -18,12 +28,6 @@ export default function SignUpPage() {
       <Suspense>
         <SignUpForm />
       </Suspense>
-      <p className="text-muted-foreground mt-6 text-center text-sm">
-        Already have an account?{" "}
-        <Suspense fallback={<span className="text-foreground font-medium">Sign in</span>}>
-          <AuthSwitchLink to="/sign-in">Sign in</AuthSwitchLink>
-        </Suspense>
-      </p>
     </AuthCard>
   );
 }

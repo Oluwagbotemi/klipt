@@ -11,20 +11,24 @@ export const metadata: Metadata = { title: "Forgot password" };
 
 export default function ForgotPasswordPage() {
   return (
-    <AuthCard visual={<KeyScene />}>
+    <AuthCard
+      visual={<KeyScene />}
+      footer={
+        <p className="text-muted-foreground text-center text-sm">
+          Remembered it?{" "}
+          <Link
+            href="/sign-in"
+            className="text-foreground focus-visible:ring-ring/50 rounded font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-[3px]"
+          >
+            Sign in
+          </Link>
+        </p>
+      }
+    >
       <AuthHeading title="Forgot your password?" />
       <Suspense>
         <ForgotPassword />
       </Suspense>
-      <p className="text-muted-foreground mt-6 text-center text-sm">
-        Remembered it?{" "}
-        <Link
-          href="/sign-in"
-          className="text-foreground focus-visible:ring-ring/50 rounded font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-[3px]"
-        >
-          Sign in
-        </Link>
-      </p>
     </AuthCard>
   );
 }
