@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { createContext, useActionState, useContext, useState } from "react";
 import Link from "next/link";
 import {
   Box,
@@ -35,7 +35,7 @@ import {
 import { CopyButton } from "@/components/copy-button";
 import { FormField } from "@/components/form-field";
 import { InlineAlert } from "@/components/inline-alert";
-import { AuthCard, AuthHeading } from "@/components/onboarding/auth-card";
+import { AuthCard, AuthHeading, FooterRow } from "@/components/onboarding/auth-card";
 import {
   BuildingScene,
   ConnectScene,
@@ -103,44 +103,68 @@ export function WelcomeFlow(props: Props) {
     connect: <ConnectScene />,
   }[step];
 
+  const header = (
+    <div className="flex items-center justify-between gap-4">
+      <Progress index={index} total={steps.length} />
+      {!joined && (
+        <form action={skipOnboardingAction}>
+          {props.site && <input type="hidden" name="site" value={props.site.id} />}
+          <button
+            type="submit"
+            className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 rounded text-sm underline-offset-4 outline-none hover:underline focus-visible:ring-[3px]"
+          >
+            Skip for now
+          </button>
+        </form>
+      )}
+    </div>
+  );
+
   return (
-    <AuthCard visual={visual} wide logoHref="/welcome">
-      <div className="flex items-center justify-between gap-4">
-        <Progress index={index} total={steps.length} />
-        {!joined && (
-          <form action={skipOnboardingAction}>
-            {props.site && <input type="hidden" name="site" value={props.site.id} />}
-            <button
-              type="submit"
-              className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 rounded text-sm underline-offset-4 outline-none hover:underline focus-visible:ring-[3px]"
-            >
-              Skip for now
-            </button>
-          </form>
-        )}
-      </div>
-      <div className="mt-8">
-        {step === "role" && <RoleStep role={role} onRole={setRole} joined={joined} />}
-        {step === "building" && <BuildingStep building={building} onBuilding={setBuilding} />}
-        {step === "site" && (
-          <SiteStep
-            site={props.site}
-            name={siteName}
-            domain={domain}
-            onName={setSiteName}
-            onDomain={setDomain}
-          />
-        )}
-        {step === "team" && props.site && (
-          <TeamStep siteId={props.site.id} emailEnabled={props.emailEnabled} />
-        )}
-        {step === "connect" && props.site && (
-          <ConnectStep siteId={props.site.id} apiBase={props.apiBase} />
-        )}
-      </div>
+    <ShellContext.Provider value={{ visual, header }}>
+      {step === "role" && <RoleStep role={role} onRole={setRole} joined={joined} />}
+      {step === "building" && <BuildingStep building={building} onBuilding={setBuilding} />}
+      {step === "site" && (
+        <SiteStep
+          site={props.site}
+          name={siteName}
+          domain={domain}
+          onName={setSiteName}
+          onDomain={setDomain}
+        />
+      )}
+      {step === "team" && props.site && (
+        <TeamStep siteId={props.site.id} emailEnabled={props.emailEnabled} />
+      )}
+      {step === "connect" && props.site && (
+        <ConnectStep siteId={props.site.id} apiBase={props.apiBase} />
+      )}
+    </ShellContext.Provider>
+  );
+}
+
+const ShellContext = createContext<{ visual: React.ReactNode; header: React.ReactNode } | null>(
+  null,
+);
+
+/** One step's card: the flow's header and illustration, this step's content and footer. */
+function StepCard({ footer, children }: { footer: React.ReactNode; children: React.ReactNode }) {
+  const shell = useContext(ShellContext);
+  return (
+    <AuthCard
+      visual={shell?.visual}
+      header={shell?.header}
+      footer={footer}
+      wide
+      logoHref="/welcome"
+    >
+      {children}
     </AuthCard>
   );
 }
+
+/** The id that ties each step's form to the Continue button in the pinned footer. */
+const STEP_FORM = "welcome-step";
 
 function Progress({ index, total }: { index: number; total: number }) {
   return (
@@ -238,7 +262,7 @@ function Footer({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
+    <FooterRow>
       {back ? (
         <Button asChild variant="outline" size="lg">
           <Link href={back}>Back</Link>
@@ -248,12 +272,12 @@ function Footer({
       )}
       <div className="flex items-center gap-3">
         {children}
-        <Button type="submit" size="lg" disabled={pending || disabled}>
+        <Button type="submit" form={STEP_FORM} size="lg" disabled={pending || disabled}>
           {pending && <Loader2 className="animate-spin" aria-hidden />}
           {label}
         </Button>
       </div>
-    </div>
+    </FooterRow>
   );
 }
 
@@ -268,40 +292,45 @@ function RoleStep({
 }) {
   const [state, action, pending] = useActionState<ChoiceState, FormData>(chooseRoleAction, {});
   return (
-    <form action={action}>
-      <AuthHeading
-        title="What best describes you?"
-        description={
-          joined
-            ? `One question before you open ${joined.name}. It helps Klipt show you the right things first.`
-            : "It helps Klipt show you the right things first. You can't get it wrong."
-        }
-      />
-      {joined && <input type="hidden" name="joined" value={joined.id} />}
-      {state.error && <InlineAlert className="mt-6">{state.error}</InlineAlert>}
-      <fieldset className="mt-6">
-        <legend className="sr-only">Your role</legend>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {ROLE_KEYS.map((key) => (
-            <ChoiceCard
-              key={key}
-              name="role"
-              value={key}
-              checked={role === key}
-              onChange={() => onRole(key)}
-              icon={ROLE_ICONS[key]}
-              title={ROLES[key].label}
-              description={ROLES[key].description}
-            />
-          ))}
-        </div>
-      </fieldset>
-      <Footer
-        pending={pending}
-        disabled={!role}
-        label={joined ? `Open ${joined.name}` : "Continue"}
-      />
-    </form>
+    <StepCard
+      footer={
+        <Footer
+          pending={pending}
+          disabled={!role}
+          label={joined ? `Open ${joined.name}` : "Continue"}
+        />
+      }
+    >
+      <form id={STEP_FORM} action={action}>
+        <AuthHeading
+          title="What best describes you?"
+          description={
+            joined
+              ? `One question before you open ${joined.name}. It helps Klipt show you the right things first.`
+              : "It helps Klipt show you the right things first. You can't get it wrong."
+          }
+        />
+        {joined && <input type="hidden" name="joined" value={joined.id} />}
+        {state.error && <InlineAlert className="mt-6">{state.error}</InlineAlert>}
+        <fieldset className="mt-6">
+          <legend className="sr-only">Your role</legend>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {ROLE_KEYS.map((key) => (
+              <ChoiceCard
+                key={key}
+                name="role"
+                value={key}
+                checked={role === key}
+                onChange={() => onRole(key)}
+                icon={ROLE_ICONS[key]}
+                title={ROLES[key].label}
+                description={ROLES[key].description}
+              />
+            ))}
+          </div>
+        </fieldset>
+      </form>
+    </StepCard>
   );
 }
 
@@ -314,48 +343,52 @@ function BuildingStep({
 }) {
   const [state, action, pending] = useActionState<ChoiceState, FormData>(chooseBuildingAction, {});
   return (
-    <form action={action}>
-      <AuthHeading
-        title="What are you building?"
-        description="Klipt sets up your first site to match. Everything it adds can be changed later."
-      />
-      {state.error && <InlineAlert className="mt-6">{state.error}</InlineAlert>}
-      <fieldset className="mt-6">
-        <legend className="sr-only">What you&apos;re building</legend>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {BUILDING_KEYS.map((key) => (
-            <ChoiceCard
-              key={key}
-              name="building"
-              value={key}
-              checked={building === key}
-              onChange={() => onBuilding(key)}
-              icon={BUILDING_ICONS[key]}
-              title={BUILDINGS[key].label}
-              description={BUILDINGS[key].description}
-            />
-          ))}
+    <StepCard footer={<Footer back="/welcome?step=role" pending={pending} disabled={!building} />}>
+      <form id={STEP_FORM} action={action}>
+        <AuthHeading
+          title="What are you building?"
+          description="Klipt sets up your first site to match. Everything it adds can be changed later."
+        />
+        {state.error && <InlineAlert className="mt-6">{state.error}</InlineAlert>}
+        <fieldset className="mt-6">
+          <legend className="sr-only">What you&apos;re building</legend>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {BUILDING_KEYS.map((key) => (
+              <ChoiceCard
+                key={key}
+                name="building"
+                value={key}
+                checked={building === key}
+                onChange={() => onBuilding(key)}
+                icon={BUILDING_ICONS[key]}
+                title={BUILDINGS[key].label}
+                description={BUILDINGS[key].description}
+              />
+            ))}
+          </div>
+        </fieldset>
+        <div
+          aria-live="polite"
+          className="bg-card-nested mt-4 min-h-[76px] rounded-[14px] px-4 py-3"
+        >
+          {building ? (
+            <>
+              <p className="text-sm font-medium">We&apos;ll set up:</p>
+              <ul className="text-muted-foreground mt-1 flex flex-col gap-0.5 text-sm">
+                {BUILDINGS[building].setsUp.map((line) => (
+                  <li key={line} className="flex items-center gap-2">
+                    <Check className="text-success size-3.5 shrink-0" aria-hidden />
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <p className="text-muted-foreground text-sm">Choose one to see what Klipt sets up.</p>
+          )}
         </div>
-      </fieldset>
-      <div aria-live="polite" className="bg-card-nested mt-4 min-h-[76px] rounded-[14px] px-4 py-3">
-        {building ? (
-          <>
-            <p className="text-sm font-medium">We&apos;ll set up:</p>
-            <ul className="text-muted-foreground mt-1 flex flex-col gap-0.5 text-sm">
-              {BUILDINGS[building].setsUp.map((line) => (
-                <li key={line} className="flex items-center gap-2">
-                  <Check className="text-success size-3.5 shrink-0" aria-hidden />
-                  {line}
-                </li>
-              ))}
-            </ul>
-          </>
-        ) : (
-          <p className="text-muted-foreground text-sm">Choose one to see what Klipt sets up.</p>
-        )}
-      </div>
-      <Footer back="/welcome?step=role" pending={pending} disabled={!building} />
-    </form>
+      </form>
+    </StepCard>
   );
 }
 
@@ -378,7 +411,18 @@ function SiteStep({
 
   if (site) {
     return (
-      <div>
+      <StepCard
+        footer={
+          <FooterRow>
+            <Button asChild variant="outline" size="lg">
+              <Link href="/welcome?step=building">Back</Link>
+            </Button>
+            <Button asChild size="lg">
+              <Link href={`/welcome?step=team&site=${site.id}`}>Continue</Link>
+            </Button>
+          </FooterRow>
+        }
+      >
         <AuthHeading
           title="Your site is ready"
           description="You can rename it any time in Settings."
@@ -389,54 +433,49 @@ function SiteStep({
             <span className="font-medium">{site.name}</span> was created.
           </p>
         </div>
-        <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
-          <Button asChild variant="outline" size="lg">
-            <Link href="/welcome?step=building">Back</Link>
-          </Button>
-          <Button asChild size="lg">
-            <Link href={`/welcome?step=team&site=${site.id}`}>Continue</Link>
-          </Button>
-        </div>
-      </div>
+      </StepCard>
     );
   }
 
   return (
-    <form action={action}>
-      <AuthHeading
-        title="Create your first site"
-        description="You'll be the owner. A site is one website's content, team and settings."
-      />
-      <div className="mt-6 flex max-w-md flex-col gap-4">
-        {state.errors?.form && <InlineAlert>{state.errors.form}</InlineAlert>}
-        <FormField
-          id="name"
-          name="name"
-          label="Site name"
-          value={name}
-          onChange={(event) => onName(event.target.value)}
-          error={state.errors?.name}
-          hint="Shown to your team in Klipt. You can change it later."
-          maxLength={80}
-          autoComplete="off"
-          required
-          autoFocus
+    <StepCard
+      footer={<Footer back="/welcome?step=building" pending={pending} label="Create site" />}
+    >
+      <form id={STEP_FORM} action={action}>
+        <AuthHeading
+          title="Create your first site"
+          description="You'll be the owner. A site is one website's content, team and settings."
         />
-        <FormField
-          id="domain"
-          name="domain"
-          label="Primary domain"
-          value={domain}
-          onChange={(event) => onDomain(event.target.value)}
-          error={state.errors?.domain}
-          hint="For example, example.com. You can add it later in Settings → Domains."
-          inputMode="url"
-          autoComplete="off"
-          spellCheck={false}
-        />
-      </div>
-      <Footer back="/welcome?step=building" pending={pending} label="Create site" />
-    </form>
+        <div className="mt-6 flex max-w-md flex-col gap-4">
+          {state.errors?.form && <InlineAlert>{state.errors.form}</InlineAlert>}
+          <FormField
+            id="name"
+            name="name"
+            label="Site name"
+            value={name}
+            onChange={(event) => onName(event.target.value)}
+            error={state.errors?.name}
+            hint="Shown to your team in Klipt. You can change it later."
+            maxLength={80}
+            autoComplete="off"
+            required
+            autoFocus
+          />
+          <FormField
+            id="domain"
+            name="domain"
+            label="Primary domain"
+            value={domain}
+            onChange={(event) => onDomain(event.target.value)}
+            error={state.errors?.domain}
+            hint="For example, example.com. You can add it later in Settings → Domains."
+            inputMode="url"
+            autoComplete="off"
+            spellCheck={false}
+          />
+        </div>
+      </form>
+    </StepCard>
   );
 }
 
@@ -452,7 +491,18 @@ function TeamStep({ siteId, emailEnabled }: { siteId: string; emailEnabled: bool
 
   const next = `/welcome?step=connect&site=${siteId}`;
   return (
-    <div>
+    <StepCard
+      footer={
+        <FooterRow>
+          <Button asChild variant="outline" size="lg">
+            <Link href={`/welcome?step=site&site=${siteId}`}>Back</Link>
+          </Button>
+          <Button asChild size="lg" variant={invited.length > 0 ? "default" : "outline"}>
+            <Link href={next}>{invited.length > 0 ? "Continue" : "Skip this step"}</Link>
+          </Button>
+        </FooterRow>
+      }
+    >
       <AuthHeading
         title="Invite your team"
         description={
@@ -524,16 +574,7 @@ function TeamStep({ siteId, emailEnabled }: { siteId: string; emailEnabled: bool
           ))}
         </ul>
       )}
-
-      <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
-        <Button asChild variant="outline" size="lg">
-          <Link href={`/welcome?step=site&site=${siteId}`}>Back</Link>
-        </Button>
-        <Button asChild size="lg" variant={invited.length > 0 ? "default" : "outline"}>
-          <Link href={next}>{invited.length > 0 ? "Continue" : "Skip this step"}</Link>
-        </Button>
-      </div>
-    </div>
+    </StepCard>
   );
 }
 
@@ -549,7 +590,21 @@ const res = await fetch("${apiBase}/entries?type=post", {
 const { data: posts } = await res.json();`;
 
   return (
-    <div>
+    <StepCard
+      footer={
+        <form action={finishOnboardingAction}>
+          <input type="hidden" name="site" value={siteId} />
+          <FooterRow>
+            <Button asChild variant="outline" size="lg">
+              <Link href={`/welcome?step=team&site=${siteId}`}>Back</Link>
+            </Button>
+            <Button type="submit" size="lg">
+              {created ? "Finish" : "Skip and finish"}
+            </Button>
+          </FooterRow>
+        </form>
+      }
+    >
       <AuthHeading
         title="Connect your website"
         description="Your website shows Klipt's content with its own design. It asks Klipt for published content with an API key."
@@ -605,17 +660,6 @@ const { data: posts } = await res.json();`;
           </div>
         </form>
       )}
-      <form action={finishOnboardingAction} className="mt-8">
-        <input type="hidden" name="site" value={siteId} />
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Button asChild variant="outline" size="lg">
-            <Link href={`/welcome?step=team&site=${siteId}`}>Back</Link>
-          </Button>
-          <Button type="submit" size="lg">
-            {created ? "Finish" : "Skip and finish"}
-          </Button>
-        </div>
-      </form>
-    </div>
+    </StepCard>
   );
 }
